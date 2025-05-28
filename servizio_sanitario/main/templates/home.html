@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard – Servizio Sanitario</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .card-section {
+      transition: all 0.3s ease;
+      border-left: 5px solid #7b0000;
+    }
+    .card-section:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    .bg-header {
+      background-color: #7b0000;
+    }
+    .icon-lg {
+      font-size: 2rem;
+    }
+    .placeholder-box {
+      height: 200px;
+      background: repeating-linear-gradient(
+        45deg,
+        #eee,
+        #eee 10px,
+        #ddd 10px,
+        #ddd 20px
+      );
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="bg-header text-white py-3 px-4 d-flex justify-content-between align-items-center">
+    <h4 class="mb-0">Servizio Sanitario Regionale</h4>
+    <img src="{% static 'img/logo_unibg.png' %}" alt="Logo UNIBG" height="50">
+  </header>
+
+  <div class="container py-5">
+    <!-- INTRO -->
+    <div class="bg-white p-4 rounded shadow mb-5">
+      <h5 class="text-danger fw-bold">Benvenuto nel sistema di monitoraggio dei ricoveri ospedalieri</h5>
+      <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera trasparente, efficiente e sicura.</p>
+      <ul class="mb-0">
+        <li><strong>Cittadini</strong>: identificati tramite codice SSN</li>
+        <li><strong>Ospedali</strong>: con indirizzo e direttore</li>
+        <li><strong>Ricoveri</strong>: con date, stato e struttura</li>
+        <li><strong>Patologie</strong>: croniche o mortali associate al paziente</li>
+      </ul>
+    </div>
+
+    <!-- MENU ICONICO -->
+    <div class="row text-center g-4">
+      <div class="col-md-3">
+        <div class="card card-section p-4 h-100">
+          <i class="bi bi-person-vcard icon-lg text-primary mb-2"></i>
+          <h6 class="fw-bold">Cittadini</h6>
+          <a href="{% url 'cittadini' %}" class="stretched-link text-decoration-none text-primary">Vai</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-section p-4 h-100">
+          <i class="bi bi-hospital icon-lg text-success mb-2"></i>
+          <h6 class="fw-bold">Ospedali</h6>
+          <a href="{% url 'ospedali' %}" class="stretched-link text-decoration-none text-success">Vai</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-section p-4 h-100">
+          <i class="bi bi-journal-medical icon-lg text-warning mb-2"></i>
+          <h6 class="fw-bold">Ricoveri</h6>
+          <a href="{% url 'ricoveri' %}" class="stretched-link text-decoration-none text-warning">Vai</a>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card card-section p-4 h-100">
+          <i class="bi bi-virus icon-lg text-danger mb-2"></i>
+          <h6 class="fw-bold">Patologie</h6>
+          <a href="{% url 'patologie' %}" class="stretched-link text-decoration-none text-danger">Vai</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLOT GRAFICI -->
+    <div class="row mt-5">
+      <div class="col-md-6">
+        <div class="bg-white p-3 rounded shadow">
+          <h6 class="mb-3 text-muted">📊 Andamento ricoveri</h6>
+          <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Grafico qui</div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="bg-white p-3 rounded shadow">
+          <h6 class="mb-3 text-muted">📈 Statistiche generali</h6>
+          <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Tabelle qui</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="text-center py-4 mt-5 bg-header text-white">
+    <p class="mb-1">Progetto universitario – Programmazione Web A.A. 2024-2025</p>
+    <p class="mb-1">Realizzato da: Alessandro Biscaro, Lorenzo Gambirasio, Marco Valceschini</p>
+    <p class="mb-0"><strong>Disclaimer:</strong> Tutti i dati sono fittizi e a scopo didattico</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
