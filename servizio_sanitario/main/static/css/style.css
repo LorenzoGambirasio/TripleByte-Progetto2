@@ -1,0 +1,28 @@
+body {
+      background-color: #f8f9fa;
+    }
+    .card-section {
+      transition: all 0.3s ease;
+      border-left: 5px solid #7b0000;
+    }
+    .card-section:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+    .bg-header {
+      background-color: #7b0000;
+    }
+    .icon-lg {
+      font-size: 2rem;
+    }
+    .placeholder-box {
+      height: 200px;
+      background: repeating-linear-gradient(
+        45deg,
+        #eee,
+        #eee 10px,
+        #ddd 10px,
+        #ddd 20px
+      );
+      border-radius: 8px;
+    }
