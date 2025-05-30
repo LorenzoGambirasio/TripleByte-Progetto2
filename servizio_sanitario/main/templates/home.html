@@ -1,65 +1,46 @@
 {% extends "base.html" %}
-
 {% block title %}Dashboard – Servizio Sanitario{% endblock %}
 
 {% block content %}
-<!-- INTRO -->
-<div class="bg-white p-4 rounded shadow mb-5">
-  <h5 class="text-danger fw-bold">Benvenuto nel sistema di monitoraggio dei ricoveri ospedalieri</h5>
-  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera trasparente, efficiente e sicura.</p>
-  <ul class="mb-0">
-    <li><strong>Cittadini</strong>: identificati tramite codice SSN</li>
-    <li><strong>Ospedali</strong>: con indirizzo e direttore</li>
-    <li><strong>Ricoveri</strong>: con date, stato e struttura</li>
-    <li><strong>Patologie</strong>: croniche o mortali associate al paziente</li>
-  </ul>
-</div>
+<div class="container-fluid">
+  <div class="row">
 
-<!-- MENU ICONICO -->
-<div class="row text-center g-4">
-  <div class="col-md-3">
-    <div class="card card-section p-4 h-100">
-      <i class="bi bi-person-vcard icon-lg text-primary mb-2"></i>
-      <h6 class="fw-bold">Cittadini</h6>
-      <a href="{% url 'cittadini' %}" class="stretched-link text-decoration-none text-primary">Vai</a>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card card-section p-4 h-100">
-      <i class="bi bi-hospital icon-lg text-success mb-2"></i>
-      <h6 class="fw-bold">Ospedali</h6>
-      <a href="{% url 'ospedali' %}" class="stretched-link text-decoration-none text-success">Vai</a>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card card-section p-4 h-100">
-      <i class="bi bi-journal-medical icon-lg text-warning mb-2"></i>
-      <h6 class="fw-bold">Ricoveri</h6>
-      <a href="{% url 'ricoveri' %}" class="stretched-link text-decoration-none text-warning">Vai</a>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card card-section p-4 h-100">
-      <i class="bi bi-virus icon-lg text-danger mb-2"></i>
-      <h6 class="fw-bold">Patologie</h6>
-      <a href="{% url 'patologie' %}" class="stretched-link text-decoration-none text-danger">Vai</a>
-    </div>
-  </div>
-</div>
+    <!-- NAV laterale con stile pulsanti esistenti -->
+    <aside class="col-md-2 mb-4">
+      <div class="d-grid gap-3">
+        <a href="{% url 'cittadini' %}" class="btn btn-outline-primary text-start">
+          <i class="bi bi-person-vcard me-2"></i> Cittadini
+        </a>
+        <a href="{% url 'ospedali' %}" class="btn btn-outline-success text-start">
+          <i class="bi bi-hospital me-2"></i> Ospedali
+        </a>
+        <a href="{% url 'ricoveri' %}" class="btn btn-outline-warning text-start">
+          <i class="bi bi-journal-medical me-2"></i> Ricoveri
+        </a>
+        <a href="{% url 'patologie' %}" class="btn btn-outline-danger text-start">
+          <i class="bi bi-virus me-2"></i> Patologie
+        </a>
+      </div>
+    </aside>
 
-<!-- SLOT GRAFICI -->
-<div class="row mt-5">
-  <div class="col-md-6">
-    <div class="bg-white p-3 rounded shadow">
-      <h6 class="mb-3 text-muted">📊 Andamento ricoveri</h6>
-      <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Grafico qui</div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="bg-white p-3 rounded shadow">
-      <h6 class="mb-3 text-muted">📈 Statistiche generali</h6>
-      <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Tabelle qui</div>
-    </div>
+    <!-- Contenuto principale con grafici e statistiche -->
+    <main class="col-md-10">
+      <div class="row">
+        <div class="col-md-6 mb-4">
+          <div class="bg-white p-3 rounded shadow">
+            <h6 class="mb-3 text-muted">📊 Andamento ricoveri</h6>
+            <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Grafico qui</div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-4">
+          <div class="bg-white p-3 rounded shadow">
+            <h6 class="mb-3 text-muted">📈 Statistiche generali</h6>
+            <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Tabelle qui</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
   </div>
 </div>
 {% endblock %}
