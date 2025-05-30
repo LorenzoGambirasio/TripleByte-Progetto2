@@ -2,104 +2,55 @@
 {% block title %}Anagrafica Cittadini{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3 py-4">
+<div class="container-fluid px-0 py-4">
+
   <div class="row">
 
-    <!-- NAV + FILTRI laterali -->
-    <aside class="col-md-3 col-lg-3">
-      <!-- Nav -->
-      <div class="d-grid gap-3 mb-4">
-        <a href="{% url 'cittadini' %}" class="btn btn-outline-primary text-start fw-bold">
-          <i class="bi bi-person-vcard me-2"></i> Cittadini
-        </a>
-        <a href="{% url 'ospedali' %}" class="btn btn-outline-success text-start fw-bold">
-          <i class="bi bi-hospital me-2"></i> Ospedali
-        </a>
-        <a href="{% url 'ricoveri' %}" class="btn btn-outline-warning text-start fw-bold">
-          <i class="bi bi-journal-medical me-2"></i> Ricoveri
-        </a>
-        <a href="{% url 'patologie' %}" class="btn btn-outline-danger text-start fw-bold">
-          <i class="bi bi-virus me-2"></i> Patologie
-        </a>
-      </div>
-
-      <!-- Filtri -->
-      <div class="bg-white p-3 rounded shadow">
-        <h6 class="text-muted mb-3 fw-bold">Filtri</h6>
-        <form method="get">
-          <div class="mb-3">
-            <label for="nome" class="form-label">Nome:</label>
-            <input type="text" class="form-control" id="nome" name="nome" placeholder="Es: Mario...">
-          </div>
-          <div class="mb-3">
-            <label for="cognome" class="form-label">Cognome:</label>
-            <input type="text" class="form-control" id="cognome" name="cognome" placeholder="Es: Rossi...">
-          </div>
-          <div class="mb-3">
-            <label for="luogo" class="form-label">Luogo Nascita:</label>
-            <input type="text" class="form-control" id="luogo" name="luogo" placeholder="Es: Milano...">
-          </div>
-          <div class="mb-3">
-            <label for="indirizzo" class="form-label">Indirizzo:</label>
-            <input type="text" class="form-control" id="indirizzo" name="indirizzo" placeholder="Es: Via Roma 1, Milano">
-          </div>
-          <div class="mb-3">
-            <label for="cssn" class="form-label">CSSN:</label>
-            <input type="text" class="form-control" id="cssn" name="cssn" placeholder="Es: ABC...">
-          </div>
-          <div class="mb-4">
-            <label for="stato" class="form-label">Stato:</label>
-            <select class="form-select" id="stato" name="stato">
-              <option value="">Tutti gli stati</option>
-              <option value="Domicilio">Domicilio</option>
-              <option value="Ricoverato">Ricoverato</option>
-              <option value="Deceduto">Deceduto</option>
-            </select>
-          </div>
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary">Applica Filtri</button>
-            <a href="{% url 'cittadini' %}" class="btn btn-secondary">Resetta Filtri</a>
-          </div>
-        </form>
-      </div>
-    </aside>
 
     <!-- CONTENUTO principale -->
-    <section class="col-md-9 col-lg-9">
+    <section class="col-12">
+
       <div class="bg-white p-4 rounded shadow">
         <h4 class="mb-4 text-danger fw-bold">Anagrafica dei Cittadini</h4>
         <div class="table-responsive">
-          <table class="table table-bordered table-hover align-middle">
-            <thead class="table-light text-center">
-              <tr>
-                <th>CSSN</th>
-                <th>Nome</th>
-                <th>Cognome</th>
-                <th>Data di Nascita</th>
-                <th>Luogo di Nascita</th>
-                <th>Indirizzo</th>
-                <th>Stato</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for cittadino in cittadini %}
-              <tr>
-                <td>{{ cittadino.CSSN }}</td>
-                <td>{{ cittadino.nome }}</td>
-                <td>{{ cittadino.cognome }}</td>
-                <td>{{ cittadino.dataNascita|date:"d/m/Y" }}</td>
-                <td>{{ cittadino.luogoNascita }}</td>
-                <td>{{ cittadino.indirizzo }}</td>
-                <td class="fst-italic text-center {% if cittadino.stato == 'Ricoverato' %}fw-bold text-dark{% elif cittadino.stato == 'Deceduto' %}text-danger{% else %}text-muted{% endif %}">{{ cittadino.stato }}</td>
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="7" class="text-center text-muted">Nessun cittadino trovato.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+  <table class="table table-striped table-hover table-bordered w-100 text-center align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>CSSN</th>
+        <th>Nome</th>
+        <th>Cognome</th>
+        <th>Data di Nascita</th>
+        <th>Luogo di Nascita</th>
+        <th>Indirizzo</th>
+        <th>Stato</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for cittadino in cittadini %}
+      <tr>
+        <td>{{ cittadino.CSSN }}</td>
+        <td>{{ cittadino.nome }}</td>
+        <td>{{ cittadino.cognome }}</td>
+        <td>{{ cittadino.data_nascita|date:"d/m/Y" }}</td>
+        <td>{{ cittadino.città }}</td>
+        <td>{{ cittadino.via }}</td>
+        <td class="stato {% if cittadino.stato == 'Ricoverato' %}text-dark{% elif cittadino.stato == 'Deceduto' %}text-danger{% else %}text-muted{% endif %}">
+  {{ cittadino.stato }}
+</td>
+
+
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center text-muted">Nessun cittadino trovato.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include 'partials/paginazione.html' %}
+
+</div>
+
       </div>
     </section>
   </div>

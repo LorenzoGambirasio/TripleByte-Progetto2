@@ -1,0 +1,39 @@
+
+<div class="bg-white p-3 rounded shadow">
+  <h6 class="text-muted mb-3 fw-bold">Filtri</h6>
+  <form method="get">
+    <div class="mb-3">
+      <label for="nome" class="form-label">Nome:</label>
+      <input type="text" class="form-control" id="nome" name="nome" placeholder="Es: Mario..." value="{{ request.GET.nome }}">
+    </div>
+    <div class="mb-3">
+      <label for="cognome" class="form-label">Cognome:</label>
+      <input type="text" class="form-control" id="cognome" name="cognome" placeholder="Es: Rossi..." value="{{ request.GET.cognome }}">
+    </div>
+    <div class="mb-3">
+      <label for="luogo" class="form-label">Luogo Nascita:</label>
+      <input type="text" class="form-control" id="luogo" name="luogo" placeholder="Es: Milano..." value="{{ request.GET.luogo }}">
+    </div>
+    <div class="mb-3">
+      <label for="indirizzo" class="form-label">Indirizzo:</label>
+      <input type="text" class="form-control" id="indirizzo" name="indirizzo" placeholder="Es: Via Roma 1, Milano" value="{{ request.GET.indirizzo }}">
+    </div>
+    <div class="mb-3">
+      <label for="cssn" class="form-label">CSSN:</label>
+      <input type="text" class="form-control" id="cssn" name="cssn" placeholder="Es: ABC..." value="{{ request.GET.cssn }}">
+    </div>
+    <div class="mb-4">
+      <label for="stato" class="form-label">Stato:</label>
+      <select class="form-select" id="stato" name="stato">
+        <option value="">Tutti gli stati</option>
+        <option value="Domicilio" {% if request.GET.stato == "Domicilio" %}selected{% endif %}>Domicilio</option>
+        <option value="Ricoverato" {% if request.GET.stato == "Ricoverato" %}selected{% endif %}>Ricoverato</option>
+        <option value="Deceduto" {% if request.GET.stato == "Deceduto" %}selected{% endif %}>Deceduto</option>
+      </select>
+    </div>
+    <div class="d-grid gap-2">
+      <button type="submit" class="btn btn-primary">Applica Filtri</button>
+      <a href="{% url 'cittadini' %}" class="btn btn-secondary">Resetta Filtri</a>
+    </div>
+  </form>
+</div>
