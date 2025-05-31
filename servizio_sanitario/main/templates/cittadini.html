@@ -14,17 +14,23 @@
         <h4 class="mb-4 text-danger fw-bold">Anagrafica dei Cittadini</h4>
         <div class="table-responsive">
   <table class="table table-striped table-hover table-bordered w-100 text-center align-middle">
-    <thead class="table-light">
-      <tr>
-        <th>CSSN</th>
-        <th>Nome</th>
-        <th>Cognome</th>
-        <th>Data di Nascita</th>
-        <th>Luogo di Nascita</th>
-        <th>Indirizzo</th>
-        <th>Stato</th>
-      </tr>
-    </thead>
+<thead class="table-light">
+  <tr>
+    {% for col, label in columns %}
+      <th>
+        <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}"
+           class="text-decoration-none text-dark">
+          {{ label }}
+          {% if current_sort == col %}
+            <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+          {% endif %}
+        </a>
+      </th>
+    {% endfor %}
+  </tr>
+</thead>
+
+
     <tbody>
       {% for cittadino in cittadini %}
       <tr>

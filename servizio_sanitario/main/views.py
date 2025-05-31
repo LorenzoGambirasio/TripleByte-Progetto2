@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Cittadino
+from . import models
 from django.core.paginator import Paginator
 
 def dashboard(request):
@@ -9,8 +9,8 @@ def dashboard(request):
 
 
 def lista_cittadini(request):
-    cittadini = Cittadino.objects.all()
-    
+    cittadini = models.Cittadino.objects.all()
+
     # Filtri
     nome = request.GET.get('nome', '')
     cognome = request.GET.get('cognome', '')
@@ -24,30 +24,98 @@ def lista_cittadini(request):
     if cognome:
         cittadini = cittadini.filter(cognome__icontains=cognome)
     if luogo:
-        cittadini = cittadini.filter(città__icontains=luogo)  # ATTENTO: campo corretto è 'città'
+        cittadini = cittadini.filter(città__icontains=luogo)
     if indirizzo:
         cittadini = cittadini.filter(via__icontains=indirizzo)
     if cssn:
         cittadini = cittadini.filter(CSSN__icontains=cssn)
     if stato:
-        cittadini = [c for c in cittadini if c.stato == stato]  # Per proprietà calcolate
+        cittadini = [c for c in cittadini if c.stato == stato]
+
+    # Ordinamento dinamico
+    sort_field = request.GET.get('sort', 'cognome')  # default
+    sort_order = request.GET.get('order', 'asc')
+    if sort_order == 'desc':
+        sort_field = '-' + sort_field
+    try:
+        cittadini = cittadini.order_by(sort_field)
+    except Exception:
+        pass  # se sort_field non è valido, ignora
 
     # Paginazione
     paginator = Paginator(cittadini, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    # Context
+    # Colonne da visualizzare
+    columns = [
+        ('CSSN', 'CSSN'),
+        ('nome', 'Nome'),
+        ('cognome', 'Cognome'),
+        ('data_nascita', 'Data di Nascita'),
+        ('città', 'Luogo di Nascita'),
+        ('via', 'Indirizzo'),
+        ('stato', 'Stato'),
+    ]
+
     context = {
         'filtro_template': 'filtri/filtro_cittadini.html',
         'page_obj': page_obj,
         'cittadini': page_obj.object_list,
+        'current_sort': request.GET.get('sort', ''),
+        'current_order': request.GET.get('order', ''),
+        'columns': columns,
     }
 
     return render(request, 'cittadini.html', context)
 
 def lista_ospedali(request):
-    return render(request, 'ospedali.html')
+    ospedali = models.Ospedale.objects.select_related('CSSN_direttore').all()
+
+    # Filtri base
+    nome = request.GET.get('nome', '')
+    citta = request.GET.get('citta', '')
+    direttore = request.GET.get('direttore', '')
+
+    if nome:
+        ospedali = ospedali.filter(nome__icontains=nome)
+    if citta:
+        ospedali = ospedali.filter(città__icontains=citta)
+    if direttore:
+        ospedali = ospedali.filter(CSSN_direttore__cognome__icontains=direttore)
+
+    # Ordinamento dinamico
+    sort_field = request.GET.get('sort', 'nome')  # default
+    sort_order = request.GET.get('order', 'asc')
+    if sort_order == 'desc':
+        sort_field = '-' + sort_field
+    try:
+        ospedali = ospedali.order_by(sort_field)
+    except Exception:
+        pass  # campo non valido
+
+    # Paginazione
+    paginator = Paginator(ospedali, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    columns = [
+        ('nome', 'Nome'),
+        ('città', 'Città'),
+        ('indirizzo', 'Indirizzo'),
+        ('CSSN_direttore__cognome', 'Direttore Sanitario'),
+    ]
+
+    context = {
+        'filtro_template': 'filtri/filtro_ospedali.html',
+        'ospedali': page_obj.object_list,
+        'page_obj': page_obj,
+        'current_sort': request.GET.get('sort', ''),
+        'current_order': request.GET.get('order', ''),
+        'columns': columns,
+    }
+
+    return render(request, 'ospedali.html', context)
 
 def lista_ricoveri(request):
     return render(request, 'ricoveri.html')

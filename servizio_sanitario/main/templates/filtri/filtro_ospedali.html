@@ -1,0 +1,16 @@
+<form method="get" class="p-3">
+  <div class="mb-3">
+    <label class="form-label fw-bold">Nome Ospedale:</label>
+    <input type="text" class="form-control" name="nome" placeholder="Es: Ospedale San Raffaele..." value="{{ request.GET.nome }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label fw-bold">Città:</label>
+    <input type="text" class="form-control" name="città" placeholder="Es: Bergamo..." value="{{ request.GET.città }}">
+  </div>
+  <div class="mb-3">
+    <label class="form-label fw-bold">Direttore Sanitario:</label>
+    <input type="text" class="form-control" name="direttore" placeholder="Es: Anna Lombardi..." value="{{ request.GET.direttore }}">
+  </div>
+  <button type="submit" class="btn btn-primary me-2">Applica Filtri</button>
+  <a href="{% url 'ospedali' %}" class="btn btn-secondary">Resetta Filtri</a>
+</form>
