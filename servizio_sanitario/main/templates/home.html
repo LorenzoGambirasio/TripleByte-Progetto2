@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – Servizio Sanitario{% endblock %}
+
+{% block content %}
+<!-- INTRO -->
+<div class="bg-white p-4 rounded shadow mb-5">
+  <h5 class="text-danger fw-bold">Benvenuto nel sistema di monitoraggio dei ricoveri ospedalieri</h5>
+  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera trasparente, efficiente e sicura.</p>
+  <ul class="mb-0">
+    <li><strong>Cittadini</strong>: identificati tramite codice SSN</li>
+    <li><strong>Ospedali</strong>: con indirizzo e direttore</li>
+    <li><strong>Ricoveri</strong>: con date, stato e struttura</li>
+    <li><strong>Patologie</strong>: croniche o mortali associate al paziente</li>
+  </ul>
+</div>
+
+<!-- SLOT GRAFICI -->
+<div class="row mt-5">
+  <div class="col-md-6">
+    <div class="bg-white p-3 rounded shadow">
+      <h6 class="mb-3 text-muted">📊 Andamento ricoveri</h6>
+      <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Grafico qui</div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="bg-white p-3 rounded shadow">
+      <h6 class="mb-3 text-muted">📈 Statistiche generali</h6>
+      <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Tabelle qui</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+<header class="bg-header text-white py-3 px-4 d-flex justify-content-between align-items-center">
+  <!-- Pulsanti di navigazione -->
+  <div class="d-flex gap-3">
+<a href="{% url 'home' %}" class="btn btn-light me-2 shadow-sm">
+  <i class="bi bi-house-door"></i>
+</a>
+<a href="javascript:history.back()" class="btn btn-light shadow-sm">
+  <i class="bi bi-arrow-left"></i>
+</a>
+
+
+  </div>
+
+  <!-- Titolo centrato dinamico -->
+  <h4 class="mb-0 fw-bold text-uppercase text-center flex-grow-1" style="letter-spacing: 0.5px;">
+    {{ titolo_pagina|default:"Servizio Sanitario Regionale" }}
+  </h4>
+
+  <!-- Spazio vuoto per simmetria -->
+  <div style="width: 70px;"></div>
+</header>

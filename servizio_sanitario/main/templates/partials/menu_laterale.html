@@ -1,0 +1,15 @@
+ {% load static %}
+<div class="d-grid gap-3 mb-4">
+  <a href="{% url 'cittadini' %}" class="btn btn-outline-primary text-start fw-bold">
+    <i class="bi bi-person-vcard me-2"></i> Cittadini
+  </a>
+  <a href="{% url 'ospedali' %}" class="btn btn-outline-success text-start fw-bold">
+    <i class="bi bi-hospital me-2"></i> Ospedali
+  </a>
+  <a href="{% url 'ricoveri' %}" class="btn btn-outline-warning text-start fw-bold">
+    <i class="bi bi-journal-medical me-2"></i> Ricoveri
+  </a>
+  <a href="{% url 'patologie' %}" class="btn btn-outline-danger text-start fw-bold">
+    <i class="bi bi-virus me-2"></i> Patologie
+  </a>
+</div>
