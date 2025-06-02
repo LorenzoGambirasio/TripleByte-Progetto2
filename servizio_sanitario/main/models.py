@@ -58,40 +58,36 @@ class Ricovero(models.Model):
 
 
 class Patologia(models.Model):
-    codice = models.CharField(max_length=10, primary_key=True, db_column='codice')
-    descrizione = models.TextField(db_column='descrizione')
-    tipo = models.CharField(max_length=10, db_column='tipo')
-
+    cod = models.CharField(primary_key=True, max_length=10)
+    nome = models.TextField(max_length=100)
+    criticita = models.IntegerField()
+    
     class Meta:
         db_table = 'main_patologia'
         managed = False
 
     def __str__(self):
-        return self.descrizione
-
+        return self.nome
 
 class PatologiaCronica(models.Model):
-    codice = models.CharField(max_length=10, primary_key=True, db_column='codice')
-    descrizione = models.TextField(db_column='descrizione')
+    cod = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codPatologia')
 
     class Meta:
         db_table = 'main_patologiacronica'
         managed = False
 
     def __str__(self):
-        return self.descrizione
-
+        return f"{self.cod.nome} (Cronica)"
 
 class PatologiaMortale(models.Model):
-    codice = models.CharField(max_length=10, primary_key=True, db_column='codice')
-    descrizione = models.TextField(db_column='descrizione')
+    cod = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codPatologia')
 
     class Meta:
         db_table = 'main_patologiamortale'
         managed = False
 
     def __str__(self):
-        return self.descrizione
+        return f"{self.cod.nome} (Mortale)"
 
 
 class PatologiaRicovero(models.Model):

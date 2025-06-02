@@ -1,0 +1,32 @@
+<div class="bg-white p-3 rounded shadow mt-3">
+  <h5 class="text-center fw-bold mb-3">Filtri</h5>
+  <form method="get">
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Nome:</label>
+      <input type="text" name="nome" class="form-control" placeholder="Es: Polmonite..." value="{{ request.GET.nome }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Livello di Criticità:</label>
+<select name="criticita" class="form-select">
+  <option value="">Tutti i livelli</option>
+  {% for i in range_criticita %}
+    <option value="{{ i }}" {% if request.GET.criticita == i|stringformat:"s" %}selected{% endif %}>{{ i }}</option>
+  {% endfor %}
+</select>
+    </div>
+    <div class="mb-3">
+      <label class="form-label fw-semibold">Tipologia:</label>
+      <select name="tipologia" class="form-select">
+        <option value="">Tutte</option>
+        <option value="Nessuna" {% if request.GET.tipologia == "Nessuna" %}selected{% endif %}>Nessuna</option>
+        <option value="Cronica" {% if request.GET.tipologia == 'Cronica' %}selected{% endif %}>Cronica</option>
+        <option value="Mortale" {% if request.GET.tipologia == 'Mortale' %}selected{% endif %}>Mortale</option>
+        <option value="Cronica e Mortale" {% if request.GET.tipologia == 'Cronica e Mortale' %}selected{% endif %}>Cronica e Mortale</option>
+      </select>
+    </div>
+    <div class="d-flex justify-content-between">
+      <button type="submit" class="btn btn-primary">Applica Filtri</button>
+      <a href="{% url 'patologie' %}" class="btn btn-secondary">Resetta Filtri</a>
+    </div>
+  </form>
+</div>

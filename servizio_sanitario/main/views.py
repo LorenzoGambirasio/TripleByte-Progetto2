@@ -120,5 +120,57 @@ def lista_ospedali(request):
 def lista_ricoveri(request):
     return render(request, 'ricoveri.html')
 
+
+
 def lista_patologie(request):
-    return render(request, 'patologie.html')
+    patologie_base = models.Patologia.objects.all()
+
+    nome_query = request.GET.get('nome')
+    criticita_query = request.GET.get('criticita')
+    tipologia_query = request.GET.get('tipologia')
+
+    if nome_query:
+        patologie_base = patologie_base.filter(nome__icontains=nome_query)
+    if criticita_query:
+        patologie_base = patologie_base.filter(criticita=criticita_query)
+
+    # Costruzione lista con tipologia
+    patologie = []
+    for p in patologie_base:
+        tipi = []
+        if models.PatologiaCronica.objects.filter(cod=p).exists():
+            tipi.append("Cronica")
+        if models.PatologiaMortale.objects.filter(cod=p).exists():
+            tipi.append("Mortale")
+        tipo = " e ".join(tipi) if tipi else "Nessuna"
+
+        if not tipologia_query or tipologia_query in tipo:
+            patologie.append({
+                'codice': p.cod,
+                'nome': p.nome,
+                'criticita': p.criticita,
+                'tipologia': tipo,
+            })
+
+    # Ordinamento
+    sort = request.GET.get("sort", "nome")
+    order = request.GET.get("order", "asc")
+
+    reverse = order == "desc"
+    try:
+        patologie.sort(key=lambda x: x.get(sort, "").lower() if isinstance(x.get(sort), str) else x.get(sort), reverse=reverse)
+    except Exception:
+        pass  # fallback: no sort
+
+    paginator = Paginator(patologie, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "patologie.html", {
+        'page_obj': page_obj,
+        'patologie': page_obj.object_list,
+        'range_criticita': range(1, 11),
+        'filtro_template': 'filtri/filtro_patologie.html',
+        'current_sort': sort,
+        'current_order': order,
+    })
