@@ -1,6 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from . import models
 from django.core.paginator import Paginator
+from .forms import RicoveroForm 
+from django.db import transaction
+
 
 def dashboard(request):
     return render(request, 'home.html')
@@ -65,6 +68,7 @@ def lista_cittadini(request):
         'current_sort': request.GET.get('sort', ''),
         'current_order': request.GET.get('order', ''),
         'columns': columns,
+        'etichetta': 'cittadini'
     }
 
     return render(request, 'cittadini.html', context)
@@ -113,14 +117,10 @@ def lista_ospedali(request):
         'current_sort': request.GET.get('sort', ''),
         'current_order': request.GET.get('order', ''),
         'columns': columns,
+        'etichetta': 'ospedali'
     }
 
     return render(request, 'ospedali.html', context)
-
-def lista_ricoveri(request):
-    return render(request, 'ricoveri.html')
-
-
 
 def lista_patologie(request):
     patologie_base = models.Patologia.objects.all()
@@ -173,4 +173,91 @@ def lista_patologie(request):
         'filtro_template': 'filtri/filtro_patologie.html',
         'current_sort': sort,
         'current_order': order,
+        'etichetta': 'patologie'
+    })
+
+def crea_ricovero(request):
+    if request.method == "POST":
+        form = RicoveroForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('lista_ricoveri')  
+    else:
+        form = RicoveroForm()
+    return render(request, 'ricoveri/crea_ricovero.html', {'form': form})
+
+def lista_ricoveri(request):
+    ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale')\
+        .prefetch_related('patologie').all()
+
+    # Paginazione
+    paginator = Paginator(ricoveri, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "ricovero.html", {
+        'page_obj': page_obj,
+        'filtro_template': 'filtri/filtro_ricovero.html',
+        'etichetta': 'ricoveri'
+    })
+
+@transaction.atomic
+def crea_ricovero(request):
+    if request.method == "POST":
+        form = RicoveroForm(request.POST)
+        if form.is_valid():
+            ricovero = form.save()
+            patologie = form.cleaned_data['patologie']
+            for p in patologie:
+                models.PatologiaRicovero.objects.create(
+                    codice_ricovero=ricovero,
+                    codice_patologia=p,
+                    codice_ospedale=ricovero.codice_ospedale
+                )
+            return redirect('lista_ricoveri')
+    else:
+        form = RicoveroForm()
+
+    return render(request, 'ricoveri/crea_modifica_ricovero.html', {
+        'form': form,
+        'titolo_pagina': 'Aggiungi Ricovero'
+    })
+
+@transaction.atomic
+def modifica_ricovero(request, pk):
+    ricovero = get_object_or_404(models.Ricovero, pk=pk)
+    patologie_preselezionate = models.Patologia.objects.filter(
+        patologie_ricovero_patologia__codice_ricovero=ricovero
+    )
+
+    if request.method == 'POST':
+        form = RicoveroForm(request.POST, instance=ricovero)
+        if form.is_valid():
+            ricovero = form.save()
+            # Rimuove le vecchie associazioni
+            models.PatologiaRicovero.objects.filter(codice_ricovero=ricovero).delete()
+            # Inserisce le nuove
+            patologie = form.cleaned_data['patologie']
+            for p in patologie:
+                models.PatologiaRicovero.objects.create(
+                    codice_ricovero=ricovero,
+                    codice_patologia=p,
+                    codice_ospedale=ricovero.codice_ospedale
+                )
+            return redirect('lista_ricoveri')
+    else:
+        form = RicoveroForm(instance=ricovero, initial={'patologie': patologie_preselezionate})
+
+    return render(request, 'ricoveri/crea_modifica_ricovero.html', {
+        'form': form,
+        'titolo_pagina': 'Modifica Ricovero'
+    })
+
+def elimina_ricovero(request, pk):
+    ricovero = get_object_or_404(models.Ricovero, pk=pk)
+    if request.method == 'POST':
+        ricovero.delete()
+        return redirect('lista_ricoveri')
+    return render(request, 'ricoveri/conferma_eliminazione.html', {
+        'ricovero': ricovero
     })

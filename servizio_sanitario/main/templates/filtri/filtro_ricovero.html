@@ -1,0 +1,23 @@
+<form method="get" class="row mb-3 g-2">
+  <div class="col-md-3">
+    <input type="text" name="ospedale" value="{{ request.GET.ospedale }}" class="form-control" placeholder="Ospedale">
+  </div>
+  <div class="col-md-3">
+    <input type="text" name="paziente" value="{{ request.GET.paziente }}" class="form-control" placeholder="Nome paziente">
+  </div>
+  <div class="col-md-3">
+    <input type="text" name="motivo" value="{{ request.GET.motivo }}" class="form-control" placeholder="Motivo ricovero">
+  </div>
+  <div class="col-md-3">
+    <select name="stato" class="form-select">
+      <option value="">Tutti gli stati</option>
+      <option value="0" {% if request.GET.stato == '0' %}selected{% endif %}>Attivo</option>
+      <option value="1" {% if request.GET.stato == '1' %}selected{% endif %}>Trasferito</option>
+      <option value="2" {% if request.GET.stato == '2' %}selected{% endif %}>Deceduto</option>
+    </select>
+  </div>
+  <div class="col-md-12 d-flex justify-content-end">
+    <button type="submit" class="btn btn-primary me-2">Applica Filtri</button>
+    <a href="{% url 'ricoveri' %}" class="btn btn-secondary">Resetta Filtri</a>
+  </div>
+</form>
