@@ -7,15 +7,19 @@
     <section class="col-12">
       <div class="bg-white p-4 rounded shadow">
         <h4 class="mb-4 text-danger fw-bold">Elenco dei Ricoveri</h4>
-        <div class="table-container">
-          <table class="table table-striped table-hover table-bordered text-center align-middle">
-            <thead class="table-danger">
+        <div class="table-responsive">
+          <div class="table-container" style="overflow-x: auto;">
+ <table class="table table-bordered table-hover text-center text-nowrap">
+
+
+            <thead class="text-nowrap" style="background-color: #c62828; color: white;">
+
               <tr>
                 <th>Ospedale</th>
                 <th>Paziente</th>
                 <th>CSSN</th>
                 <th>Data Ingresso</th>
-                <th>Data Dimissione</th>
+                <th>Durata</th>
                 <th>Stato</th>
                 <th>Motivo</th>
                 <th>Costo (€)</th>
@@ -25,34 +29,77 @@
             </thead>
             <tbody>
               {% for ricovero in page_obj %}
-              <tr class="{% if ricovero.stato == 1 %}table-warning{% elif ricovero.stato == 2 %}table-danger{% endif %}">
-                <td>{{ ricovero.codOspedale.nome }}</td>
+              <tr class="{% if ricovero.stato == 0 %}table-success{% elif ricovero.stato == 1 %}table-warning{% elif ricovero.stato == 2 %}table-danger{% elif ricovero.stato == 3 %}table-secondary{% endif %}">
+
+                <td style="max-width: 200px; white-space: normal; word-break: keep-all;">
+  {{ ricovero.codOspedale.nome }}
+</td>
+
+
                 <td>{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}</td>
                 <td>{{ ricovero.CSSN.CSSN }}</td>
                 <td>{{ ricovero.data_ingresso|date:"d/m/Y" }}</td>
                 <td>{{ ricovero.durata }}</td>
-                <td class="stato">
+                <td style="font-size: 1.1rem; padding: 0.25rem;">
                   {% if ricovero.stato == 0 %}
                     <span class="text-success">●</span>
                   {% elif ricovero.stato == 1 %}
                     <span class="text-warning">●</span>
-                  {% else %}
+                  {% elif ricovero.stato == 2 %}
                     <span class="text-danger">●</span>
+                  {% elif ricovero.stato == 3 %}
+                    <span class="text-black">●</span>
                   {% endif %}
                 </td>
-                <td>{{ ricovero.motivo }}</td>
+               <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+    data-bs-toggle="tooltip" data-bs-placement="top" title="{{ ricovero.motivo }}">
+  {{ ricovero.motivo }}
+</td>
                 <td>{{ ricovero.costo|floatformat:2 }}</td>
-                <td>
-                  {% for pr in ricovero.patologie.all %}
-                    {{ pr.codPatologia.nome }}{% if not forloop.last %}, {% endif %}
-                  {% empty %}
-                    Nessuna
-                  {% endfor %}
-                </td>
-                <td>
-                  <a href="{% url 'modifica_ricovero' ricovero.codRicovero %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
-                  <a href="{% url 'elimina_ricovero' ricovero.codRicovero %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
-                </td>
+<<td style="max-width: 200px; white-space: normal; word-break: break-word;">
+  {% if ricovero.patologie.exists %}
+    <div class="d-flex flex-wrap gap-1 justify-content-center">
+      {% for p in ricovero.patologie.all %}
+        <span class="badge bg-secondary">{{ p.nome }}</span>
+      {% endfor %}
+    </div>
+  {% else %}
+    <span class="text-muted">Nessuna</span>
+  {% endif %}
+</td>
+
+
+<td class="text-center">
+  <div class="dropdown">
+    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      ▼
+    </button>
+    <ul class="dropdown-menu">
+      <li>
+        <a class="dropdown-item text-primary" href="{% url 'modifica_ricovero' ricovero.pk %}">
+          ✏️ Modifica
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item text-success" href="{% url 'trasferisci_ricovero' ricovero.pk %}">
+          🔁 Trasferisci
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item text-dark" href="{% url 'decesso' ricovero.pk %}">
+          ☠️ Deceduto
+        </a>
+      </li>
+      <li>
+        <a class="dropdown-item text-danger" href="{% url 'elimina_ricovero' ricovero.pk %}">
+          🗑️ Elimina
+        </a>
+      </li>
+    </ul>
+  </div>
+</td>
+
+
               </tr>
               {% empty %}
               <tr>
@@ -61,7 +108,9 @@
               {% endfor %}
             </tbody>
           </table>
-          {% include 'partials/paginazione.html' %}
+          
+         
+          </div> {% include 'partials/paginazione.html' %}
         </div>
       </div>
     </section>

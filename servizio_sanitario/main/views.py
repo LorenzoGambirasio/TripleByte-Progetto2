@@ -187,8 +187,55 @@ def crea_ricovero(request):
     return render(request, 'ricoveri/crea_ricovero.html', {'form': form})
 
 def lista_ricoveri(request):
+    
+    ospedali = models.Ospedale.objects.all()
+    patologie = models.Patologia.objects.all()
+    
     ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale')\
         .prefetch_related('patologie').all()
+
+    # FILTRI
+    cssn = request.GET.get('cssn', '').strip()
+    nome = request.GET.get('nome', '').strip()
+    cognome = request.GET.get('cognome', '').strip()
+    ospedale = request.GET.get('ospedale', '').strip()
+    stato = request.GET.get('stato', '').strip()
+    data_da = request.GET.get('data_da', '').strip()
+    data_a = request.GET.get('data_a', '').strip()
+    motivo = request.GET.get('motivo', '').strip()
+    patologia = request.GET.get('patologia', '').strip()
+    deceduti = request.GET.get('deceduti', '')
+
+    if cssn:
+        ricoveri = ricoveri.filter(CSSN__codice__icontains=cssn)
+
+    if nome:
+        ricoveri = ricoveri.filter(CSSN__nome__icontains=nome)
+
+    if cognome:
+        ricoveri = ricoveri.filter(CSSN__cognome__icontains=cognome)
+
+    if ospedale:
+        ricoveri = ricoveri.filter(codOspedale__codice=ospedale)
+
+    if stato:
+        ricoveri = ricoveri.filter(stato=stato)
+
+    if data_da:
+        ricoveri = ricoveri.filter(dataRicovero__gte=data_da)
+
+    if data_a:
+        ricoveri = ricoveri.filter(dataRicovero__lte=data_a)
+
+    if motivo:
+        ricoveri = ricoveri.filter(motivo__icontains=motivo)
+
+    if patologia:
+        ricoveri = ricoveri.filter(patologie__codice=patologia)
+
+    if deceduti:
+        ricoveri = ricoveri.filter(dataDecesso__isnull=False)
+
 
     # Paginazione
     paginator = Paginator(ricoveri, 20)
@@ -198,7 +245,10 @@ def lista_ricoveri(request):
     return render(request, "ricovero.html", {
         'page_obj': page_obj,
         'filtro_template': 'filtri/filtro_ricovero.html',
-        'etichetta': 'ricoveri'
+        'etichetta': 'ricoveri',
+        "ricoveri": ricoveri,
+        "ospedali": ospedali,
+        "patologie": patologie,
     })
 
 @transaction.atomic
@@ -261,3 +311,12 @@ def elimina_ricovero(request, pk):
     return render(request, 'ricoveri/conferma_eliminazione.html', {
         'ricovero': ricovero
     })
+    
+def trasferisci_ricovero(request, pk):
+    ricovero = get_object_or_404(models.Ricovero, pk=pk)
+    return render(request)
+
+
+def dichiara_decesso(request, pk):
+    ricovero = get_object_or_404(models.Ricovero, pk=pk)
+    return render(request)

@@ -10,4 +10,6 @@ urlpatterns = [
     path('ricoveri/aggiungi/', views.crea_ricovero, name='crea_ricovero'),
     path('ricoveri/modifica/<str:pk>/', views.modifica_ricovero, name='modifica_ricovero'),
     path('ricoveri/elimina/<str:pk>/', views.elimina_ricovero, name='elimina_ricovero'),
+    path('ricoveri/decesso/<str:pk>/', views.dichiara_decesso, name='decesso'),
+    path('ricoveri/trasferisci/<str:pk>/', views.trasferisci_ricovero, name='trasferisci_ricovero'),
 ]

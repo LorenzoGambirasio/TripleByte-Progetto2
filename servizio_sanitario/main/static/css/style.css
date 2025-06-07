@@ -71,3 +71,32 @@ td.stato {
   color: #ffffff;
   transform: scale(1.1);
 }
+
+.card h5 {
+    font-weight: bold;
+    border-bottom: 2px solid #6c757d;
+    padding-bottom: 8px;
+}
+
+table td, table th {
+  padding: 0.4rem 0.5rem !important;
+  vertical-align: middle !important;
+}
+td.stato span {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.tooltip-inner {
+  max-width: 300px;
+  background-color: #343a40;
+  color: #fff;
+  font-size: 0.875rem;
+  padding: 10px 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+}
+
+.bs-tooltip-top .tooltip-arrow::before {
+  border-top-color: #343a40;
+}
