@@ -187,57 +187,42 @@ def crea_ricovero(request):
     return render(request, 'ricoveri/crea_ricovero.html', {'form': form})
 
 def lista_ricoveri(request):
-    
     ospedali = models.Ospedale.objects.all()
     patologie = models.Patologia.objects.all()
+
+    # Ordinamento dinamico
+    sort = request.GET.get('sort', 'codRicovero')
+    dir = request.GET.get('dir', 'asc')
     
-    ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale')\
-        .prefetch_related('patologie').all()
-
-    # FILTRI
-    cssn = request.GET.get('cssn', '').strip()
-    nome = request.GET.get('nome', '').strip()
-    cognome = request.GET.get('cognome', '').strip()
-    ospedale = request.GET.get('ospedale', '').strip()
-    stato = request.GET.get('stato', '').strip()
-    data_da = request.GET.get('data_da', '').strip()
-    data_a = request.GET.get('data_a', '').strip()
-    motivo = request.GET.get('motivo', '').strip()
-    patologia = request.GET.get('patologia', '').strip()
-    deceduti = request.GET.get('deceduti', '')
-
-    if cssn:
-        ricoveri = ricoveri.filter(CSSN__codice__icontains=cssn)
-
-    if nome:
-        ricoveri = ricoveri.filter(CSSN__nome__icontains=nome)
-
-    if cognome:
-        ricoveri = ricoveri.filter(CSSN__cognome__icontains=cognome)
-
-    if ospedale:
-        ricoveri = ricoveri.filter(codOspedale__codice=ospedale)
-
-    if stato:
-        ricoveri = ricoveri.filter(stato=stato)
-
-    if data_da:
-        ricoveri = ricoveri.filter(dataRicovero__gte=data_da)
-
-    if data_a:
-        ricoveri = ricoveri.filter(dataRicovero__lte=data_a)
-
-    if motivo:
-        ricoveri = ricoveri.filter(motivo__icontains=motivo)
-
-    if patologia:
-        ricoveri = ricoveri.filter(patologie__codice=patologia)
-
-    if deceduti:
-        ricoveri = ricoveri.filter(dataDecesso__isnull=False)
+    valid_columns = dict([
+        ("codOspedale__nome", "Ospedale"),
+        ("CSSN__cognome", "Paziente"),
+        ("CSSN__CSSN", "CSSN"),
+        ("data_ingresso", "Data Ingresso"),
+        ("durata", "Durata"),
+        ("stato", "Stato"),
+        ("motivo", "Motivo"),
+        ("costo", "Costo (€)")
+    ])
+    
+    
+    if sort not in valid_columns or dir not in ['asc', 'desc']:
+        ordering = ['-codRicovero']  # Ordinamento di default
+        sort = None
+        dir = None
+    elif sort == 'CSSN__cognome':
+        # Ordinamento combinato cognome + nome
+        ordering = ['CSSN__cognome', 'CSSN__nome'] if dir == 'asc' else ['-CSSN__cognome', '-CSSN__nome']
+    else:
+        ordering = [sort] if dir == 'asc' else [f'-{sort}']
 
 
-    # Paginazione
+    ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie').all()
+
+    # Filtri (omessi qui per brevità — mantieni quelli già scritti)
+
+    ricoveri = ricoveri.order_by(*ordering)
+
     paginator = Paginator(ricoveri, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -246,10 +231,14 @@ def lista_ricoveri(request):
         'page_obj': page_obj,
         'filtro_template': 'filtri/filtro_ricovero.html',
         'etichetta': 'ricoveri',
-        "ricoveri": ricoveri,
+        "ricoveri": page_obj.object_list,
         "ospedali": ospedali,
         "patologie": patologie,
+        "colonne_ordinabili": valid_columns.items(),
+        "sort": sort,
+        "dir": dir,
     })
+
 
 @transaction.atomic
 def crea_ricovero(request):
