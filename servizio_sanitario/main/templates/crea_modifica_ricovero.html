@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}{{ titolo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow rounded-4 border-0">
+        <div class="card-body">
+          <h4 class="text-center text-danger mb-4">{{ titolo_pagina }}</h4>
+          <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                {{ form.CSSN.label_tag }} {{ form.CSSN }}
+              </div>
+              <div class="col-md-6">
+                {{ form.codice_ospedale.label_tag }} {{ form.codice_ospedale }}
+              </div>
+              <div class="col-md-6">
+                {{ form.data_ingresso.label_tag }} {{ form.data_ingresso }}
+              </div>
+<div class="col-md-6">
+  {{ form.durata.label_tag }} {{ form.durata }}
+</div>
+
+              <div class="col-md-6">
+                {{ form.stato.label_tag }} {{ form.stato }}
+              </div>
+              <div class="col-md-6">
+                {{ form.motivo.label_tag }} {{ form.motivo }}
+              </div>
+              <div class="col-md-6">
+                {{ form.costo.label_tag }} {{ form.costo }}
+              </div>
+              <div class="col-md-12">
+                {{ form.patologie.label_tag }} {{ form.patologie }}
+              </div>
+            </div>
+            <div class="mt-4 d-flex justify-content-end">
+              <button type="submit" class="btn btn-danger rounded-pill px-4">Salva</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

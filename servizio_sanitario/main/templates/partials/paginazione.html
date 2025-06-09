@@ -1,12 +1,13 @@
-{% if page_obj.paginator.num_pages > 1 %}
-  <div class="total-count mt-3">Totale: <strong>{{ page_obj.paginator.count }}</strong> cittadini</div>
+{% if page_obj.paginator.count > 0 %}
+
+  <div class="total-count mt-3">Totale: <strong>{{ page_obj.paginator.count }}</strong> {{ etichetta }}</div>
 
   <nav aria-label="Paginazione" class="mt-2">
     <ul class="pagination justify-content-center">
 
       {% if page_obj.has_previous %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ request.GET.urlencode|cut:'page='|yesno:',&' }}">« Precedente</a>
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">« Precedente</a>
         </li>
       {% else %}
         <li class="page-item disabled"><span class="page-link">« Precedente</span></li>
@@ -16,9 +17,13 @@
         {% if num == page_obj.number %}
           <li class="page-item active"><span class="page-link">{{ num }}</span></li>
         {% elif num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
-          <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+          </li>
         {% elif num == 1 or num == page_obj.paginator.num_pages %}
-          <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+          </li>
         {% elif forloop.counter == 2 or forloop.counter == page_obj.paginator.num_pages|add:'-1' %}
           <li class="page-item disabled"><span class="page-link">…</span></li>
         {% endif %}
@@ -26,7 +31,7 @@
 
       {% if page_obj.has_next %}
         <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ request.GET.urlencode|cut:'page='|yesno:',&' }}">Successiva »</a>
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Successiva »</a>
         </li>
       {% else %}
         <li class="page-item disabled"><span class="page-link">Successiva »</span></li>
