@@ -1,0 +1,72 @@
+<div class="card shadow-sm p-4 rounded-4 border-0">
+  <h5 class="text-center border-bottom pb-2 mb-3">Filtri</h5>
+
+  <form method="GET" id="filtriForm">
+
+    <div class="mb-3">
+      <label for="cssn">CSSN Paziente:</label>
+      <input type="text" id="cssn" name="cssn" value="{{ request.GET.cssn }}" class="form-control" placeholder="Es: ABC...">
+    </div>
+
+    <div class="mb-3">
+      <label for="nome">Nome:</label>
+      <input type="text" id="nome" name="nome" value="{{ request.GET.nome }}" class="form-control" placeholder="Es: Mario...">
+    </div>
+
+    <div class="mb-3">
+      <label for="cognome">Cognome:</label>
+      <input type="text" id="cognome" name="cognome" value="{{ request.GET.cognome }}" class="form-control" placeholder="Es: Rossi...">
+    </div>
+
+    <div class="mb-3">
+      <label for="ospedale">Ospedale:</label>
+      <select id="ospedale" name="ospedale" class="form-select">
+        <option value="">Tutti gli ospedali</option>
+        {% for o in ospedali %}
+          <option value="{{ o.codice }}" {% if request.GET.ospedale == o.codice %}selected{% endif %}>{{ o.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="data_da">Da Data:</label>
+      <input type="date" id="data_da" name="data_da" value="{{ request.GET.data_da }}" class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label for="data_a">A Data:</label>
+      <input type="date" id="data_a" name="data_a" value="{{ request.GET.data_a }}" class="form-control">
+    </div>
+
+    <div class="mb-3">
+      <label for="motivo">Motivo:</label>
+      <input type="text" id="motivo" name="motivo" value="{{ request.GET.motivo }}" class="form-control" placeholder="Cerca nel motivo...">
+    </div>
+
+    <div class="mb-3">
+      <label for="patologia">Patologia Associata:</label>
+      <select id="patologia" name="patologia" class="form-select">
+        <option value="">Tutte le patologie</option>
+        {% for p in patologie %}
+          <option value="{{ p.codice }}" {% if request.GET.patologia == p.codice|stringformat:"s" %}selected{% endif %}>{{ p.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="stato">Stato:</label>
+      <select id="stato" name="stato" class="form-select">
+        <option value="">Tutti gli stati</option>
+        <option value="0" {% if request.GET.stato == "0" %}selected{% endif %}>Attivo</option>
+        <option value="1" {% if request.GET.stato == "1" %}selected{% endif %}>Trasferito</option>
+        <option value="2" {% if request.GET.stato == "2" %}selected{% endif %}>Dimesso</option>
+        <option value="3" {% if request.GET.stato == "3" %}selected{% endif %}>Deceduto</option>
+      </select>
+    </div>
+
+    <div class="d-grid gap-2 mt-4">
+      <button type="submit" class="btn btn-primary">Applica Filtri</button>
+      <a href="{% url 'ricoveri' %}" class="btn btn-secondary">Resetta Filtri</a>
+    </div>
+  </form>
+</div>
