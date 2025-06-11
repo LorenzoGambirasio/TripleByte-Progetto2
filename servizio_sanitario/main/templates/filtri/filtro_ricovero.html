@@ -48,7 +48,8 @@
       <select id="patologia" name="patologia" class="form-select">
         <option value="">Tutte le patologie</option>
         {% for p in patologie %}
-          <option value="{{ p.codice }}" {% if request.GET.patologia == p.codice|stringformat:"s" %}selected{% endif %}>{{ p.nome }}</option>
+          <option value="{{ p.cod }}" {% if request.GET.patologia|stringformat:"s" == p.cod|stringformat:"s" %}selected{% endif %}>
+{{ p.nome }}</option>
         {% endfor %}
       </select>
     </div>

@@ -219,7 +219,40 @@ def lista_ricoveri(request):
 
     ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie').all()
 
-    # Filtri (omessi qui per brevità — mantieni quelli già scritti)
+
+    # FILTRI
+    cssn = request.GET.get('cssn', '').strip()
+    nome = request.GET.get('nome', '').strip()
+    cognome = request.GET.get('cognome', '').strip()
+    ospedale = request.GET.get('ospedale', '').strip()
+    stato = request.GET.get('stato', '').strip()
+    data_da = request.GET.get('data_da', '').strip()
+    data_a = request.GET.get('data_a', '').strip()
+    motivo = request.GET.get('motivo', '').strip()
+    patologia = request.GET.get('patologia', '').strip()
+    deceduti = request.GET.get('deceduti', '')
+
+    if cssn:
+        ricoveri = ricoveri.filter(CSSN__CSSN__icontains=cssn)
+    if nome:
+        ricoveri = ricoveri.filter(CSSN__nome__icontains=nome)
+    if cognome:
+        ricoveri = ricoveri.filter(CSSN__cognome__icontains=cognome)
+    if ospedale:
+        ricoveri = ricoveri.filter(codOspedale__codice=ospedale)
+    if stato:
+        ricoveri = ricoveri.filter(stato=stato)
+    if data_da:
+        ricoveri = ricoveri.filter(data_ingresso__gte=data_da)
+    if data_a:
+        ricoveri = ricoveri.filter(data_ingresso__lte=data_a)
+    if motivo:
+        ricoveri = ricoveri.filter(motivo__icontains=motivo)
+    if patologia:
+        ricoveri = ricoveri.filter(patologie__cod=patologia)
+    if deceduti:
+        ricoveri = ricoveri.filter(dataDecesso__isnull=False)
+
 
     ricoveri = ricoveri.order_by(*ordering)
 
