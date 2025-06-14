@@ -1,15 +1,13 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from . import models
 from django.core.paginator import Paginator
-from .forms import RicoveroForm 
+from .forms import RicoveroForm, NuovoPazienteForm
 from django.db import transaction
+from django.http import JsonResponse
 
 
 def dashboard(request):
     return render(request, 'home.html')
-
-
-
 
 def lista_cittadini(request):
     cittadini = models.Cittadino.objects.all()
@@ -176,15 +174,27 @@ def lista_patologie(request):
         'etichetta': 'patologie'
     })
 
-def crea_ricovero(request):
-    if request.method == "POST":
-        form = RicoveroForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('lista_ricoveri')  
-    else:
-        form = RicoveroForm()
-    return render(request, 'ricoveri/crea_ricovero.html', {'form': form})
+def aggiungi_ricovero(request):
+    ricovero_form = RicoveroForm()
+    nuovo_paziente_form = NuovoPazienteForm()
+
+    if request.method == 'POST':
+        ricovero_form = RicoveroForm(request.POST)
+        nuovo_paziente_form = NuovoPazienteForm(request.POST)
+
+        # se il paziente non esiste e il form è compilato correttamente
+        if 'nuovo_cssn' in request.POST and nuovo_paziente_form.is_valid():
+            nuovo_paziente_form.save()
+
+        if ricovero_form.is_valid():
+            ricovero_form.save()
+            return redirect('ricoveri')
+
+    return render(request, 'ricoveri/aggiungi_ricovero.html', {
+        'form': ricovero_form,
+        'nuovo_paziente_form': nuovo_paziente_form,
+        'titolo_pagina': 'Aggiungi Ricovero'
+    })
 
 def lista_ricoveri(request):
     ospedali = models.Ospedale.objects.all()
@@ -198,7 +208,7 @@ def lista_ricoveri(request):
         ("codOspedale__nome", "Ospedale"),
         ("CSSN__cognome", "Paziente"),
         ("CSSN__CSSN", "CSSN"),
-        ("data_ingresso", "Data Ingresso"),
+        ("data_ingresso", "Data Inizio"),
         ("durata", "Durata"),
         ("stato", "Stato"),
         ("motivo", "Motivo"),
@@ -260,7 +270,7 @@ def lista_ricoveri(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "ricovero.html", {
+    return render(request, "ricoveri/ricovero.html", {
         'page_obj': page_obj,
         'filtro_template': 'filtri/filtro_ricovero.html',
         'etichetta': 'ricoveri',
@@ -272,9 +282,8 @@ def lista_ricoveri(request):
         "dir": dir,
     })
 
-
 @transaction.atomic
-def crea_ricovero(request):
+def aggiungi_ricovero(request):
     if request.method == "POST":
         form = RicoveroForm(request.POST)
         if form.is_valid():
@@ -290,7 +299,7 @@ def crea_ricovero(request):
     else:
         form = RicoveroForm()
 
-    return render(request, 'ricoveri/crea_modifica_ricovero.html', {
+    return render(request, 'ricoveri/aggiungi_ricovero.html', {
         'form': form,
         'titolo_pagina': 'Aggiungi Ricovero'
     })
@@ -338,7 +347,16 @@ def trasferisci_ricovero(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
     return render(request)
 
-
 def dichiara_decesso(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
     return render(request)
+
+def verifica_paziente(request):
+    if request.method == "POST":
+        cssn = request.POST.get('cssn', '').strip().upper()
+        try:
+            cittadino = models.Cittadino.objects.get(CSSN=cssn)
+            return JsonResponse({'trovato': True, 'nome': f"{cittadino.nome} {cittadino.cognome}"})
+        except models.Cittadino.DoesNotExist:
+            return JsonResponse({'trovato': False})
+    return JsonResponse({'error': 'Metodo non consentito'}, status=400)

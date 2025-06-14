@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}{{ titolo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 1000px;">
+  <div class="card shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h2 class="text-center text-danger mb-4">Aggiungi Ricovero</h2>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Selezione paziente -->
+        <div class="row g-3 mb-3 align-items-end">
+          <div class="mb-3">
+            <label for="id_cittadino" class="form-label">Paziente:</label>
+            {{ form.CSSN }}
+          </div>
+        </div>
+
+        <!-- Form nuovo paziente -->
+        <div id="formNuovoPaziente" class="d-none border rounded p-3 bg-light mb-4">
+          <h5 class="mb-3">Nuovo paziente</h5>
+          <div class="row g-3">
+            <div class="col-md-6">{{ nuovo_paziente_form.CSSN.label_tag }} {{ nuovo_paziente_form.CSSN }}</div>
+            <div class="col-md-6">{{ nuovo_paziente_form.nome.label_tag }} {{ nuovo_paziente_form.nome }}</div>
+            <div class="col-md-6">{{ nuovo_paziente_form.cognome.label_tag }} {{ nuovo_paziente_form.cognome }}</div>
+            <div class="col-md-6">{{ nuovo_paziente_form.data_nascita.label_tag }} {{ nuovo_paziente_form.data_nascita
+              }}</div>
+            <div class="col-md-6">{{ nuovo_paziente_form.città.label_tag }} {{ nuovo_paziente_form.città }}</div>
+            <div class="col-md-6">{{ nuovo_paziente_form.via.label_tag }} {{ nuovo_paziente_form.via }}</div>
+          </div>
+        </div>
+
+        <!-- Campi ricovero -->
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">{{ form.durata.label_tag }} {{ form.durata }}</div>
+          <div class="col-md-6">{{ form.data_ingresso.label_tag }} {{ form.data_ingresso }}</div>
+          <div class="col-md-6">{{ form.stato.label_tag }} {{ form.stato }}</div>
+          <div class="col-md-6">{{ form.costo.label_tag }} {{ form.costo }}</div>
+        </div>
+
+        <!-- Motivo -->
+        <div class="mb-3">{{ form.motivo.label_tag }} {{ form.motivo }}</div>
+
+        <!-- Patologie -->
+        <div class="mb-3">{{ form.patologie.label_tag }} {{ form.patologie }}</div>
+
+
+        <!-- Submit -->
+        <div class="text-center">
+          <button type="submit" class="btn btn-danger px-4 py-2">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Script interattivo -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Inizializza Select2
+    $('#id_patologie').select2({
+      placeholder: "Seleziona patologie",
+      allowClear: true,
+      width: "100%"
+    });
+
+    // Badge dinamici
+    const select = document.getElementById("id_patologie");
+    const badgeContainer = document.getElementById("patologie-selezionate");
+
+    function aggiornaBadge() {
+      badgeContainer.innerHTML = "";
+      Array.from(select.selectedOptions).forEach(opt => {
+        const badge = document.createElement("span");
+        badge.className = "badge bg-primary text-light px-3 py-2 rounded-pill";
+        badge.textContent = opt.text;
+        badgeContainer.appendChild(badge);
+      });
+    }
+
+    select.addEventListener("change", aggiornaBadge);
+    aggiornaBadge();
+
+    // Toggle nuovo paziente
+    const toggleBtn = document.getElementById("toggleNuovoPaziente");
+    const formNuovo = document.getElementById("formNuovoPaziente");
+    toggleBtn.addEventListener("click", () => {
+      formNuovo.classList.toggle("d-none");
+    });
+
+    // Verifica CSSN via AJAX
+    const cssnInput = document.getElementById("id_cittadino");
+    const nomeLabel = document.getElementById("nomeSelezionato");
+
+    cssnInput.addEventListener("blur", function () {
+      const cssn = this.value.trim();
+      if (!cssn) return;
+
+      fetch("{% url 'verifica_paziente' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: "cssn=" + encodeURIComponent(cssn)
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.trovato) {
+            nomeLabel.textContent = data.nome;
+            formNuovo.classList.add("d-none");
+          } else {
+            nomeLabel.textContent = "";
+            formNuovo.classList.remove("d-none");
+            const nuovoInput = document.getElementById("id_CSSN");
+            if (nuovoInput) nuovoInput.value = cssn;
+          }
+        });
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Elenco dei Ricoveri{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 py-4">
+  <div class="row">
+    <section class="col-12">
+      <div class="bg-white p-4 rounded shadow">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="text-danger fw-bold m-0">Elenco dei Ricoveri</h4>
+          <a href="{% url 'aggiungi_ricovero' %}" class="btn btn-success rounded-circle shadow"
+            title="Aggiungi nuovo ricovero">
+            <i class="bi bi-plus-lg"></i>
+          </a>
+        </div>
+        <div class="table-responsive">
+          <div class="table-container" style="overflow-x: auto;">
+
+            <table class="table table-bordered table-hover text-center text-nowrap">
+              <thead class="table-responsive">
+                <tr>
+                  {% for col, label in colonne_ordinabili %}
+                  <th>
+                    <a href="{% if sort == col and dir == 'asc' %}?sort={{ col }}&dir=desc
+             {% elif sort == col and dir == 'desc' %}?
+             {% else %}?sort={{ col }}&dir=asc
+             {% endif %}" class="text-decoration-none text-dark">
+                      {{ label }}
+                      {% if sort == col %}
+                      {% if dir == 'asc' %}
+                      <i class="bi bi-caret-up-fill text-dark"></i>
+                      {% elif dir == 'desc' %}
+                      <i class="bi bi-caret-down-fill text-dark"></i>
+                      {% endif %}
+                      {% endif %}
+                    </a>
+                  </th>
+                  {% endfor %}
+                  <th>Patologie</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ricovero in page_obj %}
+                <tr
+                  class="clickable-row {% if ricovero.stato == 0 %}table-success{% elif ricovero.stato == 1 %}table-warning{% elif ricovero.stato == 2 %}table-danger{% elif ricovero.stato == 3 %}table-secondary{% endif %}"
+                  data-bs-toggle="modal" data-bs-target="#ricoveroModal" data-id="{{ ricovero.codRicovero }}"
+                  data-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" data-cssn="{{ ricovero.CSSN.CSSN }}"
+                  data-data="{{ ricovero.data_ingresso|date:'d/m/Y' }}" data-costo="{{ ricovero.costo|floatformat:2 }}"
+                  data-motivo="{{ ricovero.motivo|escapejs }}"
+                  data-patologie='[{% for p in ricovero.patologie.all %}"{{ p.nome|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
+                  data-stato="{{ ricovero.stato }}"
+                  data-url-modifica="{% url 'modifica_ricovero' ricovero.codRicovero %}"
+                  data-url-elimina="{% url 'elimina_ricovero' ricovero.codRicovero %}"
+                  data-url-deceduto="{% url 'inserisci_decesso' ricovero.codRicovero %}">
+
+                  <td style="max-width: 200px; white-space: normal; word-break: keep-all;">
+                    {{ ricovero.codOspedale.nome }}
+                  </td>
+                  <td style="white-space: normal; word-break: keep-all; max-width: 100px;">
+                    {{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}
+                  </td>
+                  <td>{{ ricovero.CSSN.CSSN }}</td>
+                  <td>{{ ricovero.data_ingresso|date:"d/m/Y" }}</td>
+                  <td>{{ ricovero.durata }}</td>
+                  <td style="font-size: 1.1rem; padding: 0.25rem;">
+                    {% if ricovero.stato == 0 %}
+                    <span class="text-success">●</span>
+                    {% elif ricovero.stato == 1 %}
+                    <span class="text-warning">●</span>
+                    {% elif ricovero.stato == 2 %}
+                    <span class="text-danger">●</span>
+                    {% elif ricovero.stato == 3 %}
+                    <span class="text-black">●</span>
+                    {% endif %}
+                  </td>
+                  <td style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="{{ ricovero.motivo }}">
+                    {{ ricovero.motivo }}
+                  </td>
+                  <td>{{ ricovero.costo|floatformat:2 }}</td>
+                  <td style="max-width: 200px; white-space: normal;">
+                    {% if ricovero.patologie.exists %}
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
+                      {% for p in ricovero.patologie.all %}
+                      <span class="badge bg-secondary text-wrap"
+                        style="white-space: normal; word-break: keep-all; overflow-wrap: break-word; max-width: 100%;">
+                        {{ p.nome }}
+                      </span>
+                      {% endfor %}
+                    </div>
+                    {% else %}
+                    <span class="text-muted">Nessuna</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div> {% include 'partials/paginazione.html' %}
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Pop-UP -->
+<div class="modal fade" id="ricoveroModal" tabindex="-1" aria-labelledby="ricoveroModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header bg-light border-0 rounded-top-4">
+        <h5 class="modal-title fw-bold text-danger" id="ricoveroModalLabel">
+          <i class="bi bi-hospital"></i> Dettagli Ricovero
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+      </div>
+      <div class="modal-body px-4 py-3">
+        <ul class="list-unstyled mb-3">
+          <li><strong>Codice:</strong> <span id="modalCodice" class="text-secondary"></span></li>
+          <li><strong>Nome cittadino:</strong> <span id="modalNome" class="text-secondary"></span></li>
+          <li><strong>Codice fiscale:</strong> <span id="modalCSSN" class="text-secondary"></span></li>
+          <li><strong>Data ricovero:</strong> <span id="modalData" class="text-secondary"></span></li>
+          <li><strong>Costo:</strong> <span id="modalCosto" class="text-secondary"></span></li>
+          <li>
+            <strong>Motivo:</strong>
+            <span id="modalMotivo" class="text-secondary d-inline-block text-truncate" style="max-width: 100%;"
+              data-bs-toggle="tooltip" data-bs-placement="top" title="">
+            </span>
+          </li>
+          <li>
+            <strong>Patologie:</strong>
+            <div id="modalPatologie" class="d-flex flex-wrap gap-1 mt-1"></div>
+          </li>
+        </ul>
+
+        <p class="fw-semibold mb-2 text-muted">Azioni disponibili:</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="#" id="btnModifica" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil-square me-1"></i> Modifica
+          </a>
+          <a href="#" id="btnTrasferisci" class="btn btn-outline-warning btn-sm">
+            <i class="bi bi-arrow-left-right me-1"></i> Trasferisci
+          </a>
+          <a href="#" id="btnElimina" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-trash3 me-1"></i> Elimina
+          </a>
+          <a href="#" id="btnDeceduto" class="btn btn-outline-dark btn-sm">
+            <i class="bi bi-x-circle me-1"></i> Segna come deceduto
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+  document.querySelectorAll('.clickable-row').forEach(row => {
+    row.addEventListener('click', () => {
+      // Popola i campi
+      document.getElementById('modalCodice').textContent = row.dataset.id;
+      document.getElementById('modalNome').textContent = row.dataset.nome;
+      document.getElementById('modalData').textContent = row.dataset.data;
+      document.getElementById('modalMotivo').textContent = row.dataset.motivo;
+      document.getElementById('modalMotivo').setAttribute("title", row.dataset.motivo);
+      document.getElementById('modalCSSN').textContent = row.dataset.cssn;
+      document.getElementById('modalCosto').textContent = row.dataset.costo + " €";
+
+      // Patologie
+      const patologieContainer = document.getElementById('modalPatologie');
+      patologieContainer.innerHTML = "";
+      const patologie = JSON.parse(row.dataset.patologie || "[]");
+      patologie.forEach(p => {
+        const badge = document.createElement("span");
+        badge.className = "badge bg-secondary";
+        badge.textContent = p;
+        patologieContainer.appendChild(badge);
+      });
+
+      // Pulsanti
+      const btnModifica = document.getElementById('btnModifica');
+      const btnElimina = document.getElementById('btnElimina');
+      const btnDeceduto = document.getElementById('btnDeceduto');
+
+      btnModifica.href = row.dataset.urlModifica;
+      btnElimina.href = row.dataset.urlElimina;
+      btnDeceduto.href = row.dataset.urlDeceduto;
+
+      btnModifica.classList.remove('disabled');
+      btnElimina.classList.remove('disabled');
+      btnDeceduto.classList.remove('disabled');
+
+      // Pulisci eventuale messaggio
+      const msg = document.getElementById("modalMsg");
+      msg && msg.remove();
+
+      const stato = parseInt(row.dataset.stato);
+
+      // Blocchi in base alla codifica reale
+      if (stato === 3 || stato === 1) {
+        // Deceduto o trasferito → blocca tutto
+        [btnModifica, btnElimina, btnDeceduto].forEach(btn => {
+          btn.classList.add('disabled');
+          btn.removeAttribute('href');
+        });
+        aggiungiMessaggio("Azioni non disponibili per ricoveri trasferiti o deceduti.");
+      } else if (stato === 2) {
+        // Dimesso → blocca solo “Segna come deceduto”
+        btnDeceduto.classList.add('disabled');
+        btnDeceduto.removeAttribute('href');
+        aggiungiMessaggio("Segnalazione decesso non disponibile per ricoveri dimessi.");
+      }
+
+      // Tooltip per motivo
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+
+      function aggiungiMessaggio(testo) {
+        const msgDiv = document.createElement("div");
+        msgDiv.id = "modalMsg";
+        msgDiv.className = "alert alert-secondary mt-3 w-100";
+        msgDiv.textContent = testo;
+        document.querySelector("#ricoveroModal .modal-body").appendChild(msgDiv);
+      }
+    });
+  });
+</script>
+
+
+
+{% endblock %}
