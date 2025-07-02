@@ -222,10 +222,8 @@ def lista_ricoveri(request):
             ricovero.stato = 2 if (oggi - data_ingresso).days > durata else 0
 
             if errori:
-                for err in errori:
-                    form.add_error(None, err)
+                return JsonResponse({"success": False, "errors": errori})
             else:
-                # codice nuovo ricovero
                 ultimo = models.Ricovero.objects.order_by('-codRicovero').first()
                 if ultimo:
                     numero = int(ultimo.codRicovero[1:])
@@ -242,7 +240,15 @@ def lista_ricoveri(request):
                         codOspedale=ricovero.codOspedale,
                         codPatologia=p
                     )
-                successo = True
+
+                return JsonResponse({"success": True})
+        else:
+            # Se form.is_valid() è False -> ritorna errori form Django
+            errors = []
+            for field, field_errors in form.errors.items():
+                for err in field_errors:
+                    errors.append(err)
+            return JsonResponse({"success": False, "errors": errors})
 
     # logica GET
     ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie').all()
@@ -353,57 +359,6 @@ def lista_ricoveri(request):
         }.items()
         
     })
-
-@csrf_exempt
-@require_POST
-@transaction.atomic
-def aggiungi_ricovero(request):
-    if request.method == 'POST':
-        form = RicoveroForm(request.POST)
-        if form.is_valid():
-            ricovero = form.save(commit=False)
-            # Validazioni tue
-            oggi = date.today()
-            data_ingresso = ricovero.data_ingresso
-            durata = ricovero.durata
-            costo = ricovero.costo
-            errori = []
-
-            if data_ingresso > oggi:
-                errori.append("La data di ingresso non può essere nel futuro.")
-            elif data_ingresso < oggi - timedelta(days=30):
-                errori.append("La data di ingresso non può essere più vecchia di un mese.")
-            if durata < 1 or durata > 60:
-                errori.append("La durata deve essere tra 1 e 60 giorni.")
-            if costo < 0 or costo > 99999:
-                errori.append("Il costo non può essere negativo o superiore a 99999 euro.")
-            if not ricovero.motivo.strip():
-                errori.append("Il motivo del ricovero è obbligatorio.")
-
-            ricovero.stato = 2 if (oggi - data_ingresso).days > durata else 0
-
-            if errori:
-                return JsonResponse({'success': False, 'errors': errori})
-            else:
-                ultimo = models.Ricovero.objects.order_by('-codRicovero').first()
-                if ultimo:
-                    numero = int(ultimo.codRicovero[1:])
-                    nuovo_cod = f"R{numero + 1:0{len(ultimo.codRicovero) - 1}d}"
-                else:
-                    nuovo_cod = "R0001"
-                ricovero.codRicovero = nuovo_cod
-                ricovero.save()
-                form.save_m2m()
-                for p in form.cleaned_data['patologie']:
-                    models.PatologiaRicovero.objects.create(
-                        codRicovero=ricovero,
-                        codOspedale=ricovero.codOspedale,
-                        codPatologia=p
-                    )
-                return JsonResponse({'success': True})
-
-        else:
-            return JsonResponse({'success': False, 'errors': form.errors.get_json_data()})
 
 
 @transaction.atomic

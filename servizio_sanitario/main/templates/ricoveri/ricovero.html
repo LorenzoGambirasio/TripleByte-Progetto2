@@ -133,7 +133,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
       </div>
       <div class="modal-body">
-        <form method="post" id="formAggiungiRicovero">
+        <form method="post" id="formAggiungiRicovero" nonvalidate>
           {% csrf_token %}
           {% include "ricoveri/aggiungi_ricovero.html" %}
           <div class="text-center mt-3">
@@ -211,36 +211,63 @@
     });
 
     form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      const formData = new FormData(form);
+  e.preventDefault();
 
-      fetch("/ricoveri/", {
-        method: "POST",
-        headers: { "X-CSRFToken": "{{ csrf_token }}" },
-        body: formData
-      })
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            Swal.fire({
-              icon: 'success',
-              title: 'Ricovero aggiunto',
-              text: 'Il ricovero è stato salvato con successo!',
-              timer: 2000,
-              showConfirmButton: false
-            }).then(() => window.location.reload());
-          } else {
-            Swal.fire({
-              icon: 'error',
-              title: 'Errore di validazione',
-              html: `<ul class='text-start'>${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`
-            });
-          }
-        })
-        .catch(err => {
-          Swal.fire("Errore", "Si è verificato un errore durante l'invio del form.", "error");
-        });
+  const cittadino = form.querySelector('#id_CSSN').value.trim();
+  const durata = form.querySelector('#id_durata').value.trim();
+  const ospedale = form.querySelector('#id_codOspedale').value.trim();
+  const data_ingresso = form.querySelector('#id_data_ingresso').value.trim();
+  const motivo = form.querySelector('#id_motivo').value.trim();
+  const costo = form.querySelector('#id_costo').value.trim();
+
+  let errori = [];
+
+  if (!cittadino) errori.push("Seleziona un paziente.");
+  if (!durata) errori.push("Durata obbligatoria.");
+  if (!ospedale) errori.push("Seleziona un ospedale.");
+  if (!data_ingresso) errori.push("Data di ingresso obbligatoria.");
+  if (!motivo) errori.push("Motivo del ricovero obbligatorio.");
+  if (!costo) errori.push("Costo obbligatorio.");
+
+  if (errori.length > 0) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Dati mancanti',
+      html: `<ul class='text-start'>${errori.map(e => `<li>${e}</li>`).join('')}</ul>`
     });
+    return;
+  }
+
+  const formData = new FormData(form);
+
+  fetch("/ricoveri/aggiungi/", {
+    method: "POST",
+    headers: { "X-CSRFToken": "{{ csrf_token }}" },
+    body: formData
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Ricovero aggiunto',
+          text: 'Il ricovero è stato salvato con successo!',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => window.location.reload());
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Errore di validazione',
+          html: `<ul class='text-start'>${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`
+        });
+      }
+    })
+    .catch(err => {
+      Swal.fire("Errore", "Si è verificato un errore durante l'invio del form.", "error");
+    });
+});
+
 
     document.querySelectorAll('.clickable-row').forEach(row => {
       row.addEventListener('click', () => {
