@@ -340,7 +340,7 @@ def lista_ricoveri(request):
     "codOspedale__nome": "120px",
     "CSSN__cognome": "100px",
     "CSSN__CSSN": "165px",
-    "data_ingresso": "100px",
+    "data_ingresso": "90px",
     "durata": "60px",
     "stato": "50px",
     "motivo": "100px",

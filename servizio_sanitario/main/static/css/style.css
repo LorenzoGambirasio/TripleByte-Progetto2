@@ -194,3 +194,15 @@ td.stato span {
   border: 1px solid #ddd;
   margin: 0 1px;
 }
+
+.pagination {
+  font-size: 1rem; /* dimensione base normale */
+}
+
+.pagination .page-link {
+  padding: 0.5rem 0.75rem; /* bottoni un po' più alti e larghi */
+}
+
+.pagination-sm {
+  font-size: 1rem; /* forza dimensione normale anche se usi pagination-sm */
+}
