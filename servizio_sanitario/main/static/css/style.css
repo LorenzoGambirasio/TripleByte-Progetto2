@@ -136,3 +136,10 @@ td.stato span {
   background-color: #dc3545 !important;
   border-color: #dc3545 !important;
 }
+.select2-hidden {
+  visibility: hidden;
+}
+
+.table td, .table th {
+  padding: 0.25rem !important;
+}

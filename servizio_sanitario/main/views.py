@@ -4,7 +4,12 @@ from django.core.paginator import Paginator
 from .forms import RicoveroForm, NuovoPazienteForm
 from django.db import transaction
 from django.http import JsonResponse
-
+from datetime import date, timedelta
+from django.urls import reverse
+from django.http import HttpResponseRedirect
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 def dashboard(request):
     return render(request, 'home.html')
@@ -174,31 +179,73 @@ def lista_patologie(request):
         'etichetta': 'patologie'
     })
 
-def aggiungi_ricovero(request):
-    ricovero_form = RicoveroForm()
-    nuovo_paziente_form = NuovoPazienteForm()
+def genera_codice_ricovero():
+    codici = models.Ricovero.objects.values_list('codRicovero', flat=True)
+    max_num = 0
+
+    for codice in codici:
+        if codice.startswith("R") and codice[1:].isdigit():
+            numero = int(codice[1:])
+            if numero > max_num:
+                max_num = numero
+
+    nuovo_numero = max_num + 1
+    return f"R{nuovo_numero}"
+
+@transaction.atomic
+def lista_ricoveri(request):
+    form = RicoveroForm()
+    successo = False
 
     if request.method == 'POST':
-        ricovero_form = RicoveroForm(request.POST)
-        nuovo_paziente_form = NuovoPazienteForm(request.POST)
+        form = RicoveroForm(request.POST)
+        if form.is_valid():
+            ricovero = form.save(commit=False)
 
-        # se il paziente non esiste e il form è compilato correttamente
-        if 'nuovo_cssn' in request.POST and nuovo_paziente_form.is_valid():
-            nuovo_paziente_form.save()
+            oggi = date.today()
+            data_ingresso = ricovero.data_ingresso
+            durata = ricovero.durata
+            costo = ricovero.costo
+            errori = []
 
-        if ricovero_form.is_valid():
-            ricovero_form.save()
-            return redirect('ricoveri')
+            if data_ingresso > oggi:
+                errori.append("La data di ingresso non può essere nel futuro.")
+            elif data_ingresso < oggi - timedelta(days=30):
+                errori.append("La data di ingresso non può essere più vecchia di un mese.")
+            if durata < 1 or durata > 60:
+                errori.append("La durata deve essere tra 1 e 60 giorni.")
+            if costo < 0 or costo > 99999:
+                errori.append("Il costo non può essere negativo o superiore a 99999 euro.")
+            if not ricovero.motivo.strip():
+                errori.append("Il motivo del ricovero è obbligatorio.")
 
-    return render(request, 'ricoveri/aggiungi_ricovero.html', {
-        'form': ricovero_form,
-        'nuovo_paziente_form': nuovo_paziente_form,
-        'titolo_pagina': 'Aggiungi Ricovero'
-    })
+            ricovero.stato = 2 if (oggi - data_ingresso).days > durata else 0
 
-def lista_ricoveri(request):
-    ospedali = models.Ospedale.objects.all()
-    patologie = models.Patologia.objects.all()
+            if errori:
+                for err in errori:
+                    form.add_error(None, err)
+            else:
+                # codice nuovo ricovero
+                ultimo = models.Ricovero.objects.order_by('-codRicovero').first()
+                if ultimo:
+                    numero = int(ultimo.codRicovero[1:])
+                    nuovo_cod = f"R{numero + 1:0{len(ultimo.codRicovero) - 1}d}"
+                else:
+                    nuovo_cod = "R0001"
+                ricovero.codRicovero = nuovo_cod
+                ricovero.save()
+                form.save_m2m()
+
+                for p in form.cleaned_data['patologie']:
+                    models.PatologiaRicovero.objects.create(
+                        codRicovero=ricovero,
+                        codOspedale=ricovero.codOspedale,
+                        codPatologia=p
+                    )
+                successo = True
+
+    # logica GET
+    ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie').all()
 
     # Ordinamento dinamico
     sort = request.GET.get('sort', 'codRicovero')
@@ -227,46 +274,137 @@ def lista_ricoveri(request):
         ordering = [sort] if dir == 'asc' else [f'-{sort}']
 
 
-    ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie').all()
 
-    # ordinamento e filtri (puoi reinserire qui i tuoi)
+
+    # FILTRI
+    cssn = request.GET.get('cssn', '').strip()
+    nome = request.GET.get('nome', '').strip()
+    cognome = request.GET.get('cognome', '').strip()
+    ospedale = request.GET.get('ospedale', '').strip()
+    stato = request.GET.get('stato', '').strip()
+    data_da = request.GET.get('data_da', '').strip()
+    data_a = request.GET.get('data_a', '').strip()
+    motivo = request.GET.get('motivo', '').strip()
+    patologia = request.GET.get('patologia', '').strip()
+    deceduti = request.GET.get('deceduti', '')
+
+    if cssn:
+        ricoveri = ricoveri.filter(CSSN__CSSN__icontains=cssn)
+    if nome:
+        ricoveri = ricoveri.filter(CSSN__nome__icontains=nome)
+    if cognome:
+        ricoveri = ricoveri.filter(CSSN__cognome__icontains=cognome)
+    if ospedale:
+        ricoveri = ricoveri.filter(codOspedale__codice=ospedale)
+    if stato:
+        ricoveri = ricoveri.filter(stato=stato)
+    if data_da:
+        ricoveri = ricoveri.filter(data_ingresso__gte=data_da)
+    if data_a:
+        ricoveri = ricoveri.filter(data_ingresso__lte=data_a)
+    if motivo:
+        ricoveri = ricoveri.filter(motivo__icontains=motivo)
+    if patologia:
+        ricoveri = ricoveri.filter(patologie__cod=patologia)
+    if deceduti:
+        ricoveri = ricoveri.filter(dataDecesso__isnull=False)
+
+
+    ricoveri = ricoveri.order_by(*ordering)
+    
+    #Paginazione
     paginator = Paginator(ricoveri, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
+    
+    colonne_larghezze = {
+    "codOspedale__nome": "120px",
+    "CSSN__cognome": "100px",
+    "CSSN__CSSN": "165px",
+    "data_ingresso": "100px",
+    "durata": "60px",
+    "stato": "50px",
+    "motivo": "100px",
+    "costo": "80px",
+    "patologie": "100px",
+    }
 
     return render(request, "ricoveri/ricovero.html", {
+        'form': form,
         'page_obj': page_obj,
+        'ricoveri': page_obj.object_list,
+        'ospedali': models.Ospedale.objects.all(),
+        'patologie': models.Patologia.objects.all(),
+        'successo': successo,
         'filtro_template': 'filtri/filtro_ricovero.html',
         'etichetta': 'ricoveri',
-        "ricoveri": page_obj.object_list,
-        "ospedali": ospedali,
-        "patologie": patologie,
-        "colonne_ordinabili": valid_columns.items(),
-        "sort": sort,
-        "dir": dir,
+        'sort': sort,
+        'dir': dir,
+        'colonne_larghezze': colonne_larghezze,
+        'colonne_ordinabili': {
+            "codOspedale__nome": "Ospedale",
+            "CSSN__cognome": "Paziente",
+            "CSSN__CSSN": "CSSN",
+            "data_ingresso": "Data Inizio",
+            "durata": "Durata",
+            "stato": "Stato",
+            "motivo": "Motivo",
+            "costo": "Costo (€)"
+        }.items()
+        
     })
 
+@csrf_exempt
+@require_POST
 @transaction.atomic
 def aggiungi_ricovero(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         form = RicoveroForm(request.POST)
         if form.is_valid():
-            ricovero = form.save()
-            patologie = form.cleaned_data['patologie']
-            for p in patologie:
-                models.PatologiaRicovero.objects.create(
-                    codice_ricovero=ricovero,
-                    codice_patologia=p,
-                    codice_ospedale=ricovero.codice_ospedale
-                )
-            return redirect('lista_ricoveri')
-    else:
-        form = RicoveroForm()
+            ricovero = form.save(commit=False)
+            # Validazioni tue
+            oggi = date.today()
+            data_ingresso = ricovero.data_ingresso
+            durata = ricovero.durata
+            costo = ricovero.costo
+            errori = []
 
-    return render(request, 'ricoveri/aggiungi_ricovero.html', {
-        'form': form,
-        'titolo_pagina': 'Aggiungi Ricovero'
-    })
+            if data_ingresso > oggi:
+                errori.append("La data di ingresso non può essere nel futuro.")
+            elif data_ingresso < oggi - timedelta(days=30):
+                errori.append("La data di ingresso non può essere più vecchia di un mese.")
+            if durata < 1 or durata > 60:
+                errori.append("La durata deve essere tra 1 e 60 giorni.")
+            if costo < 0 or costo > 99999:
+                errori.append("Il costo non può essere negativo o superiore a 99999 euro.")
+            if not ricovero.motivo.strip():
+                errori.append("Il motivo del ricovero è obbligatorio.")
+
+            ricovero.stato = 2 if (oggi - data_ingresso).days > durata else 0
+
+            if errori:
+                return JsonResponse({'success': False, 'errors': errori})
+            else:
+                ultimo = models.Ricovero.objects.order_by('-codRicovero').first()
+                if ultimo:
+                    numero = int(ultimo.codRicovero[1:])
+                    nuovo_cod = f"R{numero + 1:0{len(ultimo.codRicovero) - 1}d}"
+                else:
+                    nuovo_cod = "R0001"
+                ricovero.codRicovero = nuovo_cod
+                ricovero.save()
+                form.save_m2m()
+                for p in form.cleaned_data['patologie']:
+                    models.PatologiaRicovero.objects.create(
+                        codRicovero=ricovero,
+                        codOspedale=ricovero.codOspedale,
+                        codPatologia=p
+                    )
+                return JsonResponse({'success': True})
+
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors.get_json_data()})
+
 
 @transaction.atomic
 def modifica_ricovero(request, pk):

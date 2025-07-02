@@ -1,5 +1,7 @@
 from django import forms
 from .models import Ricovero, Patologia, Cittadino
+from django.core.exceptions import ValidationError
+from datetime import date, timedelta
 
 class RicoveroForm(forms.ModelForm):
     CSSN = forms.ModelChoiceField(
@@ -19,24 +21,58 @@ class RicoveroForm(forms.ModelForm):
         })
     )
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    durata = forms.IntegerField(
+        min_value=1,
+        max_value=60,
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        error_messages={
+            'required': 'Inserisci la durata del ricovero.',
+            'min_value': 'La durata deve essere almeno 1 giorno.',
+            'max_value': 'La durata massima è di 60 giorni.'
+        }
+    )
 
-        # Etichetta leggibile nel dropdown CSSN
-        self.fields['CSSN'].label_from_instance = lambda obj: f"{obj.CSSN} - {obj.nome} {obj.cognome}"
+    data_ingresso = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        error_messages={
+            'required': 'Inserisci la data di ingresso.',
+            'invalid': 'Formato data non valido. Usa gg/mm/aaaa.'
+        }
+    )
+
+    costo = forms.DecimalField(
+        max_digits=7,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        error_messages={
+            'required': 'Inserisci il costo del ricovero.',
+            'invalid': 'Il costo deve essere un numero in euro.'
+        }
+    )
+
+    motivo = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        error_messages={
+            'required': 'Inserisci il motivo del ricovero.'
+        }
+    )
 
     class Meta:
         model = Ricovero
         fields = ['CSSN', 'codOspedale', 'data_ingresso', 'durata', 'stato', 'motivo', 'costo']
         widgets = {
             'codOspedale': forms.Select(attrs={'class': 'form-select'}),
-            'data_ingresso': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'durata': forms.NumberInput(attrs={'class': 'form-control'}),
-            'stato': forms.NumberInput(attrs={'class': 'form-control'}),
-            'motivo': forms.TextInput(attrs={'class': 'form-control'}),
-            'costo': forms.NumberInput(attrs={'class': 'form-control'}),
+            'stato': forms.HiddenInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['CSSN'].label_from_instance = lambda obj: f"{obj.CSSN} - {obj.nome} {obj.cognome}"
+
+        self.fields['CSSN'].widget.attrs.update({'id': 'id_cittadino'})
+        self.fields['patologie'].widget.attrs.update({'id': 'id_patologie'})
+        self.fields['codOspedale'].widget.attrs.update({'id': 'id_codOspedale'})
 
 class NuovoPazienteForm(forms.ModelForm):
     class Meta:

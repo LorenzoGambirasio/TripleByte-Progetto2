@@ -99,20 +99,18 @@ class PatologiaMortale(models.Model):
 
 
 class PatologiaRicovero(models.Model):
-    codRicovero = models.ForeignKey(Ricovero, on_delete=models.CASCADE, db_column='codricovero')
+    codRicovero = models.ForeignKey(Ricovero, on_delete=models.CASCADE, db_column='codricovero', primary_key=True)
     codOspedale = models.ForeignKey(Ospedale, on_delete=models.CASCADE, db_column='codospedale')
     codPatologia = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
 
     class Meta:
         db_table = 'main_patologiaricovero'
         managed = False
-        constraints = [
-            models.UniqueConstraint(fields=['codRicovero', 'codOspedale', 'codPatologia'], name='pk_patologiaricovero')
-        ]
+        unique_together = (('codRicovero', 'codOspedale', 'codPatologia'),)
 
     def __str__(self):
-        return f"{self.codRicovero} - {self.codOspedale} - {self.codPatologia.nome}"
-    
+        return f"{self.codRicovero} - {self.codOspedale} - {self.codPatologia}"
+ 
     
 class PatologiaRicoveroView(models.Model):
     id = models.IntegerField(primary_key=True)
