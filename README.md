@@ -22,7 +22,7 @@ Sistema web per la gestione di cittadini, ospedali, patologie e ricoveri, realiz
 ### 1. Clona il repository
 
 ```bash
-git clone https://github.com/tuo-utente/servizio-sanitario.git
+git clone https://github.com/LorenzoGambirasio/TripleByte-Progetto2.git
 cd servizio-sanitario
 ```
 
