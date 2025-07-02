@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from . import models
 from django.core.paginator import Paginator
-from .forms import RicoveroForm, NuovoPazienteForm
+from .forms import RicoveroForm, NuovoPazienteForm, TrasferimentoForm
 from django.db import transaction
 from django.http import JsonResponse
 from datetime import date, timedelta
@@ -376,46 +376,105 @@ def lista_ricoveri(request):
 
 @transaction.atomic
 def modifica_ricovero(request, pk):
-    ricovero = get_object_or_404(models.Ricovero, pk=pk)
-    patologie_preselezionate = models.Patologia.objects.filter(
-        patologie_ricovero_patologia__codice_ricovero=ricovero
-    )
+    # 1. Recupera l'oggetto ricovero da modificare o restituisce un errore 404 se non esiste.
+    ricovero = get_object_or_404(models.Ricovero, codRicovero=pk)
 
     if request.method == 'POST':
+        # 2. Se la richiesta è POST, popola il form con i dati inviati e l'istanza da modificare.
         form = RicoveroForm(request.POST, instance=ricovero)
         if form.is_valid():
-            ricovero = form.save()
-            # Rimuove le vecchie associazioni
-            models.PatologiaRicovero.objects.filter(codice_ricovero=ricovero).delete()
-            # Inserisce le nuove
-            patologie = form.cleaned_data['patologie']
-            for p in patologie:
-                models.PatologiaRicovero.objects.create(
-                    codice_ricovero=ricovero,
-                    codice_patologia=p,
-                    codice_ospedale=ricovero.codice_ospedale
-                )
-            return redirect('lista_ricoveri')
+            # 3. Salva il form. Django si occuperà di aggiornare sia l'oggetto Ricovero
+            #    sia le relazioni Many-to-Many (le patologie).
+            form.save()
+            # 4. Reindirizza alla pagina dell'elenco con il nome corretto.
+            return redirect('ricoveri')
     else:
-        form = RicoveroForm(instance=ricovero, initial={'patologie': patologie_preselezionate})
+        # 5. Se la richiesta è GET, crea un'istanza del form legata all'oggetto Ricovero.
+        #    Django pre-compilerà automaticamente tutti i campi, incluse le patologie.
+        form = RicoveroForm(instance=ricovero)
 
-    return render(request, 'ricoveri/crea_modifica_ricovero.html', {
+    # 6. Renderizza il template passando il form e l'oggetto ricovero.
+    context = {
         'form': form,
-        'titolo_pagina': 'Modifica Ricovero'
-    })
+        'ricovero': ricovero
+    }
+    return render(request, 'ricoveri/modifica_ricovero.html', context)
 
 def elimina_ricovero(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
     if request.method == 'POST':
         ricovero.delete()
-        return redirect('lista_ricoveri')
-    return render(request, 'ricoveri/conferma_eliminazione.html', {
+        return redirect('ricoveri')
+    return render(request, 'ricoveri/elimina_ricovero.html', {
         'ricovero': ricovero
     })
     
+# Assicurati di avere questi import all'inizio del file views.py
+
+ # Assicurati che questo form esista in forms.py
+
+
+def genera_nuovo_codice_ricovero():
+    # Assicurati che questa logica sia corretta per il tuo schema
+    ultimo_ricovero = models.Ricovero.objects.order_by('-codRicovero').first()
+    if ultimo_ricovero:
+        numero = int(ultimo_ricovero.codRicovero[1:]) + 1
+        return f"R{numero:04d}"
+    return "R0001"
+
 def trasferisci_ricovero(request, pk):
-    ricovero = get_object_or_404(models.Ricovero, pk=pk)
-    return render(request)
+    ricovero_originale = get_object_or_404(models.Ricovero, codRicovero=pk)
+
+    if request.method == 'POST':
+        form = TrasferimentoForm(request.POST, instance=ricovero_originale)
+        if form.is_valid():
+            nuovo_ospedale = form.cleaned_data['codOspedale']
+            
+            try:
+                with transaction.atomic():
+                    patologie_da_copiare = list(ricovero_originale.patologie.all())
+
+                    models.Ricovero.objects.filter(pk=ricovero_originale.pk).update(stato=1)
+
+                    # Creazione del nuovo ricovero
+                    ricovero_nuovo = models.Ricovero.objects.create(
+                        codRicovero=genera_nuovo_codice_ricovero(),
+                        CSSN=ricovero_originale.CSSN,
+                        codOspedale=nuovo_ospedale,
+                        data_ingresso=timezone.now().date(),
+                        motivo=ricovero_originale.motivo,  # <-- MODIFICA QUI: Mantiene il motivo originale
+                        costo=ricovero_originale.costo,
+                        durata=ricovero_originale.durata,
+                        stato=0
+                    )
+
+                    # Associazione delle patologie
+                    if patologie_da_copiare:
+                        nuovi_collegamenti = []
+                        for patologia in patologie_da_copiare:
+                            nuovi_collegamenti.append(
+                                models.PatologiaRicovero(
+                                    codRicovero=ricovero_nuovo,
+                                    codOspedale=ricovero_nuovo.codOspedale,
+                                    codPatologia=patologia
+                                )
+                            )
+                        models.PatologiaRicovero.objects.bulk_create(nuovi_collegamenti)
+
+                return redirect('ricoveri')
+
+            except Exception as e:
+                form.add_error(None, f"Si è verificato un errore durante il trasferimento: {e}")
+    else:
+        form = TrasferimentoForm(instance=ricovero_originale)
+
+    context = {
+        'form': form,
+        'ricovero': ricovero_originale
+    }
+    return render(request, 'ricoveri/trasferisci_ricovero.html', context)
+
+
 
 def dichiara_decesso(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
