@@ -10,12 +10,14 @@ from django.http import HttpResponseRedirect
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.db.models import Count
 
 def dashboard(request):
     return render(request, 'home.html')
 
+
 def lista_cittadini(request):
-    cittadini = models.Cittadino.objects.all()
+    cittadini = models.Cittadino.objects.annotate(numero_ricoveri=Count('ricovero'))
 
     # Filtri
     nome = request.GET.get('nome', '')
@@ -39,30 +41,40 @@ def lista_cittadini(request):
         cittadini = [c for c in cittadini if c.stato == stato]
 
     # Ordinamento dinamico
-    sort_field = request.GET.get('sort', 'cognome')  # default
+    sort_field = request.GET.get('sort', 'cognome')
     sort_order = request.GET.get('order', 'asc')
     if sort_order == 'desc':
         sort_field = '-' + sort_field
     try:
         cittadini = cittadini.order_by(sort_field)
     except Exception:
-        pass  # se sort_field non è valido, ignora
+        pass
 
     # Paginazione
     paginator = Paginator(cittadini, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    # Colonne da visualizzare
+    # Colonne da visualizzare (unifica Nome e Cognome!)
     columns = [
         ('CSSN', 'CSSN'),
-        ('nome', 'Nome'),
-        ('cognome', 'Cognome'),
+        ('nome_cognome', 'Nome e Cognome'),
         ('data_nascita', 'Data di Nascita'),
         ('città', 'Luogo di Nascita'),
         ('via', 'Indirizzo'),
         ('stato', 'Stato'),
     ]
+    
+    colonne_larghezze = {
+        'CSSN': '145px',
+        'nome_cognome': '120px',
+        'data_nascita': '105px',
+        'città': '125px',
+        'via': '105px',
+        'stato': '73px',
+        'ricoveri': '60px',
+    }
+
 
     context = {
         'filtro_template': 'filtri/filtro_cittadini.html',
@@ -71,6 +83,7 @@ def lista_cittadini(request):
         'current_sort': request.GET.get('sort', ''),
         'current_order': request.GET.get('order', ''),
         'columns': columns,
+        'colonne_larghezze': colonne_larghezze,
         'etichetta': 'cittadini'
     }
 
