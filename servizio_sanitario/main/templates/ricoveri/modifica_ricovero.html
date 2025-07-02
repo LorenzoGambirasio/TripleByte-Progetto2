@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Modifica Ricovero{% endblock %}
+
+{% block content %}
+
+<style>
+    /* Rimuove le freccine dai campi numerici su tutti i browser */
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    /* Stile aggiuntivo per un look più pulito */
+    body {
+        background-color: #f8f9fa; /* Sfondo pagina leggermente grigio */
+    }
+    .card {
+        border: none; /* Rimuove il bordo dalla card, affidandosi solo all'ombra */
+        border-radius: 0.75rem; /* Bordi più arrotondati */
+    }
+    .card-header {
+        border-radius: 0.75rem 0.75rem 0 0;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+    }
+    .input-group-text {
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i>Modifica Ricovero</h4>
+                </div>
+                <div class="card-body p-4 p-md-5">
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {{ form.stato.as_hidden }}
+                        {{ form.CSSN.as_hidden }}
+                        {{ form.codOspedale.as_hidden }}
+
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong class="d-block mb-2">Errore!</strong>
+                            {% if form.non_field_errors %}
+                                {{ form.non_field_errors }}
+                            {% else %}
+                                <p class="mb-0">Correggi i problemi indicati nei campi qui sotto.</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label class="form-label">Paziente</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" value="{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }} ({{ ricovero.CSSN.CSSN }})" disabled readonly>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Ospedale</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-hospital"></i></span>
+                                <input type="text" class="form-control" value="{{ ricovero.codOspedale.nome }}" disabled readonly>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                {{ form.data_ingresso.label_tag }}
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                    {{ form.data_ingresso }}
+                                </div>
+                                {% if form.data_ingresso.errors %}<div class="invalid-feedback d-block mt-1">{{ form.data_ingresso.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.durata.label_tag }}
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-hourglass-split"></i></span>
+                                    {{ form.durata }}
+                                </div>
+                                {% if form.durata.errors %}<div class="invalid-feedback d-block mt-1">{{ form.durata.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            {{ form.motivo.label_tag }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-card-text"></i></span>
+                                {{ form.motivo }}
+                            </div>
+                            {% if form.motivo.errors %}<div class="invalid-feedback d-block mt-1">{{ form.motivo.errors.0 }}</div>{% endif %}
+                        </div>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                {{ form.costo.label_tag }}
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
+                                    {{ form.costo }}
+                                </div>
+                                {% if form.costo.errors %}<div class="invalid-feedback d-block mt-1">{{ form.costo.errors.0 }}</div>{% endif %}
+                            </div>
+                             <div class="col-md-6">
+                                {{ form.patologie.label_tag }}
+                                {{ form.patologie }}
+                                {% if form.patologie.errors %}<div class="invalid-feedback d-block mt-1">{{ form.patologie.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'ricoveri' %}" class="btn btn-secondary px-4 me-2">Annulla</a>
+                            <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                                <i class="bi bi-check-lg me-2"></i>Salva Modifiche
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        $('#id_patologie').select2({
+            placeholder: "Seleziona patologie",
+            allowClear: true,
+            width: "100%",
+            theme: "bootstrap-5"
+        });
+    });
+</script>
+
+{% endblock %}

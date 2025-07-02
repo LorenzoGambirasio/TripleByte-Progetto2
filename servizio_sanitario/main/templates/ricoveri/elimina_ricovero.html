@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Conferma Eliminazione Ricovero{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: none;
+        border-radius: 0.75rem;
+    }
+    .card-header {
+        border-radius: 0.75rem 0.75rem 0 0;
+    }
+    .summary-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #6c757d; /* Grigio Bootstrap 'secondary' */
+    }
+    .summary-value {
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-lg">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Conferma Eliminazione</h4>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <p class="fs-5 text-center mb-4">Sei sicuro di voler eliminare <strong>definitivamente</strong> questo ricovero? L'azione non può essere annullata.</p>
+
+                    <div class="border rounded p-3 mb-4">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="summary-label">Paziente</div>
+                                <div class="summary-value"><i class="bi bi-person me-2 text-muted"></i>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</div>
+                            </div>
+                            <div class="col-12">
+                                <div class="summary-label">Ospedale</div>
+                                <div class="summary-value"><i class="bi bi-hospital me-2 text-muted"></i>{{ ricovero.codOspedale.nome }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="summary-label">Data Ingresso</div>
+                                <div class="summary-value"><i class="bi bi-calendar-event me-2 text-muted"></i>{{ ricovero.data_ingresso|date:"d/m/Y" }}</div>
+                            </div>
+                             <div class="col-md-6">
+                                <div class="summary-label">Motivo</div>
+                                <div class="summary-value"><i class="bi bi-card-text me-2 text-muted"></i>{{ ricovero.motivo|truncatechars:30 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post" class="d-flex justify-content-end">
+                        {% csrf_token %}
+                        <a href="{% url 'ricoveri' %}" class="btn btn-secondary px-4 me-2 d-flex align-items-center">
+                            <i class="bi bi-x-lg me-2"></i>Annulla
+                        </a>
+                        <button type="submit" class="btn btn-danger px-4 d-flex align-items-center">
+                            <i class="bi bi-trash3-fill me-2"></i>Sì, elimina
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

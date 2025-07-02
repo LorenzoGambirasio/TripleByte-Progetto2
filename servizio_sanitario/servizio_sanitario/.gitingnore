@@ -1,1 +1,17 @@
+# File di cache e compilati di Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ambiente virtuale (non va mai committato)
+.venv/
+venv/
+env/
 .env
+
+# File di sistema specifici (come quello che hai in elenco)
+.DS_Store
+
+# Database di sviluppo locale
+db.sqlite3

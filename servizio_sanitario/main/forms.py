@@ -2,6 +2,7 @@ from django import forms
 from .models import Ricovero, Patologia, Cittadino
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
+from . import models
 
 class RicoveroForm(forms.ModelForm):
     CSSN = forms.ModelChoiceField(
@@ -81,3 +82,29 @@ class NuovoPazienteForm(forms.ModelForm):
         widgets = {
             'data_nascita': forms.DateInput(attrs={'type': 'date'})
         }
+        
+class TrasferimentoForm(forms.ModelForm):
+    class Meta:
+        model = models.Ricovero
+        fields = ['codOspedale']
+        labels = {
+            'codOspedale': 'Nuovo Ospedale di Destinazione'
+        }
+
+    def clean(self):
+        # Chiama prima la logica di pulizia del genitore
+        cleaned_data = super().clean()
+        
+        # Recupera il nuovo ospedale selezionato nel form
+        nuovo_ospedale = cleaned_data.get("codOspedale")
+        
+        # Controlla che l'istanza del ricovero esista (c'è sempre in un form di modifica)
+        if self.instance:
+            # Confronta il nuovo ospedale con quello attuale
+            if nuovo_ospedale == self.instance.codOspedale:
+                # Se sono uguali, solleva un errore di validazione
+                raise ValidationError(
+                    "L'ospedale di destinazione non può essere lo stesso di quello attuale. Seleziona un ospedale diverso."
+                )
+        
+        return cleaned_data

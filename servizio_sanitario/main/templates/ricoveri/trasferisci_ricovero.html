@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Trasferimento Paziente{% endblock %}
+
+{% block content %}
+
+<style>
+    body {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border: none;
+        border-radius: 0.75rem;
+    }
+    .card-header {
+        border-radius: 0.75rem 0.75rem 0 0;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #495057;
+    }
+    .input-group-text {
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+    }
+</style>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0 fw-bold"><i class="bi bi-arrow-left-right me-2"></i>Trasferimento Paziente</h4>
+                </div>
+                <div class="card-body p-4 p-md-5">
+
+                    <p class="fs-5 text-center mb-4">Seleziona il nuovo ospedale di destinazione per il paziente.</p>
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <strong class="d-block mb-2">Errore!</strong>
+                            {% if form.non_field_errors %}
+                                {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            {% else %}
+                                <p class="mb-0">Correggi i problemi indicati nei campi qui sotto.</p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <label class="form-label">Paziente</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" value="{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}" disabled readonly>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Ospedale Attuale</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-hospital"></i></span>
+                                <input type="text" class="form-control" value="{{ ricovero.codOspedale.nome }}" disabled readonly>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-4">
+                            <label for="id_codOspedale" class="form-label fs-5">Nuovo Ospedale di Destinazione</label>
+                            {{ form.codOspedale }}
+                            {% if form.codOspedale.errors %}<div class="invalid-feedback d-block mt-1">{{ form.codOspedale.errors.0 }}</div>{% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-5">
+                            <a href="{% url 'ricoveri' %}" class="btn btn-secondary px-4 me-2">Annulla</a>
+                            <button type="submit" class="btn btn-warning px-4 d-flex align-items-center text-dark">
+                                <i class="bi bi-check-lg me-2"></i>Conferma Trasferimento
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Inizializzazione di Select2 per il menu a tendina degli ospedali
+        $('#id_codOspedale').select2({
+            placeholder: "Seleziona un ospedale di destinazione",
+            allowClear: true,
+            width: "100%",
+            theme: "bootstrap-5"
+        });
+    });
+</script>
+
+{% endblock %}
