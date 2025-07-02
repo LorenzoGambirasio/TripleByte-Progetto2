@@ -143,3 +143,54 @@ td.stato span {
 .table td, .table th {
   padding: 0.25rem !important;
 }
+.pagination {
+  border-radius: .5rem;
+  overflow: hidden;
+}
+
+.pagination .page-item .page-link {
+  border: none;
+  color: #800020; /* Bordò */
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.pagination .page-item.active .page-link {
+  background: #800020; /* Bordò pieno */
+  color: #fff;
+}
+
+.pagination .page-item.disabled .page-link {
+  color: #999;
+  background: #f5f5f5;
+}
+
+.pagination .page-item .page-link:hover {
+  background: #f5e6ea; /* Bordò chiaro */
+  color: #4b0014; /* Bordò più scuro */
+}
+
+.pagination .page-link i {
+  color: #800020;
+}
+
+.pagination .page-item.active .page-link i {
+  color: #fff;
+}
+
+.pagination .page-item.disabled .page-link i {
+  color: #999;
+}
+
+.pagination-sm .page-link {
+  padding: .25rem .5rem;
+  font-size: .85rem;
+}
+
+.pagination .page-item {
+  margin: 0 1px;
+}
+.pagination .page-item .page-link {
+  border: 1px solid #ddd;
+  margin: 0 1px;
+}
