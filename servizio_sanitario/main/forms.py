@@ -1,19 +1,20 @@
 from django import forms
-from .models import Ricovero, Patologia, Cittadino
-from django.core.exceptions import ValidationError
-from datetime import date, timedelta
 from . import models
+from django.core.exceptions import ValidationError
+from datetime import date, timedelta, datetime # Importa datetime qui
+# from django.utils import timezone # Rimuovi questo import se non lo usi più altrove
+
 
 class RicoveroForm(forms.ModelForm):
     CSSN = forms.ModelChoiceField(
-        queryset=Cittadino.objects.all().order_by('cognome', 'nome'),
+        queryset=models.Cittadino.objects.filter(deceduto=0).order_by('cognome', 'nome'),
         label="CSSN",
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_cittadino'}),
         to_field_name="CSSN"
     )
 
     patologie = forms.ModelMultipleChoiceField(
-        queryset=Patologia.objects.all(),
+        queryset=models.Patologia.objects.all(),
         required=False,
         widget=forms.SelectMultiple(attrs={
             'class': 'form-select select2',
@@ -28,7 +29,7 @@ class RicoveroForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
         error_messages={
             'required': 'Inserisci la durata del ricovero.',
-            'min_value': 'La durata deve essere almeno 1 giorno.',
+            'min_value': 'La durata deve be essere almeno 1 giorno.',
             'max_value': 'La durata massima è di 60 giorni.'
         }
     )
@@ -37,7 +38,7 @@ class RicoveroForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         error_messages={
             'required': 'Inserisci la data di ingresso.',
-            'invalid': 'Formato data non valido. Usa gg/mm/aaaa.'
+            'invalid': 'Formato data non valido. Usa AAAA-MM-GGTHH:MM.'
         }
     )
 
@@ -59,7 +60,7 @@ class RicoveroForm(forms.ModelForm):
     )
 
     class Meta:
-        model = Ricovero
+        model = models.Ricovero
         fields = ['CSSN', 'codOspedale', 'data_ingresso', 'durata', 'stato', 'motivo', 'costo']
         widgets = {
             'codOspedale': forms.Select(attrs={'class': 'form-select'}),
@@ -69,6 +70,8 @@ class RicoveroForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.fields['CSSN'].queryset = models.Cittadino.objects.filter(deceduto=0).order_by('cognome', 'nome')
+
         self.fields['CSSN'].label_from_instance = lambda obj: f"{obj.CSSN} - {obj.nome} {obj.cognome}"
 
         self.fields['CSSN'].widget.attrs.update({'id': 'id_cittadino'})
@@ -77,7 +80,7 @@ class RicoveroForm(forms.ModelForm):
 
 class NuovoPazienteForm(forms.ModelForm):
     class Meta:
-        model = Cittadino
+        model = models.Cittadino
         fields = ['CSSN', 'nome', 'cognome', 'data_nascita', 'città', 'via']
         widgets = {
             'data_nascita': forms.DateInput(attrs={'type': 'date'})
@@ -92,19 +95,62 @@ class TrasferimentoForm(forms.ModelForm):
         }
 
     def clean(self):
-        # Chiama prima la logica di pulizia del genitore
         cleaned_data = super().clean()
         
-        # Recupera il nuovo ospedale selezionato nel form
         nuovo_ospedale = cleaned_data.get("codOspedale")
         
-        # Controlla che l'istanza del ricovero esista (c'è sempre in un form di modifica)
         if self.instance:
-            # Confronta il nuovo ospedale con quello attuale
             if nuovo_ospedale == self.instance.codOspedale:
-                # Se sono uguali, solleva un errore di validazione
                 raise ValidationError(
                     "L'ospedale di destinazione non può essere lo stesso di quello attuale. Seleziona un ospedale diverso."
                 )
         
         return cleaned_data
+
+# DecessoForm (basato su Cittadino)
+class DecessoForm(forms.ModelForm):
+    data_ora_decesso = forms.DateTimeField(
+        label="Data e Ora del Decesso",
+        input_formats=['%Y-%m-%dT%H:%M'], 
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
+        error_messages={
+            'required': 'Inserisci la data e ora del decesso.',
+            'invalid': 'Formato data e ora non valido. Assicurati che sia completo (es.বারে-MM-DDTHH:MM).'
+        }
+    )
+    causa_decesso = forms.CharField(
+        label="Causa del Decesso",
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        required=False, 
+        max_length=500
+    )
+
+    class Meta:
+        model = models.Cittadino
+        fields = ['data_ora_decesso', 'causa_decesso']
+
+    def clean_data_ora_decesso(self):
+        data_ora_input = self.cleaned_data['data_ora_decesso']
+        
+        if not data_ora_input:
+            return data_ora_input
+        
+        # Ottieni l'ora attuale e tronca i secondi e i microsecondi
+        now_truncated = datetime.now().replace(second=0, microsecond=0)
+        
+        # Confronteremo l'input con l'ora attuale troncata
+        if data_ora_input > now_truncated:
+            raise ValidationError("La data e ora del decesso non può essere nel futuro.")
+        
+        return data_ora_input
+
+
+# PasswordForm
+class PasswordForm(forms.Form):
+    password = forms.CharField(
+        label="Password",
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        error_messages={
+            'required': 'Inserisci la password.'
+        }
+    )

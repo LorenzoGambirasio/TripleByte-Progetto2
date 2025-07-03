@@ -1,7 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from . import models
 from django.core.paginator import Paginator
-from .forms import RicoveroForm, NuovoPazienteForm, TrasferimentoForm
+# MODIFICA QUESTA RIGA PER INCLUDERE DecessoForm e PasswordForm
+from .forms import RicoveroForm, NuovoPazienteForm, TrasferimentoForm, DecessoForm, PasswordForm 
 from django.db import transaction
 from django.http import JsonResponse
 from datetime import date, timedelta # Importa timedelta
@@ -10,6 +11,8 @@ from django.db.models import Count, Max, Q
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
 
+# Password per i modali protetti
+ADMIN_PASSWORD = 'admin' # Impostiamo una password fissa
 
 def dashboard(request):
     return render(request, 'home.html')
@@ -325,7 +328,26 @@ def lista_ricoveri(request):
             ricovero = form.save(commit=False)
             ricovero.codRicovero = genera_nuovo_codice_ricovero()
             ricovero.save()
-            form.save_m2m()
+            
+            # --- GESTIONE MANUALE DELLE PATOLOGIE (TABELLA THROUGH) ---
+            # Questo è il punto cruciale. Assicurati che l'istanza di ricovero sia salvata prima
+            # di tentare di creare le istanze di PatologiaRicovero.
+            patologie_selezionate_cods = form.cleaned_data.get('patologie') # Sono i codici delle patologie
+            
+            # Prima, elimina tutte le relazioni esistenti per questo ricovero
+            # (utile in caso di modifica, ma anche sicuro per l'aggiunta)
+            models.PatologiaRicovero.objects.filter(codRicovero=ricovero).delete()
+            
+            # Poi, crea nuove istanze di PatologiaRicovero per ogni patologia selezionata
+            if patologie_selezionate_cods:
+                for patologia_obj in patologie_selezionate_cods:
+                    models.PatologiaRicovero.objects.create(
+                        codRicovero=ricovero,
+                        codOspedale=ricovero.codOspedale, # Assicurati di usare l'Ospedale del ricovero
+                        codPatologia=patologia_obj # L'oggetto Patologia
+                    )
+            # --- FINE GESTIONE MANUALE DELLE PATOLOGIE ---
+
             return JsonResponse({"success": True})
         else:
             errors = [error for field, field_errors in form.errors.items() for error in field_errors]
@@ -333,6 +355,7 @@ def lista_ricoveri(request):
 
     # Logica GET
     form = RicoveroForm()
+    # Pre-carica le patologie associate per la visualizzazione nella lista e il tooltip
     ricoveri_filtrati = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie')
     
     # --- LOGICA DEI FILTRI (Adattata ai tuoi nuovi nomi e all'uso di filtri_attivi) ---
@@ -458,33 +481,31 @@ def trasferisci_ricovero(request, pk):
         form = TrasferimentoForm(request.POST, instance=ricovero_originale)
         if form.is_valid():
             nuovo_ospedale = form.cleaned_data['codOspedale']
-            patologie_da_copiare = list(ricovero_originale.patologie.all())
-
-            # --- LOGICA DI CLONAZIONE E AGGIORNAMENTO CORRETTA ---
-
-            # 1. Duplica l'oggetto in memoria prima di modificarlo
+            
+            # --- CLONAZIONE DEL RICOVERO PER IL TRASFERIMENTO ---
             ricovero_nuovo = ricovero_originale
-            ricovero_nuovo.pk = None
-            ricovero_nuovo._state.adding = True
+            ricovero_nuovo.pk = None # Stacca l'istanza dal database
+            ricovero_nuovo._state.adding = True # Indica che è un nuovo oggetto
 
-            # 2. Assegna i nuovi valori al clone
             ricovero_nuovo.codRicovero = genera_nuovo_codice_ricovero()
             ricovero_nuovo.codOspedale = nuovo_ospedale
-            ricovero_nuovo.data_ingresso = timezone.now().date()
-            ricovero_nuovo.stato = 0
+            ricovero_nuovo.data_ingresso = timezone.now().date() # La data di ingresso per il nuovo ricovero è oggi
+            ricovero_nuovo.stato = 0 # Il nuovo ricovero è "Attivo"
+            ricovero_nuovo.save() # Salva il nuovo ricovero
 
-            # 3. Salva il nuovo ricovero
-            ricovero_nuovo.save()
-
-            # 4. Aggiorna lo stato del ricovero originale nel database
+            # Aggiorna lo stato del ricovero originale a "Trasferito"
             models.Ricovero.objects.filter(codRicovero=pk).update(stato=1)
 
-            # 5. Associa le patologie al nuovo ricovero
-            for patologia in patologie_da_copiare:
+            # Trasferisci le patologie al nuovo ricovero manualmente, dato il modello through
+            # Prima, recupera le patologie del ricovero originale (prima che venga aggiornato lo stato)
+            patologie_da_copiare = ricovero_originale.patologie.all() # Queryset di oggetti Patologia
+            
+            # Associa le patologie al nuovo ricovero tramite PatologiaRicovero
+            for patologia_obj in patologie_da_copiare:
                 models.PatologiaRicovero.objects.create(
                     codRicovero=ricovero_nuovo,
-                    codOspedale=ricovero_nuovo.codOspedale,
-                    codPatologia=patologia
+                    codOspedale=ricovero_nuovo.codOspedale, # Usa l'ospedale del nuovo ricovero
+                    codPatologia=patologia_obj # L'oggetto Patologia
                 )
             
             return JsonResponse({'success': True})
@@ -515,7 +536,7 @@ def modifica_ricovero(request, pk):
     if form.is_valid():
         ricovero_salvato = form.save(commit=False)
         
-        # --- NUOVA LOGICA PER AGGIORNARE LO STATO IN BASE ALLA DURATA ---
+        # --- LOGICA PER AGGIORNARE LO STATO IN BASE ALLA DURATA ---
         # Applica questa logica solo se lo stato attuale è Attivo (0) o Dimesso (2)
         if ricovero_salvato.stato in [0, 2]:
             today = timezone.now().date()
@@ -536,7 +557,22 @@ def modifica_ricovero(request, pk):
         # --- FINE NUOVA LOGICA ---
 
         ricovero_salvato.save()
-        form.save_m2m() # Salva le patologie, che sono un campo ManyToMany
+        
+        # GESTIONE MANUALE DELLE PATOLOGIE (TABELLA THROUGH) PER LA MODIFICA
+        patologie_selezionate_cods = form.cleaned_data.get('patologie') # Sono gli oggetti Patologia
+        
+        # Elimina tutte le relazioni esistenti per questo ricovero
+        models.PatologiaRicovero.objects.filter(codRicovero=ricovero_salvato).delete()
+        
+        # Poi, crea nuove istanze di PatologiaRicovero per ogni patologia selezionata
+        if patologie_selezionate_cods:
+            for patologia_obj in patologie_selezionate_cods:
+                models.PatologiaRicovero.objects.create(
+                    codRicovero=ricovero_salvato,
+                    codOspedale=ricovero_salvato.codOspedale, # Usa l'Ospedale del ricovero
+                    codPatologia=patologia_obj # L'oggetto Patologia
+                )
+        # FINE GESTIONE MANUALE DELLE PATOLOGIE
 
         return JsonResponse({"success": True})
     else:
@@ -550,27 +586,91 @@ def modifica_ricovero(request, pk):
 def elimina_ricovero(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
     try:
+        # Quando elimini un ricovero, devi eliminare prima le relazioni nella tabella "through"
+        # dato che gestisci PatologiaRicovero manualmente.
+        models.PatologiaRicovero.objects.filter(codRicovero=ricovero).delete()
         ricovero.delete()
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"success": False, "errors": [str(e)]}, status=400)
 
-def dichiara_decesso(request, pk):
-    ricovero = get_object_or_404(models.Ricovero, pk=pk)
+# FUNZIONI PER IL DECESSO (DA IMPLEMENTARE CORRETTAMENTE)
+
+@require_http_methods(["POST"]) # Questa vista accetta POST per la verifica password
+def verifica_password(request):
+    form = PasswordForm(request.POST)
+    if form.is_valid():
+        password_inserita = form.cleaned_data['password']
+        if password_inserita == ADMIN_PASSWORD:
+            return JsonResponse({"success": True})
+        else:
+            return JsonResponse({"success": False, "errors": ["Password non corretta."]}, status=400)
+    else:
+        errors = {field: form.errors[field] for field in form.errors if field != '__all__'}
+        non_field_errors = form.non_field_errors()
+        return JsonResponse({"success": False, "errors": errors, "non_field_errors": list(non_field_errors)}, status=400)
+
+
+@require_http_methods(["POST"]) # Accetta solo POST dal modale
+@transaction.atomic
+def dichiara_decesso(request, pk): # pk qui è il codRicovero che ha triggerato
+    ricovero = get_object_or_404(models.Ricovero, codRicovero=pk)
+    cittadino = ricovero.CSSN # Ottieni il cittadino associato al ricovero
+    
+    # Se il paziente è già deceduto, non permettere un nuovo decesso tramite questa funzione
+    if cittadino.deceduto == 1:
+        return JsonResponse({"success": False, "errors": ["Questo paziente è già stato dichiarato deceduto."]}, status=400)
+
+    form = DecessoForm(request.POST, instance=cittadino) # DecessoForm agisce sull'istanza del Cittadino
+    
+    if form.is_valid():
+        cittadino_salvato = form.save(commit=False) # Salva i campi del form (dataoradecesso, causadecesso) nel cittadino
+        
+        # Aggiorna lo stato del cittadino a "Deceduto"
+        cittadino_salvato.deceduto = 1
+        cittadino_salvato.save() # Salva le modifiche al cittadino
+        
+        # Aggiorna TUTTI i ricoveri attivi, trasferiti o dimessi di questo cittadino a stato 3 (Deceduto)
+        # Questo garantisce che tutti i ricoveri del paziente mostrino lo stato corretto di decesso.
+        models.Ricovero.objects.filter(CSSN=cittadino, stato__in=[0, 1, 2]).update(stato=3)
+
+        return JsonResponse({"success": True})
+    else:
+        # Restituisci gli errori di validazione del form
+        errors = {field: form.errors[field] for field in form.errors if field != '__all__'}
+        non_field_errors = form.non_field_errors()
+        return JsonResponse({"success": False, "errors": errors, "non_field_errors": list(non_field_errors)}, status=400)
+
+@require_http_methods(["POST"])
+@transaction.atomic
+def modifica_causa_decesso(request, pk): # pk qui è il codRicovero, ma ci serve il CSSN del paziente
+    ricovero = get_object_or_404(models.Ricovero, codRicovero=pk)
     cittadino = ricovero.CSSN
-    with transaction.atomic():
-        ricovero.stato = 3
-        ricovero.save()
-        cittadino.deceduto = 1
-        cittadino.save()
-    return redirect('lista_ricoveri')
+
+    # Assicurati che il paziente sia effettivamente deceduto per poter modificare la causa
+    if cittadino.deceduto != 1:
+        return JsonResponse({"success": False, "errors": ["Il paziente non è dichiarato deceduto."]}, status=400)
+
+    form = DecessoForm(request.POST, instance=cittadino) # Il form agisce sull'istanza del Cittadino
+    
+    if form.is_valid():
+        # Salva solo la causa del decesso e la data/ora se sono state modificate
+        form.save() # Questo salverà i campi dataoradecesso e causadecesso sul cittadino
+        return JsonResponse({"success": True})
+    else:
+        errors = {field: form.errors[field] for field in form.errors if field != '__all__'}
+        non_field_errors = form.non_field_errors()
+        return JsonResponse({"success": False, "errors": errors, "non_field_errors": list(non_field_errors)}, status=400)
 
 def verifica_paziente(request):
     if request.method == "POST":
         cssn = request.POST.get('cssn', '').strip().upper()
         try:
             cittadino = models.Cittadino.objects.get(CSSN=cssn)
+            if cittadino.deceduto == 1:
+                return JsonResponse({'trovato': False, 'message': 'Paziente già dichiarato deceduto.'})
+            
             return JsonResponse({'trovato': True, 'nome': f"{cittadino.nome} {cittadino.cognome}"})
         except models.Cittadino.DoesNotExist:
-            return JsonResponse({'trovato': False})
+            return JsonResponse({'trovato': False, 'message': 'Paziente non trovato.'})
     return JsonResponse({'error': 'Metodo non consentito'}, status=400)

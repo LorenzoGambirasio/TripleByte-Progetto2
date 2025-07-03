@@ -76,7 +76,7 @@
                 <h5 class="modal-title fw-bold text-dark fs-5" id="trasferisciModalLabel"><i class="bi bi-arrow-left-right me-2"></i> Trasferisci Paziente</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
-            <div class="modal-body p-4 py-4">
+            <div class="modal-body px-4 py-4">
                 <form id="formTrasferisci" method="POST" novalidate>
                     {% csrf_token %}
                     <input type="hidden" id="trasferisciRicoveroPk">
@@ -223,6 +223,150 @@
     </div>
 </div>
 
+{# Modali per il decesso (aggiunti per la funzionalità di decesso) #}
+
+{# Modale per la password #}
+<div class="modal fade" id="decessoPasswordModal" tabindex="-1" aria-labelledby="decessoPasswordModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="decessoPasswordModalLabel"><i class="bi bi-lock-fill me-2"></i>Verifica Password</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <p class="fs-5 text-center mb-4 text-dark">Inserisci la password per procedere.</p>
+                
+                <form id="formVerificaPassword" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="passwordAction" name="action"> {# Campo nascosto per distinguere l'azione: 'dichiara' o 'modifica' #}
+                    <input type="hidden" id="passwordRicoveroPk" name="ricovero_pk"> {# PK del ricovero #}
+
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label fw-semibold">Password:</label>
+                        <input type="password" id="id_password" name="password" class="form-control" required>
+                        <div class="invalid-feedback d-block mt-1" id="passwordError"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-dark px-4 d-flex align-items-center">
+                            <i class="bi bi-check-lg me-2"></i>Verifica
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Modale per Dichiarare il Decesso #}
+<div class="modal fade" id="dichiaraDecessoModal" tabindex="-1" aria-labelledby="dichiaraDecessoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="dichiaraDecessoModalLabel"><i class="bi bi-x-circle me-2"></i>Dichiara Decesso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <p class="fs-5 text-center mb-4 text-dark">Confermi il decesso del paziente <strong id="dichiaraDecessoNomePaziente"></strong>?</p>
+                
+                <form id="formDichiaraDecesso" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="dichiaraDecessoRicoveroPk" name="ricovero_pk">
+                    
+                    <div class="mb-3">
+                        <label for="id_data_ora_decesso_dichiara" class="form-label fw-semibold">Data e Ora del Decesso:</label>
+                        <input type="datetime-local" id="id_data_ora_decesso_dichiara" name="data_ora_decesso" class="form-control" required>
+                        <div class="invalid-feedback d-block mt-1" id="dichiaraDecessoDataOraError"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="id_causa_decesso_dichiara" class="form-label fw-semibold">Causa del Decesso (opzionale):</label>
+                        <textarea id="id_causa_decesso_dichiara" name="causa_decesso" class="form-control" rows="3" maxlength="500"></textarea>
+                        <div class="invalid-feedback d-block mt-1" id="dichiaraDecessoCausaError"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-dark px-4 d-flex align-items-center">
+                            <i class="bi bi-check-lg me-2"></i>Conferma Decesso
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Modale di riepilogo del Decesso #}
+<div class="modal fade" id="riepilogoDecessoModal" tabindex="-1" aria-labelledby="riepilogoDecessoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="riepilogoDecessoModalLabel"><i class="bi bi-info-circle-fill me-2"></i>Dettagli Decesso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <p class="fs-5 mb-3 text-dark">Informazioni sul decesso del paziente <strong id="riepilogoDecessoNomePaziente"></strong>:</p>
+                
+                <div class="mb-2">
+                    <strong class="text-secondary">Data e Ora Decesso:</strong> <span class="fw-bold" id="riepilogoDecessoDataOra"></span>
+                </div>
+                <div class="mb-4">
+                    <strong class="text-secondary">Causa Decesso:</strong> <span class="fw-bold" id="riepilogoDecessoCausa"></span>
+                </div>
+                
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="button" id="btnModificaCausaDecesso" class="btn btn-primary px-4 me-2 d-flex align-items-center">
+                        <i class="bi bi-pencil-square me-2"></i>Modifica Causa
+                    </button>
+                    <button type="button" id="btnEliminaDecesso" class="btn btn-danger px-4 d-2 d-flex align-items-center">
+                        <i class="bi bi-trash3 me-2"></i>Elimina
+                    </button>
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Modale per Modificare la Causa del Decesso #}
+<div class="modal fade" id="modificaCausaDecessoModal" tabindex="-1" aria-labelledby="modificaCausaDecessoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="modificaCausaDecessoModalLabel"><i class="bi bi-pencil-square me-2"></i>Modifica Causa Decesso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <form id="formModificaCausaDecesso" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="modificaCausaRicoveroPk" name="ricovero_pk">
+                    
+                    <div class="mb-3">
+                        <label for="id_data_ora_decesso_modifica" class="form-label fw-semibold">Data e Ora del Decesso:</label>
+                        <input type="datetime-local" id="id_data_ora_decesso_modifica" name="data_ora_decesso" class="form-control" readonly disabled>
+                        <div class="invalid-feedback d-block mt-1" id="modificaCausaDataOraError"></div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="id_causa_decesso_modifica" class="form-label fw-semibold">Causa del Decesso:</label>
+                        <textarea id="id_causa_decesso_modifica" name="causa_decesso" class="form-control" rows="3" maxlength="500" required></textarea>
+                        <div class="invalid-feedback d-block mt-1" id="modificaCausaCausaError"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                            <i class="bi bi-check-lg me-2"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const modaleAggiungi = new bootstrap.Modal(document.getElementById('modaleAggiungi'));
@@ -230,6 +374,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const trasferisciModal = new bootstrap.Modal(document.getElementById('trasferisciModal'));
     const eliminaRicoveroModal = new bootstrap.Modal(document.getElementById('eliminaRicoveroModal'));
     const modificaRicoveroModal = new bootstrap.Modal(document.getElementById('modificaRicoveroModal'));
+    const decessoPasswordModal = new bootstrap.Modal(document.getElementById('decessoPasswordModal'));
+    const dichiaraDecessoModal = new bootstrap.Modal(document.getElementById('dichiaraDecessoModal'));
+    const riepilogoDecessoModal = new bootstrap.Modal(document.getElementById('riepilogoDecessoModal'));
+    const modificaCausaDecessoModal = new bootstrap.Modal(document.getElementById('modificaCausaDecessoModal'));
     
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
@@ -338,46 +486,63 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     let activeRow; // Dichiarata all'inizio dello scope di DOMContentLoaded
+    let currentAction = ''; // Variabile per tracciare l'azione del modale password ('dichiara' o 'modificaCausa')
 
     $(document).on('click', '.clickable-row', function() {
         activeRow = $(this); // Assegna activeRow qui per essere sicuro che sia aggiornata
         
-        const dettagli = activeRow.data('dettagli-json');
-        const dettagliContenuto = $('#dettagliContenuto');
-        dettagliContenuto.empty();
-        $.each(dettagli, function(key, value) {
-            dettagliContenuto.append(`<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${value}</span></div>`);
-        });
-        
-        const patologie = activeRow.data('patologie-json');
-        const patologieContainer = $('#dettagliPatologie');
-        patologieContainer.empty();
-        if (patologie.length > 0) {
-            patologie.forEach(p => patologieContainer.append(`<span class="badge bg-info text-dark rounded-pill me-1 mb-1">${p.nome}</span>`));
+        const statoRicovero = activeRow.data('stato'); // Stato del ricovero (0,1,2,3)
+        const pazienteDeceduto = activeRow.data('paziente-deceduto'); // Se il CITTADINO è deceduto (0 o 1)
+        const pazienteNome = activeRow.data('paziente-nome');
+
+        // Se il paziente è deceduto (paziente-deceduto === 1), mostra il modale di riepilogo decesso
+        if (pazienteDeceduto === 1) {
+            const decessoData = activeRow.data('decesso-data');
+            const decessoCausa = activeRow.data('decesso-causa');
+            
+            $('#riepilogoDecessoNomePaziente').text(pazienteNome);
+            $('#riepilogoDecessoDataOra').text(decessoData || 'Non specificata');
+            $('#riepilogoDecessoCausa').text(decessoCausa || 'Non specificata');
+            
+            riepilogoDecessoModal.show();
         } else {
-            patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
+            // Altrimenti (se il paziente è vivo), mostra il modale delle azioni sul ricovero
+            const dettagli = activeRow.data('dettagli-json');
+            const dettagliContenuto = $('#dettagliContenuto');
+            dettagliContenuto.empty();
+            $.each(dettagli, function(key, value) {
+                dettagliContenuto.append(`<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${value}</span></div>`);
+            });
+            
+            const patologie = activeRow.data('patologie-json');
+            const patologieContainer = $('#dettagliPatologie');
+            patologieContainer.empty();
+            if (patologie.length > 0) {
+                patologie.forEach(p => patologieContainer.append(`<span class="badge bg-info text-dark rounded-pill me-1 mb-1">${p.nome}</span>`));
+            } else {
+                patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
+            }
+            
+            const msgBox = $('#dettagliMsg').hide();
+            
+            // Imposta sempre href="#" e disabilita/abilita con JS
+            $('#btnModifica').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto');
+            $('#btnElimina').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto'); 
+            $('#btnTrasferisci').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto');
+            $('#btnDeceduto').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto'); 
+            
+            if (statoRicovero === 0) {
+                $('#btnTrasferisci').removeClass('disabled').css('pointer-events', 'auto');
+                $('#btnDeceduto').removeClass('disabled').css('pointer-events', 'auto'); 
+                msgBox.hide();
+            } else {
+                $('#btnTrasferisci').addClass('disabled').css('pointer-events', 'none');
+                $('#btnDeceduto').addClass('disabled').css('pointer-events', 'none'); 
+                msgBox.text("Le azioni 'Trasferisci' e 'Segna come deceduto' sono disponibili solo per i ricoveri con stato 'Attivo'.").show();
+            }
+            
+            dettagliModal.show();
         }
-        
-        const stato = activeRow.data('stato');
-        const msgBox = $('#dettagliMsg').hide();
-        
-        // Assicurati che questi pulsanti non abbiano un href che possa causare navigazione indesiderata
-        $('#btnModifica').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto');
-        $('#btnElimina').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto'); // Assicurati che non sia disabilitato
-        $('#btnTrasferisci').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto');
-        $('#btnDeceduto').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto'); // Mantenuto per coerenza, sebbene la vista sia solo redirect
-        
-        if (stato === 0) {
-            $('#btnTrasferisci').removeClass('disabled').css('pointer-events', 'auto');
-            $('#btnDeceduto').removeClass('disabled').css('pointer-events', 'auto').attr('href', activeRow.data('url-deceduto')); // L'href originale per la vista redirect
-            msgBox.hide();
-        } else {
-            $('#btnTrasferisci').addClass('disabled').css('pointer-events', 'none');
-            $('#btnDeceduto').addClass('disabled').css('pointer-events', 'none').attr('href', '#'); // Rimuovi l'href se disabilitato
-            msgBox.text("Le azioni 'Trasferisci' e 'Segna come deceduto' sono disponibili solo per i ricoveri con stato 'Attivo'.").show();
-        }
-        
-        dettagliModal.show();
     });
 
     // LISTENER PER IL PULSANTE "ELIMINA" NEL MODALE DETTAGLI
@@ -401,7 +566,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // LISTENER PER IL PULSANTE "TRASFERISCI" NEL MODALE DETTAGLI
-    // Usiamo .off().on() per essere sicuri che un solo listener sia attivo per click su questo bottone
     $('#btnTrasferisci').off('click').on('click', function(e) {
         e.preventDefault();
         if ($(this).hasClass('disabled')) return;
@@ -421,6 +585,192 @@ document.addEventListener("DOMContentLoaded", function () {
         
         dettagliModal.hide();
         trasferisciModal.show();
+    });
+
+    // LISTENER PER IL PULSANTE "DECEDUTO" NEL MODALE DETTAGLI
+    $('#btnDeceduto').off('click').on('click', function(e) {
+        e.preventDefault();
+        if ($(this).hasClass('disabled')) return;
+
+        // Pulisci il campo password e il messaggio di errore prima di mostrare
+        $('#id_password').val('');
+        $('#passwordError').text('');
+        
+        $('#passwordAction').val('dichiara'); // Imposta l'azione per il modale password
+        $('#passwordRicoveroPk').val(activeRow.data('pk')); // Passa il PK del ricovero
+
+        dettagliModal.hide();
+        decessoPasswordModal.show();
+    });
+
+    // LISTENER PER IL PULSANTE "MODIFICA CAUSA" NEL MODALE DI RIEPILOGO DECESSO
+    $('#btnModificaCausaDecesso').off('click').on('click', function(e) {
+        e.preventDefault();
+
+        // Pulisci il campo password e il messaggio di errore prima di mostrare
+        $('#id_password').val('');
+        $('#passwordError').text('');
+
+        $('#passwordAction').val('modificaCausa'); // Imposta l'azione per il modale password
+        $('#passwordRicoveroPk').val(activeRow.data('pk')); // Passa il PK del ricovero
+
+        riepilogoDecessoModal.hide();
+        decessoPasswordModal.show();
+    });
+
+    // GESTIONE SUBMIT DEL FORM DI VERIFICA PASSWORD
+    $('#formVerificaPassword').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        const password = $('#id_password').val();
+        const action = $('#passwordAction').val();
+        const ricoveroPk = $('#passwordRicoveroPk').val();
+
+        $('#passwordError').text(''); // Pulisci l'errore precedente
+
+        $.ajax({
+            type: "POST",
+            url: "/verifica_password/", // L'URL per la verifica password
+            data: {
+                csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val(),
+                password: password
+            },
+            success: function(data) {
+                if (data.success) {
+                    decessoPasswordModal.hide();
+                    if (action === 'dichiara') {
+                        // Pre-popola i campi del modale Dichara Decesso
+                        const pazienteNome = activeRow.data('paziente-nome');
+                        $('#dichiaraDecessoNomePaziente').text(pazienteNome);
+                        $('#dichiaraDecessoRicoveroPk').val(ricoveroPk);
+                        
+                        // Imposta la data/ora attuale come default, formattata per input datetime-local
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                        const day = now.getDate().toString().padStart(2, '0');
+                        const hours = now.getHours().toString().padStart(2, '0');
+                        const minutes = now.getMinutes().toString().padStart(2, '0');
+                        $('#id_data_ora_decesso_dichiara').val(`${year}-${month}-${day}T${hours}:${minutes}`);
+                        
+                        $('#id_causa_decesso_dichiara').val(''); // Pulisci la causa
+                        $('#dichiaraDecessoDataOraError').text(''); // Pulisci errori
+                        $('#dichiaraDecessoCausaError').text(''); // Pulisci errori
+                        dichiaraDecessoModal.show();
+                    } else if (action === 'modificaCausa') {
+                        // Pre-popola i campi del modale Modifica Causa Decesso
+                        const decessoData = activeRow.data('decesso-data'); // Dal paziente deceduto
+                        const decessoCausa = activeRow.data('decesso-causa'); // Dal paziente deceduto
+                        
+                        $('#modificaCausaRicoveroPk').val(ricoveroPk);
+                        // Converti dd/mm/yyyy HH:MM in AAAA-MM-GGTHH:MM per input datetime-local
+                        if (decessoData) {
+                            const [datePart, timePart] = decessoData.split(' ');
+                            const [day, month, year] = datePart.split('/');
+                            $('#id_data_ora_decesso_modifica').val(`${year}-${month}-${day}T${timePart}`);
+                        } else {
+                            $('#id_data_ora_decesso_modifica').val('');
+                        }
+                        
+                        $('#id_causa_decesso_modifica').val(decessoCausa || '');
+                        $('#modificaCausaDataOraError').text(''); // Pulisci errori
+                        $('#modificaCausaCausaError').text(''); // Pulisci errori
+                        modificaCausaDecessoModal.show();
+                    }
+                } else {
+                    $('#passwordError').text(data.errors[0] || 'Password non corretta.').show();
+                }
+            },
+            error: function(xhr) {
+                $('#passwordError').text('Problema di comunicazione con il server.').show();
+            }
+        });
+    });
+
+    // GESTIONE SUBMIT DEL FORM "DICHIARA DECESSO"
+    $('#formDichiaraDecesso').on('submit', function(e) {
+        e.preventDefault();
+        const pk = $('#dichiaraDecessoRicoveroPk').val();
+        const formData = $(this).serialize();
+
+        $('#dichiaraDecessoDataOraError').text('');
+        $('#dichiaraDecessoCausaError').text('');
+
+        $.ajax({
+            type: "POST",
+            url: `/dichiara_decesso/${pk}/`, // Invia il PK del ricovero
+            data: formData,
+            success: function(data) {
+                if (data.success) {
+                    dichiaraDecessoModal.hide();
+                    Swal.fire({ icon: 'success', title: 'Decesso dichiarato!', timer: 2500, showConfirmButton: false }).then(() => window.location.reload());
+                } else {
+                    if (data.errors) {
+                        for (const fieldName in data.errors) {
+                            if (data.errors.hasOwnProperty(fieldName)) {
+                                const errorMessages = data.errors[fieldName];
+                                const errorDiv = $(`#dichiaraDecesso${capitalizeFirstLetter(fieldName)}Error`);
+                                if (errorDiv.length) {
+                                    errorDiv.text(errorMessages.join(', '));
+                                } else {
+                                    Swal.fire({ icon: 'error', title: 'Errore', html: errorMessages.join('<br>') });
+                                }
+                            }
+                        }
+                    } else if (data.non_field_errors && data.non_field_errors.length > 0) {
+                         Swal.fire({ icon: 'error', title: 'Errore di Validazione', html: data.non_field_errors.join('<br>') });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Errore', text: 'Dati inseriti non validi. Controlla i campi.' });
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                Swal.fire("Errore", "Problema di comunicazione con il server.", "error");
+            }
+        });
+    });
+
+    // GESTIONE SUBMIT DEL FORM "MODIFICA CAUSA DECESSO"
+    $('#formModificaCausaDecesso').on('submit', function(e) {
+        e.preventDefault();
+        const pk = $('#modificaCausaRicoveroPk').val(); // PK del ricovero per identificare il paziente
+        const formData = $(this).serialize();
+
+        $('#modificaCausaDataOraError').text(''); // Pulisci errori
+        $('#modificaCausaCausaError').text(''); // Pulisci errori
+
+        $.ajax({
+            type: "POST",
+            url: `/modifica_causa_decesso/${pk}/`, // La tua URL per modificare la causa
+            data: formData,
+            success: function(data) {
+                if (data.success) {
+                    modificaCausaDecessoModal.hide();
+                    Swal.fire({ icon: 'success', title: 'Causa modificata!', timer: 2500, showConfirmButton: false }).then(() => window.location.reload());
+                } else {
+                    if (data.errors) {
+                        for (const fieldName in data.errors) {
+                            if (data.errors.hasOwnProperty(fieldName)) {
+                                const errorMessages = data.errors[fieldName];
+                                const errorDiv = $(`#modificaCausa${capitalizeFirstLetter(fieldName)}Error`);
+                                if (errorDiv.length) {
+                                    errorDiv.text(errorMessages.join(', '));
+                                } else {
+                                    Swal.fire({ icon: 'error', title: 'Errore', html: errorMessages.join('<br>') });
+                                }
+                            }
+                        }
+                    } else if (data.non_field_errors && data.non_field_errors.length > 0) {
+                         Swal.fire({ icon: 'error', title: 'Errore di Validazione', html: data.non_field_errors.join('<br>') });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Errore', text: 'Si è verificato un errore sconosciuto.' });
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                Swal.fire("Errore", "Problema di comunicazione con il server.", "error");
+            }
+        });
     });
 
     // GESTIONE DEL PULSANTE "MODIFICA" NEL MODALE DETTAGLI
