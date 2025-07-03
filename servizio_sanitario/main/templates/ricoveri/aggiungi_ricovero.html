@@ -1,11 +1,10 @@
-<!-- Messaggi di errore -->
 {% if form.errors %}
 <div class="alert alert-danger alert-dismissible fade show" role="alert">
-  <strong>Errore!</strong> Correggi i seguenti problemi:
+  <strong class="d-block mb-2">Errore!</strong>
   <ul class="mb-0">
     {% for field, errors in form.errors.items %}
       {% for error in errors %}
-        <li>{{ error }}</li>
+        <li>{{ field|capfirst }}: {{ error }}</li> {# Mostra il nome del campo #}
       {% endfor %}
     {% endfor %}
   </ul>
@@ -13,27 +12,42 @@
 </div>
 {% endif %}
 
-<!-- Selezione paziente -->
 <div class="mb-3">
-  <label for="id_cittadino" class="form-label">Paziente:</label>
-  {{ form.CSSN }}
+  <label for="id_cittadino" class="form-label fw-semibold">Paziente:</label>
+  {{ form.CSSN }} {# Questo campo è un Select2 #}
 </div>
 
-<!-- Campi ricovero -->
 <div class="row g-3 mb-3">
-  <div class="col-md-6">{{ form.durata.label_tag }} {{ form.durata }}</div>
-  <div class="col-md-6">{{ form.data_ingresso.label_tag }} {{ form.data_ingresso }}</div>
-  <div class="col-md-6">{{ form.codOspedale.label_tag }} {{ form.codOspedale }}</div>
-  <div class="col-md-6">{{ form.costo.label_tag }} {{ form.costo }}</div>
+  <div class="col-md-6">
+    <label for="id_durata" class="form-label fw-semibold">{{ form.durata.label }}:</label>
+    {# Aggiunto placeholder #}
+    <input type="number" id="id_durata" name="{{ form.durata.name }}" value="{{ form.durata.value|default_if_none:'' }}" class="form-control" placeholder="Es: 15"> 
+  </div>
+  <div class="col-md-6">
+    <label for="id_data_ingresso" class="form-label fw-semibold">{{ form.data_ingresso.label }}:</label>
+    {# Ho aggiunto l'attributo placeholder qui, anche se non sempre visibile per i campi date a seconda del browser #}
+    <input type="date" id="id_data_ingresso" name="{{ form.data_ingresso.name }}" value="{{ form.data_ingresso.value|date:'Y-m-d'|default_if_none:'' }}" class="form-control" placeholder="gg/mm/aaaa">
+  </div>
+  <div class="col-md-6">
+    <label for="id_codOspedale" class="form-label fw-semibold">{{ form.codOspedale.label }}:</label>
+    {{ form.codOspedale }} {# Select2 #}
+  </div>
+  <div class="col-md-6">
+    <label for="id_costo" class="form-label fw-semibold">{{ form.costo.label }}:</label>
+    {# Aggiunto placeholder #}
+    <input type="text" id="id_costo" name="{{ form.costo.name }}" value="{{ form.costo.value|default_if_none:'' }}" class="form-control" placeholder="Es: 1234.50">
+  </div>
 </div>
 
-<!-- Motivo -->
-<div class="mb-3">{{ form.motivo.label_tag }} {{ form.motivo }}</div>
-
-<!-- Patologie -->
 <div class="mb-3">
-  {{ form.patologie.label_tag }} {{ form.patologie }}
+  <label for="id_motivo" class="form-label fw-semibold">{{ form.motivo.label }}:</label>
+  {# Aggiunto placeholder #}
+  <input type="text" id="id_motivo" name="{{ form.motivo.name }}" value="{{ form.motivo.value|default_if_none:'' }}" class="form-control" placeholder="Es: Influenza stagionale">
 </div>
 
-<!-- Campo nascosto per stato -->
+<div class="mb-3">
+  <label for="id_patologie" class="form-label fw-semibold">{{ form.patologie.label }}:</label>
+  {{ form.patologie }} {# Select2 Multiple #}
+</div>
+
 {{ form.stato.as_hidden }}

@@ -1,16 +1,17 @@
 <div class="modal fade" id="modaleAggiungi" tabindex="-1" aria-labelledby="modaleAggiungiLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content rounded-4 shadow">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="modaleAggiungiLabel">Aggiungi ricovero</h5>
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow-lg border-0">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title fw-bold fs-5" id="modaleAggiungiLabel"><i class="bi bi-plus-lg me-2"></i>Aggiungi ricovero</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
-            <div class="modal-body">
-                <form method="post" id="formAggiungiRicovero" action="{% url 'lista_ricoveri' %}" novalidate>
+            <div class="modal-body p-4 p-md-5">
+                <form method="post" id="formAggiungiRicovero" action="{% url 'lista_ricoveri' %}">
                     {% csrf_token %}
-                    {% include "ricoveri/aggiungi_ricovero.html" %}
-                    <div class="text-center mt-3">
-                        <button type="submit" class="btn btn-success px-4 py-2">Salva Ricovero</button>
+                    {# CORRETTO IL PERCORSO QUI, MANTENENDO IL TUO FILE ESISTENTE #}
+                    {% include "ricoveri/aggiungi_ricovero.html" %} 
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-success px-5 py-2 fw-bold">Salva Ricovero</button>
                     </div>
                 </form>
             </div>
@@ -26,7 +27,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
             <div class="modal-body px-4 py-4">
-                <div id="dettagliContenuto" class="mb-4">
+                <div id="dettagliContenuto" class="mb-2">
                     {# I dettagli verranno inseriti qui dal JS #}
                 </div>
                 
@@ -80,17 +81,16 @@
                     {% csrf_token %}
                     <input type="hidden" id="trasferisciRicoveroPk">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark">Paziente:</label> {# Aggiunto text-dark qui #}
+                        <label class="form-label fw-semibold text-dark">Paziente:</label>
                         <input type="text" id="trasferisciNomePaziente" class="form-control" disabled readonly>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark">Ospedale Attuale:</label> {# Aggiunto text-dark qui #}
+                        <label class="form-label fw-semibold text-dark">Ospedale Attuale:</label>
                         <input type="text" id="trasferisciOspedaleAttuale" class="form-control" disabled readonly>
                     </div>
                     <hr class="my-3">
                     <div class="mb-4">
-                        {# Modificato il colore del testo da text-primary a text-dark e aumentato il font size #}
-                        <label for="id_nuovo_ospedale" class="form-label fs-5 fw-bold text-dark">Nuovo Ospedale di Destinazione:</label>
+                        <label for="id_nuovo_ospedale" class="form-label fs-6 fw-bold text-dark">Nuovo Ospedale di Destinazione:</label>
                         <select id="id_nuovo_ospedale" name="codOspedale" class="form-select" required style="width: 100%;">
                             <option></option>
                             {% for o in ospedali %}<option value="{{ o.codice }}">{{ o.nome }}</option>{% endfor %}
@@ -112,15 +112,47 @@ document.addEventListener("DOMContentLoaded", function () {
     const dettagliModal = new bootstrap.Modal(document.getElementById('dettagliModal'));
     const trasferisciModal = new bootstrap.Modal(document.getElementById('trasferisciModal'));
     
-    // Inizializza i tooltip Bootstrap per tutti gli elementi con data-bs-toggle="tooltip"
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 
-    // Inizializzazione Select2 per le modali
+    // --- INIZIALIZZAZIONE SELECT2 PER IL FORM "AGGIUNGI RICOVERO" ALL'APERTURA DEL MODALE ---
+    // La inizializzazione all'apertura (shown.bs.modal) è spesso la più affidabile per i modali.
     $('#modaleAggiungi').on('shown.bs.modal', function () {
-      $('#id_cittadino, #id_patologie, #id_codOspedale').select2({ theme: "bootstrap-5", dropdownParent: $(this) });
+        // Inizializzazione Select2 per id_cittadino
+        $('#id_cittadino').select2({ 
+            theme: "bootstrap-5", 
+            dropdownParent: $(this), 
+            placeholder: "Seleziona un paziente",
+            allowClear: true,
+            width: '100%',
+            language: {
+                noResults: function () { return "Nessun paziente trovato"; }
+            }
+        });
+
+        // Inizializzazione per id_patologie (multi-selezione, verso l'alto)
+        $('#id_patologie').select2({ 
+            theme: "bootstrap-5", 
+            dropdownParent: $(this),
+            placeholder: "Seleziona patologie",
+            allowClear: true,
+            multiple: true,
+            closeOnSelect: false,
+            width: '100%',
+            dropdownPosition: 'above' // Apre la tendina verso l'alto
+        });
+
+        // Inizializzazione per id_codOspedale
+        $('#id_codOspedale').select2({
+            theme: "bootstrap-5",
+            dropdownParent: $(this),
+            placeholder: "Seleziona un ospedale",
+            allowClear: true,
+            width: '100%'
+        });
     });
-    
+
+    // Inizializzazione Select2 per il modale Trasferisci (id_nuovo_ospedale)
     $('#trasferisciModal').on('shown.bs.modal', function () {
         $('#id_nuovo_ospedale').select2({ theme: "bootstrap-5", dropdownParent: $(this), placeholder: "Cerca e seleziona un ospedale" });
     });
@@ -142,9 +174,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    let activeRow; // Variabile per tenere traccia della riga cliccata
+    let activeRow; 
     
-    // Gestione click sulla riga della tabella per aprire dettagliModal
     $(document).on('click', '.clickable-row', function() {
         activeRow = $(this);
         
@@ -206,7 +237,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     Swal.fire({ icon: 'error', title: 'Errore', html: (data.errors || ['Errore.']).join('<br>') });
                 }
             },
-            error: function() { Swal.fire('Errore', 'Problema di comunicazione.', 'error'); }
+            error: function() { Swal.fire("Errore", "Problema di comunicazione.", "error"); }
         });
     });
 });

@@ -3,75 +3,89 @@
 {% block title %}Anagrafica Cittadini{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0 py-4">
-
-  <div class="row">
-
-
-    <section class="col-12">
-
-      <div class="bg-white p-4 rounded shadow">
-        <h4 class="mb-4 text-danger fw-bold">Anagrafica dei Cittadini</h4>
-        <div class="table-responsive">
-          <table class="table table-bordered table-hover text-center text-nowrap"
-            style="table-layout: fixed; width: 100%;">
-            <thead class="table-light">
-              <tr>
-                {% for col, label in columns %}
-                <th style="width: {{ colonne_larghezze|get_item:col }}" {% if col == 'data_nascita' or col == 'ricoveri' %}class="text-end"{% endif %}> {# Allineamento a destra per Data e Ricoveri #}
-                  <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}"
-                    class="text-decoration-none text-dark">
-                    {{ label }}
-                    {% if current_sort == col %}
-                    <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
-                    {% endif %}
-                  </a>
-                </th>
-                {% endfor %}
-                <th style="width: {{ colonne_larghezze|get_item:'ricoveri' }}" class="text-end">Ricoveri</th> {# Allineamento a destra #}
-              </tr>
-            </thead>
-
-
-            <tbody>
-              {% for cittadino in page_obj.object_list %}
-              <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?cssn={{ cittadino.CSSN }}"> {# Aggiunto data-href per il reindirizzamento #}
-                <td style="width: {{ colonne_larghezze|get_item:'CSSN' }}">{{ cittadino.CSSN }}</td>
-                <td class="nome-cognome" style="width: {{ colonne_larghezze|get_item:'nome_cognome' }};">
-                  {{ cittadino.nome }} {{ cittadino.cognome }}
-                </td>
-                <td style="width: {{ colonne_larghezze|get_item:'data_nascita' }}" class="text-end"> {# Allineamento a destra #}
-                  {{cittadino.data_nascita|date:"d/m/Y" }}</td>
-                <td
-                  style="width: {{ colonne_larghezze|get_item:'città' }}; word-break: break-word; white-space: normal;">
-                  {{ cittadino.città }}
-                </td>
-                <td class="indirizzo-col" style="width: {{ colonne_larghezze|get_item:'via' }};"
-                  data-bs-toggle="tooltip" data-bs-placement="top" title="{{ cittadino.via }}">
-                  {{ cittadino.via }}
-                </td>
-                <td style="width: {{ colonne_larghezze|get_item:'stato' }}"
-                  class="stato {% if cittadino.stato_display == 'Ricoverato' %}text-dark{% elif cittadino.stato_display == 'Deceduto' %}text-danger{% else %}text-muted{% endif %}"> {# Usare stato_display #}
-                  {{ cittadino.stato_display }}
-                </td>
-                <td style="width: {{ colonne_larghezze|get_item:'ricoveri' }};" class="text-end">{{ cittadino.numero_ricoveri }}</td> {# Allineamento a destra #}
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="7" class="text-center text-muted">Nessun cittadino trovato.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-
-          </table>
-          {% include 'partials/paginazione.html' with etichetta="cittadini" %}
-
-        </div>
-
-      </div>
-    </section>
+<div class="row mb-4 g-3">
+  <div class="col-md-3">
+    <div class="stat-card" style="border-color: #0d6efd;">{# Blu #}
+      <div class="stat-value">{{ statistiche_cittadini.totali }}</div>
+      <div class="stat-label">Cittadini Totali</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="border-color: #198754;">{# Verde #}
+      <div class="stat-value">{{ statistiche_cittadini.domicilio }}</div>
+      <div class="stat-label">Domicilio</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="border-color: #ffc107;">{# Giallo #}
+      <div class="stat-value">{{ statistiche_cittadini.ricoverati }}</div>
+      <div class="stat-label">Ricoverati</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="border-color: #dc3545;">{# Rosso #}
+      <div class="stat-value">{{ statistiche_cittadini.deceduti }}</div>
+      <div class="stat-label">Deceduti</div>
+    </div>
   </div>
 </div>
+
+{# Ho rimosso il container-fluid px-0 py-4 esterno che era presente qui e che poteva causare spaziatura extra #}
+{# La sezione principale ora inizia direttamente con la card che contiene la tabella #}
+<section class="col-12 px-0 py-0"> {# Rimosso il padding eccessivo da qui #}
+  <div class="bg-white p-4 rounded shadow">
+    <h4 class="mb-4 text-danger fw-bold">Anagrafica dei Cittadini</h4>
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover table-striped w-100 align-middle">
+        <thead class="table-light">
+          <tr>
+            {% for col, label in columns %}
+            <th {% if col == 'ricoveri' or col == 'data_nascita' %}class="text-end"{% endif %} style="width: {{ colonne_larghezze|get_item:col }}">
+              <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}"
+                class="text-decoration-none text-dark">
+                {{ label }}
+                {% if current_sort == col %}
+                <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                {% endif %}
+              </a>
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for cittadino in page_obj.object_list %}
+          <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?cssn={{ cittadino.CSSN }}">
+            <td style="width: {{ colonne_larghezze|get_item:'CSSN' }}">{{ cittadino.CSSN }}</td>
+            <td class="nome-cognome" style="width: {{ colonne_larghezze|get_item:'nome_cognome' }};">
+              {{ cittadino.nome }} {{ cittadino.cognome }}
+            </td>
+            <td class="text-end" style="width: {{ colonne_larghezze|get_item:'data_nascita' }}">
+              {{cittadino.data_nascita|date:"d/m/Y" }}</td>
+            <td
+              style="width: {{ colonne_larghezze|get_item:'città' }};">
+              {{ cittadino.città }}
+            </td>
+            <td class="indirizzo-col" style="width: {{ colonne_larghezze|get_item:'via' }};"
+              data-bs-toggle="tooltip" data-bs-placement="top" title="{{ cittadino.via }}">
+              {{ cittadino.via }}
+            </td>
+            <td style="width: {{ colonne_larghezze|get_item:'stato' }}"
+              class="stato {% if cittadino.stato_display == 'Ricoverato' %}text-dark{% elif cittadino.stato_display == 'Deceduto' %}text-danger{% else %}text-muted{% endif %}">
+              {{ cittadino.stato_display }}
+            </td>
+            <td class="text-end" style="width: {{ colonne_larghezze|get_item:'ricoveri' }};">{{ cittadino.numero_ricoveri }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted">Nessun cittadino trovato.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% include 'partials/paginazione.html' with etichetta="cittadini" %}
+    </div>
+  </div>
+</section> {# Chiusura della sezione principale della tabella #}
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {

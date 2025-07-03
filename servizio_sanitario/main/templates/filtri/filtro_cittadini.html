@@ -50,13 +50,12 @@
     <div class="mb-4">
       <label for="stato-cittadino" class="form-label">Stato:</label>
       <div class="input-group">
-        <select class="form-select select2-filter" id="stato-cittadino" name="stato" data-placeholder="Tutti gli stati"> {# Aggiunto select2-filter e data-placeholder #}
-          <option value=""></option> {# Valore vuoto per il placeholder #}
+        <select class="form-select select2-filter" id="stato-cittadino" name="stato" data-placeholder="Tutti gli stati">
+          <option value=""></option>
           <option value="Domicilio" {% if request.GET.stato == "Domicilio" %}selected{% endif %}>Domicilio</option>
           <option value="Ricoverato" {% if request.GET.stato == "Ricoverato" %}selected{% endif %}>Ricoverato</option>
           <option value="Deceduto" {% if request.GET.stato == "Deceduto" %}selected{% endif %}>Deceduto</option>
         </select>
-        {# Il pulsante clear-filter-btn qui non è più necessario se Select2 ha il suo clear #}
       </div>
     </div>
     <div class="d-grid gap-2">

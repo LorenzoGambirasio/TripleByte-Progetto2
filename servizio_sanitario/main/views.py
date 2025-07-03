@@ -52,6 +52,13 @@ def lista_cittadini(request):
     if stato_filtro:
         cittadini_list = [c for c in cittadini_list if c['stato_display'] == stato_filtro]
 
+    # Calcolo delle statistiche per i riquadri della pagina Cittadini
+    statistiche_cittadini = {
+        'totali': models.Cittadino.objects.count(),
+        'domicilio': models.Cittadino.objects.filter(deceduto=0).exclude(ricovero__stato=0).count(), # Non deceduto e non ricoverato
+        'ricoverati': models.Ricovero.objects.filter(stato=0).count(), # Ricoveri attivi
+        'deceduti': models.Cittadino.objects.filter(deceduto=1).count(),
+    }
 
     # Dizionario per le larghezze delle colonne
     colonne_larghezze = {
@@ -72,6 +79,7 @@ def lista_cittadini(request):
         ('città', 'Città'),
         ('via', 'Indirizzo'),
         ('stato', 'Stato'),
+        ('ricoveri', 'Ricoveri'), # Colonna per il conteggio ricoveri
     ]
 
     # Logica di ordinamento (sort) per i cittadini
@@ -92,7 +100,7 @@ def lista_cittadini(request):
         cittadini_list.sort(key=lambda x: x['città'], reverse=(current_order == 'desc'))
     elif current_sort == 'via':
         cittadini_list.sort(key=lambda x: x['via'], reverse=(current_order == 'desc'))
-    elif current_sort == 'ricoveri': # Aggiunto ordinamento per la nuova colonna
+    elif current_sort == 'ricoveri':
         cittadini_list.sort(key=lambda x: x['numero_ricoveri'], reverse=(current_order == 'desc'))
 
     # Gestione righe per pagina
@@ -112,7 +120,8 @@ def lista_cittadini(request):
         'current_sort': current_sort,
         'current_order': current_order,
         'etichetta': 'cittadini',
-        'filtro_template': 'filtri/filtro_cittadini.html'
+        'filtro_template': 'filtri/filtro_cittadini.html',
+        'statistiche_cittadini': statistiche_cittadini, # Passa le statistiche
     }
     return render(request, 'cittadini.html', context)
 
@@ -138,12 +147,20 @@ def lista_ospedali(request):
             Q(CSSN_direttore__cognome__icontains=direttore_filtro)
         )
 
+    # Calcolo delle statistiche per i riquadri della pagina Ospedali
+    statistiche_ospedali = {
+        'totali': models.Ospedale.objects.count(),
+        'con_direttore': models.Ospedale.objects.filter(CSSN_direttore__isnull=False).count(),
+        'senza_direttore': models.Ospedale.objects.filter(CSSN_direttore__isnull=True).count(),
+    }
+
+
     colonne_larghezze = {
         'nome': '22%',
         'città': '22%',
         'indirizzo': '22%',
         'direttore': '22%',
-        'ricoveri': '12%', # Aggiunta la larghezza per la nuova colonna
+        'ricoveri': '12%',
     }
 
     columns = [
@@ -151,7 +168,7 @@ def lista_ospedali(request):
         ('città', 'Città'),
         ('indirizzo', 'Indirizzo'),
         ('direttore', 'Direttore Sanitario'),
-        ('ricoveri', 'Ricoveri'), # Aggiunta la nuova colonna
+        ('ricoveri', 'Ricoveri'),
     ]
 
     # Logica di ordinamento
@@ -163,7 +180,7 @@ def lista_ospedali(request):
         'città': 'città',
         'indirizzo': 'indirizzo',
         'direttore': 'CSSN_direttore__cognome',
-        'ricoveri': 'numero_ricoveri_ospedale', # Ordina per il conteggio
+        'ricoveri': 'numero_ricoveri_ospedale',
     }
 
     sort_field = sort_mapping.get(current_sort, 'nome')
@@ -190,7 +207,8 @@ def lista_ospedali(request):
         'current_sort': current_sort,
         'current_order': current_order,
         'etichetta': 'ospedali',
-        'filtro_template': 'filtri/filtro_ospedali.html'
+        'filtro_template': 'filtri/filtro_ospedali.html',
+        'statistiche_ospedali': statistiche_ospedali,
     }
     return render(request, 'ospedali.html', context)
 
@@ -316,9 +334,9 @@ def lista_ricoveri(request):
     
     # --- LOGICA DEI FILTRI (Adattata ai tuoi nuovi nomi e all'uso di filtri_attivi) ---
     # Parametri che potrebbero arrivare da un click su riga (URL)
-    cssn_from_url = request.GET.get('cssn', '').strip() # Questo è l'originale 'cssn' dall'URL
-    ospedale_from_url = request.GET.get('ospedale_cod', '').strip() # Questo è l'originale 'ospedale_cod' dall'URL
-    nome_patologia_from_url = request.GET.get('nome_patologia', '').strip() # Questo è il nome singola patologia dal click
+    cssn_from_url = request.GET.get('cssn', '').strip()
+    ospedale_from_url = request.GET.get('ospedale_cod', '').strip()
+    nome_patologia_from_url = request.GET.get('nome_patologia', '').strip()
 
     # Parametri che arrivano dal form di filtro (possono essere singoli o liste per Select2)
     cssn_from_form = request.GET.get('cssn_form', '').strip()
@@ -329,7 +347,7 @@ def lista_ricoveri(request):
     data_da_from_form = request.GET.get('data_da', '').strip()
     data_a_from_form = request.GET.get('data_a', '').strip()
     motivo_from_form = request.GET.get('motivo', '').strip()
-    nome_patologia_list_from_form = request.GET.getlist('nome_patologia') # Per Select2 multiplo
+    nome_patologia_list_from_form = request.GET.getlist('nome_patologia')
 
 
     # Determinazione dei valori finali dei filtri, dando priorità ai parametri da URL per i click su riga
@@ -342,8 +360,6 @@ def lista_ricoveri(request):
     final_data_a_filter = data_a_from_form
     final_motivo_filter = motivo_from_form
     
-    # Per il filtro patologia: se arriva un singolo nome_patologia da URL, ha priorità e diventa una lista
-    # Altrimenti, usiamo la lista di nomi dal form
     final_nome_patologia_filters = []
     if nome_patologia_from_url:
         final_nome_patologia_filters = [nome_patologia_from_url]
@@ -361,7 +377,6 @@ def lista_ricoveri(request):
     if final_data_a_filter: ricoveri_filtrati = ricoveri_filtrati.filter(data_ingresso__lte=final_data_a_filter)
     if final_motivo_filter: ricoveri_filtrati = ricoveri_filtrati.filter(motivo__icontains=final_motivo_filter)
     
-    # Applica il filtro per patologia con la lista di nomi
     if final_nome_patologia_filters:
         ricoveri_filtrati = ricoveri_filtrati.filter(patologie__nome__in=final_nome_patologia_filters).distinct()
     
@@ -419,7 +434,7 @@ def lista_ricoveri(request):
         'current_order': current_order,
         # Passa i filtri attivi al template per pre-popolare il form
         'filtri_attivi': {
-            'cssn': final_cssn_filter, # Usa il valore finale per pre-popolare
+            'cssn': final_cssn_filter,
             'nome': final_nome_filter,
             'cognome': final_cognome_filter,
             'ospedale': final_ospedale_filter,
@@ -427,7 +442,7 @@ def lista_ricoveri(request):
             'data_da': final_data_da_filter,
             'data_a': final_data_a_filter,
             'motivo': final_motivo_filter,
-            'nome_patologia': final_nome_patologia_filters, # Passa la LISTA per Select2
+            'nome_patologia': final_nome_patologia_filters,
         }
     }
     return render(request, "ricoveri/ricovero.html", context)
