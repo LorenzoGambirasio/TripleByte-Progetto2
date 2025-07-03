@@ -75,8 +75,9 @@
               data-pk="{{ ricovero.codRicovero }}" data-paziente-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" 
               data-ospedale-nome="{{ ricovero.codOspedale.nome }}" data-stato="{{ ricovero.stato }}"
               data-dettagli-json='{"Codice": "{{ ricovero.codRicovero }}", "Paziente": "{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}", "CSSN": "{{ ricovero.CSSN.CSSN }}", "Data Ingresso": "{{ ricovero.data_ingresso|date:"d/m/Y" }}", "Durata (gg)": "{{ ricovero.durata }}", "Costo": "€ {{ ricovero.costo|floatformat:2 }}"}'
-              data-patologie-json='[{% for p in ricovero.patologie.all %}{"nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
-              data-url-modifica="{% url 'modifica_ricovero' ricovero.pk %}" data-url-elimina="{% url 'elimina_ricovero' ricovero.pk %}" data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}">
+              data-patologie-json='[{% for p in ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+              data-url-modifica="{% url 'modifica_ricovero' ricovero.pk %}" data-url-elimina="{% url 'elimina_ricovero' ricovero.pk %}" data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}"
+              data-motivo="{{ ricovero.motivo|escapejs }}">
             <td>{{ ricovero.codOspedale.nome }}</td>
             <td>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</td>
             <td>{{ ricovero.data_ingresso|date:"d/m/Y" }}</td>

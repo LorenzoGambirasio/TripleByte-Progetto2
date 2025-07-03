@@ -4,9 +4,12 @@ from django.core.paginator import Paginator
 from .forms import RicoveroForm, NuovoPazienteForm, TrasferimentoForm
 from django.db import transaction
 from django.http import JsonResponse
-from datetime import date, timedelta
-from django.utils import timezone
+from datetime import date, timedelta # Importa timedelta
+from django.utils import timezone # Importa timezone
 from django.db.models import Count, Max, Q
+from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_http_methods
+
 
 def dashboard(request):
     return render(request, 'home.html')
@@ -490,26 +493,67 @@ def trasferisci_ricovero(request, pk):
             return JsonResponse({"success": False, "errors": errors})
     return JsonResponse({'error': 'Metodo non valido'}, status=405)
 
+@require_http_methods(["POST"])
 def modifica_ricovero(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
-    if request.method == 'POST':
-        form = RicoveroForm(request.POST, instance=ricovero)
-        if form.is_valid():
-            form.save()
-            return redirect('lista_ricoveri')
+    
+    data = request.POST.copy()
+    
+    # Assicurati che i valori non modificabili vengano passati al form
+    # altrimenti il ModelForm penserà che manchino e genererà errori di validazione.
+    if 'CSSN' not in data:
+        data['CSSN'] = ricovero.CSSN.CSSN
+    if 'codOspedale' not in data:
+        data['codOspedale'] = ricovero.codOspedale.codice
+    
+    # Manteniamo questa riga per la validazione iniziale del form.
+    # Il valore effettivo dello stato verrà ricalcolato dopo la validazione.
+    data['stato'] = ricovero.stato 
+
+    form = RicoveroForm(data, instance=ricovero)
+    
+    if form.is_valid():
+        ricovero_salvato = form.save(commit=False)
+        
+        # --- NUOVA LOGICA PER AGGIORNARE LO STATO IN BASE ALLA DURATA ---
+        # Applica questa logica solo se lo stato attuale è Attivo (0) o Dimesso (2)
+        if ricovero_salvato.stato in [0, 2]:
+            today = timezone.now().date()
+            
+            # Calcola la data di fine prevista del ricovero con la nuova durata
+            # Assicurati che ricovero_salvato.durata non sia None o 0 per evitare errori
+            if ricovero_salvato.durata is not None and ricovero_salvato.durata > 0:
+                data_fine_prevista = ricovero_salvato.data_ingresso + timedelta(days=ricovero_salvato.durata)
+            else:
+                # Se la durata non è valida, consideriamo il ricovero ancora attivo per default
+                # o puoi decidere una logica diversa (es. errore, o stato indefinito)
+                data_fine_prevista = today + timedelta(days=1) # Forza a essere nel futuro se durata non valida
+            
+            if data_fine_prevista <= today:
+                ricovero_salvato.stato = 2  # Dimesso
+            else:
+                ricovero_salvato.stato = 0  # Attivo
+        # --- FINE NUOVA LOGICA ---
+
+        ricovero_salvato.save()
+        form.save_m2m() # Salva le patologie, che sono un campo ManyToMany
+
+        return JsonResponse({"success": True})
     else:
-        # Pre-popola le patologie nel form
-        initial_patologie = ricovero.patologie.all().values_list('cod', flat=True)
-        form = RicoveroForm(instance=ricovero, initial={'patologie': list(initial_patologie)})
-    return render(request, 'ricoveri/modifica_ricovero.html', {'form': form, 'ricovero': ricovero})
+        errors = {field: form.errors[field] for field in form.errors if field != '__all__'}
+        non_field_errors = form.non_field_errors()
+        
+        return JsonResponse({"success": False, "errors": errors, "non_field_errors": list(non_field_errors)}, status=400)
 
 
+@require_POST
 def elimina_ricovero(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
-    if request.method == 'POST':
+    try:
         ricovero.delete()
-        return redirect('lista_ricoveri')
-    return render(request, 'ricoveri/elimina_ricovero.html', {'ricovero': ricovero})
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"success": False, "errors": [str(e)]}, status=400)
 
 def dichiara_decesso(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
