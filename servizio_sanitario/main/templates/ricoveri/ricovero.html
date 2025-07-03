@@ -71,13 +71,22 @@
       <tbody>
         {% for item in ricoveri_items %}
           {% with ricovero=item.ricovero max_criticita=item.max_criticita %}
-          <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#dettagliModal" 
-              data-pk="{{ ricovero.codRicovero }}" data-paziente-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" 
-              data-ospedale-nome="{{ ricovero.codOspedale.nome }}" data-stato="{{ ricovero.stato }}"
+          <tr class="clickable-row" 
+              data-pk="{{ ricovero.codRicovero }}" 
+              data-paziente-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" 
+              data-ospedale-nome="{{ ricovero.codOspedale.nome }}" 
+              data-stato="{{ ricovero.stato }}"
+              data-paziente-deceduto="{{ ricovero.CSSN.deceduto }}" {# NUOVO: Passa se il paziente è deceduto #}
               data-dettagli-json='{"Codice": "{{ ricovero.codRicovero }}", "Paziente": "{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}", "CSSN": "{{ ricovero.CSSN.CSSN }}", "Data Ingresso": "{{ ricovero.data_ingresso|date:"d/m/Y" }}", "Durata (gg)": "{{ ricovero.durata }}", "Costo": "€ {{ ricovero.costo|floatformat:2 }}"}'
               data-patologie-json='[{% for p in ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
-              data-url-modifica="{% url 'modifica_ricovero' ricovero.pk %}" data-url-elimina="{% url 'elimina_ricovero' ricovero.pk %}" data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}"
-              data-motivo="{{ ricovero.motivo|escapejs }}">
+              data-url-modifica="{% url 'modifica_ricovero' ricovero.pk %}" 
+              data-url-elimina="{% url 'elimina_ricovero' ricovero.pk %}" 
+              data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}"
+              data-motivo="{{ ricovero.motivo|escapejs }}"
+              {# NUOVO: Passa data e causa decesso dal CITTADINO #}
+              data-decesso-data="{{ ricovero.CSSN.dataoradecesso|date:"d/m/Y H:i"|default:"" }}" 
+              data-decesso-causa="{{ ricovero.CSSN.causadecesso|escapejs|default:"" }}"
+              >
             <td>{{ ricovero.codOspedale.nome }}</td>
             <td>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</td>
             <td>{{ ricovero.data_ingresso|date:"d/m/Y" }}</td>
@@ -90,7 +99,7 @@
                 <span class="badge border border-warning-subtle rounded-pill status-icon-badge text-warning-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Trasferito"><i class="bi bi-arrow-left-right"></i></span>
               {% elif ricovero.stato == 2 %} 
                 <span class="badge border border-danger-subtle rounded-pill status-icon-badge text-danger-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Dimesso"><i class="bi bi-house"></i></span>
-              {% elif ricovero.stato == 3 %} 
+              {% elif ricovero.stato == 3 %} {# NUOVO STATO DECEDUTO #}
                 <span class="badge border border-dark-subtle rounded-pill status-icon-badge text-dark-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Deceduto"><i class="bi bi-x-circle"></i></span>
               {% endif %}
             </td>
