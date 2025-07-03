@@ -5,480 +5,506 @@ from .forms import RicoveroForm, NuovoPazienteForm, TrasferimentoForm
 from django.db import transaction
 from django.http import JsonResponse
 from datetime import date, timedelta
-from django.urls import reverse
-from django.http import HttpResponseRedirect
 from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.db.models import Count
+from django.db.models import Count, Max, Q
 
 def dashboard(request):
     return render(request, 'home.html')
 
-
 def lista_cittadini(request):
-    cittadini = models.Cittadino.objects.annotate(numero_ricoveri=Count('ricovero'))
+    # Annotate i cittadini con il numero di ricoveri
+    cittadini_base = models.Cittadino.objects.annotate(numero_ricoveri_cittadino=Count('ricovero')).all()
 
-    # Filtri
-    nome = request.GET.get('nome', '')
-    cognome = request.GET.get('cognome', '')
-    luogo = request.GET.get('luogo', '')
-    indirizzo = request.GET.get('indirizzo', '')
-    cssn = request.GET.get('cssn', '')
-    stato = request.GET.get('stato', '')
+    # Logica dei filtri
+    nome_filtro = request.GET.get('nome', '').strip()
+    cognome_filtro = request.GET.get('cognome', '').strip()
+    luogo_nascita_filtro = request.GET.get('luogo', '').strip()
+    indirizzo_filtro = request.GET.get('indirizzo', '').strip()
+    cssn_filtro = request.GET.get('cssn', '').strip()
+    stato_filtro = request.GET.get('stato', '').strip()
 
-    if nome:
-        cittadini = cittadini.filter(nome__icontains=nome)
-    if cognome:
-        cittadini = cittadini.filter(cognome__icontains=cognome)
-    if luogo:
-        cittadini = cittadini.filter(città__icontains=luogo)
-    if indirizzo:
-        cittadini = cittadini.filter(via__icontains=indirizzo)
-    if cssn:
-        cittadini = cittadini.filter(CSSN__icontains=cssn)
-    if stato:
-        cittadini = [c for c in cittadini if c.stato == stato]
+    if nome_filtro:
+        cittadini_base = cittadini_base.filter(nome__icontains=nome_filtro)
+    if cognome_filtro:
+        cittadini_base = cittadini_base.filter(cognome__icontains=cognome_filtro)
+    if luogo_nascita_filtro:
+        cittadini_base = cittadini_base.filter(città__icontains=luogo_nascita_filtro)
+    if indirizzo_filtro:
+        cittadini_base = cittadini_base.filter(via__icontains=indirizzo_filtro)
+    if cssn_filtro:
+        cittadini_base = cittadini_base.filter(CSSN__icontains=cssn_filtro)
+    
+    # Pre-processa i cittadini per aggiungere la proprietà 'stato' e il conteggio ricoveri
+    cittadini_list = []
+    for c in cittadini_base:
+        cittadini_list.append({
+            'CSSN': c.CSSN,
+            'nome': c.nome,
+            'cognome': c.cognome,
+            'data_nascita': c.data_nascita,
+            'città': c.città,
+            'via': c.via,
+            'deceduto': c.deceduto,
+            'stato_display': c.stato, # Usa un nome diverso per la proprietà visualizzata
+            'numero_ricoveri': c.numero_ricoveri_cittadino,
+        })
 
-    # Ordinamento dinamico
-    sort_field = request.GET.get('sort', 'cognome')
-    sort_order = request.GET.get('order', 'asc')
-    if sort_order == 'desc':
-        sort_field = '-' + sort_field
-    try:
-        cittadini = cittadini.order_by(sort_field)
-    except Exception:
-        pass
+    if stato_filtro:
+        cittadini_list = [c for c in cittadini_list if c['stato_display'] == stato_filtro]
 
-    # Paginazione
-    paginator = Paginator(cittadini, 20)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
 
-    # Colonne da visualizzare (unifica Nome e Cognome!)
+    # Dizionario per le larghezze delle colonne
+    colonne_larghezze = {
+        'CSSN': '18%',         
+        'nome_cognome': '18%', 
+        'data_nascita': '12%',
+        'città': '15%',
+        'via': '15%',          
+        'stato': '8%',
+        'ricoveri': '8%',
+    }
+
+    # Definisci le colonne e le etichette per l'intestazione della tabella
     columns = [
         ('CSSN', 'CSSN'),
         ('nome_cognome', 'Nome e Cognome'),
         ('data_nascita', 'Data di Nascita'),
-        ('città', 'Luogo di Nascita'),
+        ('città', 'Città'),
         ('via', 'Indirizzo'),
         ('stato', 'Stato'),
     ]
-    
-    colonne_larghezze = {
-        'CSSN': '145px',
-        'nome_cognome': '120px',
-        'data_nascita': '105px',
-        'città': '125px',
-        'via': '105px',
-        'stato': '73px',
-        'ricoveri': '60px',
-    }
 
+    # Logica di ordinamento (sort) per i cittadini
+    current_sort = request.GET.get('sort', 'cognome') # Default sort
+    current_order = request.GET.get('order', 'asc') # Default order
+
+    # Mappa i nomi delle colonne nel template ai campi del modello o proprietà
+    # Ora ordiniamo la lista processata
+    if current_sort == 'stato':
+        cittadini_list.sort(key=lambda x: x['stato_display'], reverse=(current_order == 'desc'))
+    elif current_sort == 'nome_cognome':
+        cittadini_list.sort(key=lambda x: (x['cognome'], x['nome']), reverse=(current_order == 'desc'))
+    elif current_sort == 'CSSN':
+        cittadini_list.sort(key=lambda x: x['CSSN'], reverse=(current_order == 'desc'))
+    elif current_sort == 'data_nascita':
+        cittadini_list.sort(key=lambda x: x['data_nascita'], reverse=(current_order == 'desc'))
+    elif current_sort == 'città':
+        cittadini_list.sort(key=lambda x: x['città'], reverse=(current_order == 'desc'))
+    elif current_sort == 'via':
+        cittadini_list.sort(key=lambda x: x['via'], reverse=(current_order == 'desc'))
+    elif current_sort == 'ricoveri': # Aggiunto ordinamento per la nuova colonna
+        cittadini_list.sort(key=lambda x: x['numero_ricoveri'], reverse=(current_order == 'desc'))
+
+    # Gestione righe per pagina
+    per_page = request.GET.get('per_page', 20)
+    try:
+        per_page = int(per_page)
+    except ValueError:
+        per_page = 20
+
+    paginator = Paginator(cittadini_list, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     context = {
-        'filtro_template': 'filtri/filtro_cittadini.html',
         'page_obj': page_obj,
-        'cittadini': page_obj.object_list,
-        'current_sort': request.GET.get('sort', ''),
-        'current_order': request.GET.get('order', ''),
-        'columns': columns,
         'colonne_larghezze': colonne_larghezze,
-        'etichetta': 'cittadini'
+        'columns': columns,
+        'current_sort': current_sort,
+        'current_order': current_order,
+        'etichetta': 'cittadini',
+        'filtro_template': 'filtri/filtro_cittadini.html'
     }
-
     return render(request, 'cittadini.html', context)
 
+
 def lista_ospedali(request):
-    ospedali = models.Ospedale.objects.select_related('CSSN_direttore').all()
+    # Annotate gli ospedali con il numero di ricoveri
+    ospedali_base = models.Ospedale.objects.select_related('CSSN_direttore').annotate(
+        numero_ricoveri_ospedale=Count('ricovero')
+    ).all()
 
-    # Filtri base
-    nome = request.GET.get('nome', '')
-    citta = request.GET.get('citta', '')
-    direttore = request.GET.get('direttore', '')
+    # Logica dei filtri
+    nome_filtro = request.GET.get('nome', '').strip()
+    citta_filtro = request.GET.get('città', '').strip()
+    direttore_filtro = request.GET.get('direttore', '').strip()
 
-    if nome:
-        ospedali = ospedali.filter(nome__icontains=nome)
-    if citta:
-        ospedali = ospedali.filter(città__icontains=citta)
-    if direttore:
-        ospedali = ospedali.filter(CSSN_direttore__cognome__icontains=direttore)
+    if nome_filtro:
+        ospedali_base = ospedali_base.filter(nome__icontains=nome_filtro)
+    if citta_filtro:
+        ospedali_base = ospedali_base.filter(città__icontains=citta_filtro)
+    if direttore_filtro:
+        ospedali_base = ospedali_base.filter(
+            Q(CSSN_direttore__nome__icontains=direttore_filtro) |
+            Q(CSSN_direttore__cognome__icontains=direttore_filtro)
+        )
 
-    # Ordinamento dinamico
-    sort_field = request.GET.get('sort', 'nome')  # default
-    sort_order = request.GET.get('order', 'asc')
-    if sort_order == 'desc':
-        sort_field = '-' + sort_field
-    try:
-        ospedali = ospedali.order_by(sort_field)
-    except Exception:
-        pass  # campo non valido
-
-    # Paginazione
-    paginator = Paginator(ospedali, 20)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-
-    columns = [
-        ('nome', 'Nome'),
-        ('città', 'Città'),
-        ('indirizzo', 'Indirizzo'),
-        ('CSSN_direttore__cognome', 'Direttore Sanitario'),
-    ]
-
-    context = {
-        'filtro_template': 'filtri/filtro_ospedali.html',
-        'ospedali': page_obj.object_list,
-        'page_obj': page_obj,
-        'current_sort': request.GET.get('sort', ''),
-        'current_order': request.GET.get('order', ''),
-        'columns': columns,
-        'etichetta': 'ospedali'
+    colonne_larghezze = {
+        'nome': '22%',
+        'città': '22%',
+        'indirizzo': '22%',
+        'direttore': '22%',
+        'ricoveri': '12%', # Aggiunta la larghezza per la nuova colonna
     }
 
+    columns = [
+        ('nome', 'Nome Ospedale'),
+        ('città', 'Città'),
+        ('indirizzo', 'Indirizzo'),
+        ('direttore', 'Direttore Sanitario'),
+        ('ricoveri', 'Ricoveri'), # Aggiunta la nuova colonna
+    ]
+
+    # Logica di ordinamento
+    current_sort = request.GET.get('sort', 'nome')
+    current_order = request.GET.get('order', 'asc')
+
+    sort_mapping = {
+        'nome': 'nome',
+        'città': 'città',
+        'indirizzo': 'indirizzo',
+        'direttore': 'CSSN_direttore__cognome',
+        'ricoveri': 'numero_ricoveri_ospedale', # Ordina per il conteggio
+    }
+
+    sort_field = sort_mapping.get(current_sort, 'nome')
+    if current_order == 'desc':
+        ospedali_base = ospedali_base.order_by(f'-{sort_field}')
+    else:
+        ospedali_base = ospedali_base.order_by(sort_field)
+
+    # Gestione righe per pagina
+    per_page = request.GET.get('per_page', 20)
+    try:
+        per_page = int(per_page)
+    except ValueError:
+        per_page = 20
+
+    paginator = Paginator(ospedali_base, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        'page_obj': page_obj,
+        'ospedali': page_obj.object_list,
+        'columns': columns,
+        'colonne_larghezze': colonne_larghezze,
+        'current_sort': current_sort,
+        'current_order': current_order,
+        'etichetta': 'ospedali',
+        'filtro_template': 'filtri/filtro_ospedali.html'
+    }
     return render(request, 'ospedali.html', context)
 
+
 def lista_patologie(request):
-    patologie_base = models.Patologia.objects.all()
+    # Annotate le patologie con il conteggio dei ricoveri
+    patologie_base = models.Patologia.objects.annotate(
+        numero_ricoveri_patologia=Count('ricoveri')
+    ).all()
 
-    nome_query = request.GET.get('nome')
-    criticita_query = request.GET.get('criticita')
-    tipologia_query = request.GET.get('tipologia')
+    # LOGICA FILTRI
+    nome_filtro = request.GET.get('nome', '').strip()
+    criticita_filtro = request.GET.get('criticita', '').strip()
+    tipologia_filtro = request.GET.get('tipologia', '').strip()
 
-    if nome_query:
-        patologie_base = patologie_base.filter(nome__icontains=nome_query)
-    if criticita_query:
-        patologie_base = patologie_base.filter(criticita=criticita_query)
+    if nome_filtro:
+        patologie_base = patologie_base.filter(nome__icontains=nome_filtro)
+    if criticita_filtro:
+        try:
+            patologie_base = patologie_base.filter(criticita=int(criticita_filtro))
+        except ValueError:
+            pass
 
-    # Costruzione lista con tipologia
-    patologie = []
+    # Applica i filtri di tipologia
+    if tipologia_filtro:
+        if tipologia_filtro == "Cronica":
+            patologie_base = patologie_base.filter(patologiacronica__isnull=False).distinct()
+        elif tipologia_filtro == "Mortale":
+            patologie_base = patologie_base.filter(patologiamortale__isnull=False).distinct()
+        elif tipologia_filtro == "Nessuna":
+            patologie_base = patologie_base.exclude(patologiacronica__isnull=False).exclude(patologiamortale__isnull=False).distinct()
+        elif tipologia_filtro == "Cronica e Mortale":
+            patologie_base = patologie_base.filter(patologiacronica__isnull=False, patologiamortale__isnull=False).distinct()
+
+    # Pre-processa le patologie per aggiungere il campo 'tipologia' e 'numero_ricoveri'
+    patologie_processate = []
     for p in patologie_base:
         tipi = []
-        if models.PatologiaCronica.objects.filter(cod=p).exists():
-            tipi.append("Cronica")
-        if models.PatologiaMortale.objects.filter(cod=p).exists():
-            tipi.append("Mortale")
-        tipo = " e ".join(tipi) if tipi else "Nessuna"
+        is_cronica = models.PatologiaCronica.objects.filter(cod=p.cod).exists()
+        is_mortale = models.PatologiaMortale.objects.filter(cod=p.cod).exists()
 
-        if not tipologia_query or tipologia_query in tipo:
-            patologie.append({
-                'codice': p.cod,
-                'nome': p.nome,
-                'criticita': p.criticita,
-                'tipologia': tipo,
-            })
+        if is_cronica: tipi.append("Cronica")
+        if is_mortale: tipi.append("Mortale")
 
-    # Ordinamento
-    sort = request.GET.get("sort", "nome")
-    order = request.GET.get("order", "asc")
+        tipo_display = " e ".join(tipi) if tipi else "Nessuna"
+        
+        patologie_processate.append({
+            'codice': p.cod,
+            'nome': p.nome,
+            'criticita': p.criticita,
+            'tipologia': tipo_display,
+            'numero_ricoveri': p.numero_ricoveri_patologia,
+        })
 
-    reverse = order == "desc"
+    # Calcolo delle statistiche per i riquadri
+    statistiche_patologie = {
+        'totali': models.Patologia.objects.count(),
+        'croniche': models.PatologiaCronica.objects.count(),
+        'mortali': models.PatologiaMortale.objects.count(),
+    }
+
+    # LOGICA DI ORDINAMENTO (ordina la lista in memoria)
+    current_sort = request.GET.get('sort', 'nome')
+    current_order = request.GET.get('order', 'asc')
+
+    if current_sort == 'nome':
+        patologie_processate.sort(key=lambda x: x['nome'], reverse=(current_order == 'desc'))
+    elif current_sort == 'criticita':
+        patologie_processate.sort(key=lambda x: x['criticita'], reverse=(current_order == 'desc'))
+    elif current_sort == 'tipologia':
+        patologie_processate.sort(key=lambda x: x['tipologia'], reverse=(current_order == 'desc'))
+    elif current_sort == 'numero_ricoveri':
+        patologie_processate.sort(key=lambda x: x['numero_ricoveri'], reverse=(current_order == 'desc'))
+
+    # Gestione righe per pagina
+    per_page = request.GET.get('per_page', 20)
     try:
-        patologie.sort(key=lambda x: x.get(sort, "").lower() if isinstance(x.get(sort), str) else x.get(sort), reverse=reverse)
-    except Exception:
-        pass  # fallback: no sort
+        per_page = int(per_page)
+    except ValueError:
+        per_page = 20
 
-    paginator = Paginator(patologie, 20)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    paginator = Paginator(patologie_processate, per_page)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
-    return render(request, "patologie.html", {
+    context = {
         'page_obj': page_obj,
         'patologie': page_obj.object_list,
         'range_criticita': range(1, 11),
+        'current_sort': current_sort,
+        'current_order': current_order,
+        'etichetta': 'patologie',
         'filtro_template': 'filtri/filtro_patologie.html',
-        'current_sort': sort,
-        'current_order': order,
-        'etichetta': 'patologie'
-    })
+        'statistiche_patologie': statistiche_patologie,
+    }
+    return render(request, "patologie.html", context)
 
-def genera_codice_ricovero():
-    codici = models.Ricovero.objects.values_list('codRicovero', flat=True)
-    max_num = 0
+def genera_nuovo_codice_ricovero():
+    ultimo = models.Ricovero.objects.order_by('codRicovero').last()
+    if not ultimo: return "R0001"
+    try:
+        numero = int(ultimo.codRicovero[1:]) + 1
+    except (ValueError, TypeError):
+        return "R0001"
+    return f"R{numero:04d}"
 
-    for codice in codici:
-        if codice.startswith("R") and codice[1:].isdigit():
-            numero = int(codice[1:])
-            if numero > max_num:
-                max_num = numero
 
-    nuovo_numero = max_num + 1
-    return f"R{nuovo_numero}"
-
-@transaction.atomic
 def lista_ricoveri(request):
-    form = RicoveroForm()
-    successo = False
-
     if request.method == 'POST':
         form = RicoveroForm(request.POST)
         if form.is_valid():
             ricovero = form.save(commit=False)
-
-            oggi = date.today()
-            data_ingresso = ricovero.data_ingresso
-            durata = ricovero.durata
-            costo = ricovero.costo
-            errori = []
-
-            if data_ingresso > oggi:
-                errori.append("La data di ingresso non può essere nel futuro.")
-            elif data_ingresso < oggi - timedelta(days=30):
-                errori.append("La data di ingresso non può essere più vecchia di un mese.")
-            if durata < 1 or durata > 60:
-                errori.append("La durata deve essere tra 1 e 60 giorni.")
-            if costo < 0 or costo > 99999:
-                errori.append("Il costo non può essere negativo o superiore a 99999 euro.")
-            if not ricovero.motivo.strip():
-                errori.append("Il motivo del ricovero è obbligatorio.")
-
-            ricovero.stato = 2 if (oggi - data_ingresso).days > durata else 0
-
-            if errori:
-                return JsonResponse({"success": False, "errors": errori})
-            else:
-                ultimo = models.Ricovero.objects.order_by('-codRicovero').first()
-                if ultimo:
-                    numero = int(ultimo.codRicovero[1:])
-                    nuovo_cod = f"R{numero + 1:0{len(ultimo.codRicovero) - 1}d}"
-                else:
-                    nuovo_cod = "R0001"
-                ricovero.codRicovero = nuovo_cod
-                ricovero.save()
-                form.save_m2m()
-
-                for p in form.cleaned_data['patologie']:
-                    models.PatologiaRicovero.objects.create(
-                        codRicovero=ricovero,
-                        codOspedale=ricovero.codOspedale,
-                        codPatologia=p
-                    )
-
-                return JsonResponse({"success": True})
+            ricovero.codRicovero = genera_nuovo_codice_ricovero()
+            ricovero.save()
+            form.save_m2m()
+            return JsonResponse({"success": True})
         else:
-            # Se form.is_valid() è False -> ritorna errori form Django
-            errors = []
-            for field, field_errors in form.errors.items():
-                for err in field_errors:
-                    errors.append(err)
+            errors = [error for field, field_errors in form.errors.items() for error in field_errors]
             return JsonResponse({"success": False, "errors": errors})
 
-    # logica GET
-    ricoveri = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie').all()
-
-    # Ordinamento dinamico
-    sort = request.GET.get('sort', 'codRicovero')
-    dir = request.GET.get('dir', 'asc')
+    # Logica GET
+    form = RicoveroForm()
+    ricoveri_filtrati = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie')
     
-    valid_columns = dict([
-        ("codOspedale__nome", "Ospedale"),
-        ("CSSN__cognome", "Paziente"),
-        ("CSSN__CSSN", "CSSN"),
-        ("data_ingresso", "Data Inizio"),
-        ("durata", "Durata"),
-        ("stato", "Stato"),
-        ("motivo", "Motivo"),
-        ("costo", "Costo (€)")
-    ])
+    # --- LOGICA DEI FILTRI (Adattata ai tuoi nuovi nomi e all'uso di filtri_attivi) ---
+    # Parametri che potrebbero arrivare da un click su riga (URL)
+    cssn_from_url = request.GET.get('cssn', '').strip() # Questo è l'originale 'cssn' dall'URL
+    ospedale_from_url = request.GET.get('ospedale_cod', '').strip() # Questo è l'originale 'ospedale_cod' dall'URL
+    nome_patologia_from_url = request.GET.get('nome_patologia', '').strip() # Questo è il nome singola patologia dal click
+
+    # Parametri che arrivano dal form di filtro (possono essere singoli o liste per Select2)
+    cssn_from_form = request.GET.get('cssn_form', '').strip()
+    nome_from_form = request.GET.get('nome', '').strip()
+    cognome_from_form = request.GET.get('cognome', '').strip()
+    ospedale_from_form = request.GET.get('ospedale', '').strip()
+    stato_from_form = request.GET.get('stato', '').strip()
+    data_da_from_form = request.GET.get('data_da', '').strip()
+    data_a_from_form = request.GET.get('data_a', '').strip()
+    motivo_from_form = request.GET.get('motivo', '').strip()
+    nome_patologia_list_from_form = request.GET.getlist('nome_patologia') # Per Select2 multiplo
+
+
+    # Determinazione dei valori finali dei filtri, dando priorità ai parametri da URL per i click su riga
+    final_cssn_filter = cssn_from_url if cssn_from_url else cssn_from_form
+    final_nome_filter = nome_from_form
+    final_cognome_filter = cognome_from_form
+    final_ospedale_filter = ospedale_from_url if ospedale_from_url else ospedale_from_form
+    final_stato_filter = stato_from_form
+    final_data_da_filter = data_da_from_form
+    final_data_a_filter = data_a_from_form
+    final_motivo_filter = motivo_from_form
     
+    # Per il filtro patologia: se arriva un singolo nome_patologia da URL, ha priorità e diventa una lista
+    # Altrimenti, usiamo la lista di nomi dal form
+    final_nome_patologia_filters = []
+    if nome_patologia_from_url:
+        final_nome_patologia_filters = [nome_patologia_from_url]
+    elif nome_patologia_list_from_form:
+        final_nome_patologia_filters = nome_patologia_list_from_form
+
+
+    # Applica i filtri al queryset
+    if final_cssn_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__CSSN__icontains=final_cssn_filter)
+    if final_nome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__nome__icontains=final_nome_filter)
+    if final_cognome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__cognome__icontains=final_cognome_filter)
+    if final_ospedale_filter: ricoveri_filtrati = ricoveri_filtrati.filter(codOspedale__codice=final_ospedale_filter)
+    if final_stato_filter: ricoveri_filtrati = ricoveri_filtrati.filter(stato=final_stato_filter)
+    if final_data_da_filter: ricoveri_filtrati = ricoveri_filtrati.filter(data_ingresso__gte=final_data_da_filter)
+    if final_data_a_filter: ricoveri_filtrati = ricoveri_filtrati.filter(data_ingresso__lte=final_data_a_filter)
+    if final_motivo_filter: ricoveri_filtrati = ricoveri_filtrati.filter(motivo__icontains=final_motivo_filter)
     
-    if sort not in valid_columns or dir not in ['asc', 'desc']:
-        ordering = ['-codRicovero']  # Ordinamento di default
-        sort = None
-        dir = None
-    elif sort == 'CSSN__cognome':
-        # Ordinamento combinato cognome + nome
-        ordering = ['CSSN__cognome', 'CSSN__nome'] if dir == 'asc' else ['-CSSN__cognome', '-CSSN__nome']
-    else:
-        ordering = [sort] if dir == 'asc' else [f'-{sort}']
-
-
-
-
-    # FILTRI
-    cssn = request.GET.get('cssn', '').strip()
-    nome = request.GET.get('nome', '').strip()
-    cognome = request.GET.get('cognome', '').strip()
-    ospedale = request.GET.get('ospedale', '').strip()
-    stato = request.GET.get('stato', '').strip()
-    data_da = request.GET.get('data_da', '').strip()
-    data_a = request.GET.get('data_a', '').strip()
-    motivo = request.GET.get('motivo', '').strip()
-    patologia = request.GET.get('patologia', '').strip()
-    deceduti = request.GET.get('deceduti', '')
-
-    if cssn:
-        ricoveri = ricoveri.filter(CSSN__CSSN__icontains=cssn)
-    if nome:
-        ricoveri = ricoveri.filter(CSSN__nome__icontains=nome)
-    if cognome:
-        ricoveri = ricoveri.filter(CSSN__cognome__icontains=cognome)
-    if ospedale:
-        ricoveri = ricoveri.filter(codOspedale__codice=ospedale)
-    if stato:
-        ricoveri = ricoveri.filter(stato=stato)
-    if data_da:
-        ricoveri = ricoveri.filter(data_ingresso__gte=data_da)
-    if data_a:
-        ricoveri = ricoveri.filter(data_ingresso__lte=data_a)
-    if motivo:
-        ricoveri = ricoveri.filter(motivo__icontains=motivo)
-    if patologia:
-        ricoveri = ricoveri.filter(patologie__cod=patologia)
-    if deceduti:
-        ricoveri = ricoveri.filter(dataDecesso__isnull=False)
-
-
-    ricoveri = ricoveri.order_by(*ordering)
+    # Applica il filtro per patologia con la lista di nomi
+    if final_nome_patologia_filters:
+        ricoveri_filtrati = ricoveri_filtrati.filter(patologie__nome__in=final_nome_patologia_filters).distinct()
     
-    #Paginazione
-    paginator = Paginator(ricoveri, 20)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-    
-    colonne_larghezze = {
-    "codOspedale__nome": "120px",
-    "CSSN__cognome": "100px",
-    "CSSN__CSSN": "165px",
-    "data_ingresso": "90px",
-    "durata": "60px",
-    "stato": "50px",
-    "motivo": "100px",
-    "costo": "80px",
-    "patologie": "100px",
+    statistiche = {
+        'totali': ricoveri_filtrati.count(),
+        'attivi': ricoveri_filtrati.filter(stato=0).count(),
+        'trasferiti': ricoveri_filtrati.filter(stato=1).count(),
+        'dimessi': ricoveri_filtrati.filter(stato=2).count()
     }
 
-    return render(request, "ricoveri/ricovero.html", {
-        'form': form,
-        'page_obj': page_obj,
-        'ricoveri': page_obj.object_list,
-        'ospedali': models.Ospedale.objects.all(),
-        'patologie': models.Patologia.objects.all(),
-        'successo': successo,
-        'filtro_template': 'filtri/filtro_ricovero.html',
-        'etichetta': 'ricoveri',
-        'sort': sort,
-        'dir': dir,
-        'colonne_larghezze': colonne_larghezze,
-        'colonne_ordinabili': {
-            "codOspedale__nome": "Ospedale",
-            "CSSN__cognome": "Paziente",
-            "CSSN__CSSN": "CSSN",
-            "data_ingresso": "Data Inizio",
-            "durata": "Durata",
-            "stato": "Stato",
-            "motivo": "Motivo",
-            "costo": "Costo (€)"
-        }.items()
-        
-    })
+    # --- LOGICA ORDINAMENTO TABELLA RICOVERI ---
+    current_sort = request.GET.get('sort', 'codRicovero')
+    current_order = request.GET.get('order', 'desc')
+
+    sort_mapping = {
+        'ospedale': 'codOspedale__nome',
+        'paziente': 'CSSN__cognome',
+        'data_ingresso': 'data_ingresso',
+        'durata': 'durata',
+        'stato': 'stato',
+        'costo': 'costo',
+        'motivo': 'motivo',
+        'patologie': 'patologie__criticita',
+        'codRicovero': 'codRicovero',
+    }
+
+    sort_field = sort_mapping.get(current_sort, 'codRicovero')
+    
+    if current_order == 'desc':
+        ricoveri_ordinati = ricoveri_filtrati.order_by(f'-{sort_field}')
+    else:
+        ricoveri_ordinati = ricoveri_filtrati.order_by(sort_field)
+    
+    # Gestione righe per pagina
+    per_page = request.GET.get('per_page', 15)
+    try:
+        per_page = int(per_page)
+    except ValueError:
+        per_page = 15
+
+    paginator = Paginator(ricoveri_ordinati, per_page)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    ricoveri_con_dati = []
+    for ricovero in page_obj.object_list:
+        max_criticita = ricovero.patologie.aggregate(max_c=Max('criticita'))['max_c'] or 0
+        ricoveri_con_dati.append({'ricovero': ricovero, 'max_criticita': max_criticita})
+
+    context = {
+        'form': form, 'page_obj': page_obj, 'ricoveri_items': ricoveri_con_dati,
+        'ospedali': models.Ospedale.objects.all(), 'statistiche': statistiche,
+        'patologie': models.Patologia.objects.all(), 'filtro_template': 'filtri/filtro_ricovero.html',
+        'current_sort': current_sort,
+        'current_order': current_order,
+        # Passa i filtri attivi al template per pre-popolare il form
+        'filtri_attivi': {
+            'cssn': final_cssn_filter, # Usa il valore finale per pre-popolare
+            'nome': final_nome_filter,
+            'cognome': final_cognome_filter,
+            'ospedale': final_ospedale_filter,
+            'stato': final_stato_filter,
+            'data_da': final_data_da_filter,
+            'data_a': final_data_a_filter,
+            'motivo': final_motivo_filter,
+            'nome_patologia': final_nome_patologia_filters, # Passa la LISTA per Select2
+        }
+    }
+    return render(request, "ricoveri/ricovero.html", context)
 
 
 @transaction.atomic
-def modifica_ricovero(request, pk):
-    # 1. Recupera l'oggetto ricovero da modificare o restituisce un errore 404 se non esiste.
-    ricovero = get_object_or_404(models.Ricovero, codRicovero=pk)
-
+def trasferisci_ricovero(request, pk):
+    ricovero_originale = get_object_or_404(models.Ricovero, codRicovero=pk)
     if request.method == 'POST':
-        # 2. Se la richiesta è POST, popola il form con i dati inviati e l'istanza da modificare.
+        form = TrasferimentoForm(request.POST, instance=ricovero_originale)
+        if form.is_valid():
+            nuovo_ospedale = form.cleaned_data['codOspedale']
+            patologie_da_copiare = list(ricovero_originale.patologie.all())
+
+            # --- LOGICA DI CLONAZIONE E AGGIORNAMENTO CORRETTA ---
+
+            # 1. Duplica l'oggetto in memoria prima di modificarlo
+            ricovero_nuovo = ricovero_originale
+            ricovero_nuovo.pk = None
+            ricovero_nuovo._state.adding = True
+
+            # 2. Assegna i nuovi valori al clone
+            ricovero_nuovo.codRicovero = genera_nuovo_codice_ricovero()
+            ricovero_nuovo.codOspedale = nuovo_ospedale
+            ricovero_nuovo.data_ingresso = timezone.now().date()
+            ricovero_nuovo.stato = 0
+
+            # 3. Salva il nuovo ricovero
+            ricovero_nuovo.save()
+
+            # 4. Aggiorna lo stato del ricovero originale nel database
+            models.Ricovero.objects.filter(codRicovero=pk).update(stato=1)
+
+            # 5. Associa le patologie al nuovo ricovero
+            for patologia in patologie_da_copiare:
+                models.PatologiaRicovero.objects.create(
+                    codRicovero=ricovero_nuovo,
+                    codOspedale=ricovero_nuovo.codOspedale,
+                    codPatologia=patologia
+                )
+            
+            return JsonResponse({'success': True})
+        else:
+            errors = [error for field in form.errors.values() for error in field]
+            return JsonResponse({"success": False, "errors": errors})
+    return JsonResponse({'error': 'Metodo non valido'}, status=405)
+
+def modifica_ricovero(request, pk):
+    ricovero = get_object_or_404(models.Ricovero, pk=pk)
+    if request.method == 'POST':
         form = RicoveroForm(request.POST, instance=ricovero)
         if form.is_valid():
-            # 3. Salva il form. Django si occuperà di aggiornare sia l'oggetto Ricovero
-            #    sia le relazioni Many-to-Many (le patologie).
             form.save()
-            # 4. Reindirizza alla pagina dell'elenco con il nome corretto.
-            return redirect('ricoveri')
+            return redirect('lista_ricoveri')
     else:
-        # 5. Se la richiesta è GET, crea un'istanza del form legata all'oggetto Ricovero.
-        #    Django pre-compilerà automaticamente tutti i campi, incluse le patologie.
-        form = RicoveroForm(instance=ricovero)
+        # Pre-popola le patologie nel form
+        initial_patologie = ricovero.patologie.all().values_list('cod', flat=True)
+        form = RicoveroForm(instance=ricovero, initial={'patologie': list(initial_patologie)})
+    return render(request, 'ricoveri/modifica_ricovero.html', {'form': form, 'ricovero': ricovero})
 
-    # 6. Renderizza il template passando il form e l'oggetto ricovero.
-    context = {
-        'form': form,
-        'ricovero': ricovero
-    }
-    return render(request, 'ricoveri/modifica_ricovero.html', context)
 
 def elimina_ricovero(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
     if request.method == 'POST':
         ricovero.delete()
-        return redirect('ricoveri')
-    return render(request, 'ricoveri/elimina_ricovero.html', {
-        'ricovero': ricovero
-    })
-    
-# Assicurati di avere questi import all'inizio del file views.py
-
- # Assicurati che questo form esista in forms.py
-
-
-def genera_nuovo_codice_ricovero():
-    # Assicurati che questa logica sia corretta per il tuo schema
-    ultimo_ricovero = models.Ricovero.objects.order_by('-codRicovero').first()
-    if ultimo_ricovero:
-        numero = int(ultimo_ricovero.codRicovero[1:]) + 1
-        return f"R{numero:04d}"
-    return "R0001"
-
-def trasferisci_ricovero(request, pk):
-    ricovero_originale = get_object_or_404(models.Ricovero, codRicovero=pk)
-
-    if request.method == 'POST':
-        form = TrasferimentoForm(request.POST, instance=ricovero_originale)
-        if form.is_valid():
-            nuovo_ospedale = form.cleaned_data['codOspedale']
-            
-            try:
-                with transaction.atomic():
-                    patologie_da_copiare = list(ricovero_originale.patologie.all())
-
-                    models.Ricovero.objects.filter(pk=ricovero_originale.pk).update(stato=1)
-
-                    # Creazione del nuovo ricovero
-                    ricovero_nuovo = models.Ricovero.objects.create(
-                        codRicovero=genera_nuovo_codice_ricovero(),
-                        CSSN=ricovero_originale.CSSN,
-                        codOspedale=nuovo_ospedale,
-                        data_ingresso=timezone.now().date(),
-                        motivo=ricovero_originale.motivo,  # <-- MODIFICA QUI: Mantiene il motivo originale
-                        costo=ricovero_originale.costo,
-                        durata=ricovero_originale.durata,
-                        stato=0
-                    )
-
-                    # Associazione delle patologie
-                    if patologie_da_copiare:
-                        nuovi_collegamenti = []
-                        for patologia in patologie_da_copiare:
-                            nuovi_collegamenti.append(
-                                models.PatologiaRicovero(
-                                    codRicovero=ricovero_nuovo,
-                                    codOspedale=ricovero_nuovo.codOspedale,
-                                    codPatologia=patologia
-                                )
-                            )
-                        models.PatologiaRicovero.objects.bulk_create(nuovi_collegamenti)
-
-                return redirect('ricoveri')
-
-            except Exception as e:
-                form.add_error(None, f"Si è verificato un errore durante il trasferimento: {e}")
-    else:
-        form = TrasferimentoForm(instance=ricovero_originale)
-
-    context = {
-        'form': form,
-        'ricovero': ricovero_originale
-    }
-    return render(request, 'ricoveri/trasferisci_ricovero.html', context)
-
-
+        return redirect('lista_ricoveri')
+    return render(request, 'ricoveri/elimina_ricovero.html', {'ricovero': ricovero})
 
 def dichiara_decesso(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
-    return render(request)
+    cittadino = ricovero.CSSN
+    with transaction.atomic():
+        ricovero.stato = 3
+        ricovero.save()
+        cittadino.deceduto = 1
+        cittadino.save()
+    return redirect('lista_ricoveri')
 
 def verifica_paziente(request):
     if request.method == "POST":

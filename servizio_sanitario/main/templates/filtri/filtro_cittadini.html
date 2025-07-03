@@ -1,38 +1,66 @@
+<div class="card shadow-sm p-4 rounded-4 border-0">
+  <h5 class="text-center border-bottom pb-2 mb-3">Filtri</h5>
 
-<div class="bg-white p-3 rounded shadow">
-  <h6 class="text-muted mb-3 fw-bold">Filtri</h6>
-  <form method="get">
+  <form method="get" id="filtriCittadiniForm">
     <div class="mb-3">
-      <label for="nome" class="form-label">Nome:</label>
-      <input type="text" class="form-control" id="nome" name="nome" placeholder="Es: Mario..." value="{{ request.GET.nome }}">
+      <label for="nome-cittadino" class="form-label">Nome:</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="nome-cittadino" name="nome" placeholder="Es: Mario..." value="{{ request.GET.nome }}">
+        <button type="button" class="btn btn-outline-secondary clear-filter-btn" data-target="nome-cittadino" title="Svuota campo">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
     <div class="mb-3">
-      <label for="cognome" class="form-label">Cognome:</label>
-      <input type="text" class="form-control" id="cognome" name="cognome" placeholder="Es: Rossi..." value="{{ request.GET.cognome }}">
+      <label for="cognome-cittadino" class="form-label">Cognome:</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="cognome-cittadino" name="cognome" placeholder="Es: Rossi..." value="{{ request.GET.cognome }}">
+        <button type="button" class="btn btn-outline-secondary clear-filter-btn" data-target="cognome-cittadino" title="Svuota campo">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
     <div class="mb-3">
-      <label for="luogo" class="form-label">Luogo Nascita:</label>
-      <input type="text" class="form-control" id="luogo" name="luogo" placeholder="Es: Milano..." value="{{ request.GET.luogo }}">
+      <label for="luogo-nascita" class="form-label">Luogo Nascita:</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="luogo-nascita" name="luogo" placeholder="Es: Milano..." value="{{ request.GET.luogo }}">
+        <button type="button" class="btn btn-outline-secondary clear-filter-btn" data-target="luogo-nascita" title="Svuota campo">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
     <div class="mb-3">
-      <label for="indirizzo" class="form-label">Indirizzo:</label>
-      <input type="text" class="form-control" id="indirizzo" name="indirizzo" placeholder="Es: Via Roma 1, Milano" value="{{ request.GET.indirizzo }}">
+      <label for="indirizzo-cittadino" class="form-label">Indirizzo:</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="indirizzo-cittadino" name="indirizzo" placeholder="Es: Via Roma 1, Milano" value="{{ request.GET.indirizzo }}">
+        <button type="button" class="btn btn-outline-secondary clear-filter-btn" data-target="indirizzo-cittadino" title="Svuota campo">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
     <div class="mb-3">
-      <label for="cssn" class="form-label">CSSN:</label>
-      <input type="text" class="form-control" id="cssn" name="cssn" placeholder="Es: ABC..." value="{{ request.GET.cssn }}">
+      <label for="cssn-cittadino" class="form-label">CSSN:</label>
+      <div class="input-group">
+        <input type="text" class="form-control" id="cssn-cittadino" name="cssn" placeholder="Es: ABC..." value="{{ request.GET.cssn }}">
+        <button type="button" class="btn btn-outline-secondary clear-filter-btn" data-target="cssn-cittadino" title="Svuota campo">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
     <div class="mb-4">
-      <label for="stato" class="form-label">Stato:</label>
-      <select class="form-select" id="stato" name="stato">
-        <option value="">Tutti gli stati</option>
-        <option value="Domicilio" {% if request.GET.stato == "Domicilio" %}selected{% endif %}>Domicilio</option>
-        <option value="Ricoverato" {% if request.GET.stato == "Ricoverato" %}selected{% endif %}>Ricoverato</option>
-        <option value="Deceduto" {% if request.GET.stato == "Deceduto" %}selected{% endif %}>Deceduto</option>
-      </select>
+      <label for="stato-cittadino" class="form-label">Stato:</label>
+      <div class="input-group">
+        <select class="form-select select2-filter" id="stato-cittadino" name="stato" data-placeholder="Tutti gli stati"> {# Aggiunto select2-filter e data-placeholder #}
+          <option value=""></option> {# Valore vuoto per il placeholder #}
+          <option value="Domicilio" {% if request.GET.stato == "Domicilio" %}selected{% endif %}>Domicilio</option>
+          <option value="Ricoverato" {% if request.GET.stato == "Ricoverato" %}selected{% endif %}>Ricoverato</option>
+          <option value="Deceduto" {% if request.GET.stato == "Deceduto" %}selected{% endif %}>Deceduto</option>
+        </select>
+        {# Il pulsante clear-filter-btn qui non è più necessario se Select2 ha il suo clear #}
+      </div>
     </div>
     <div class="d-grid gap-2">
-      <button type="submit" class="btn btn-primary">Applica Filtri</button>
+      <button type="submit" class="btn btn-primary custom-apply-filters-btn">Applica Filtri</button>
       <a href="{% url 'cittadini' %}" class="btn btn-secondary">Resetta Filtri</a>
     </div>
   </form>

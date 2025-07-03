@@ -2,61 +2,103 @@
 {% block title %}Elenco Patologie{% endblock %}
 
 {% block content %}
+<div class="row mb-4 g-3">
+  <div class="col-md-4">
+    <div class="stat-card" style="border-color: #dc3545;">{# Colore rosso per le patologie #}
+      <div class="stat-value">{{ statistiche_patologie.totali }}</div>
+      <div class="stat-label">Patologie Totali</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card" style="border-color: #ffc107;">{# Colore giallo/arancio per croniche #}
+      <div class="stat-value">{{ statistiche_patologie.croniche }}</div>
+      <div class="stat-label">Croniche</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card" style="border-color: #6f42c1;">{# Colore viola/blu per mortali #}
+      <div class="stat-value">{{ statistiche_patologie.mortali }}</div>
+      <div class="stat-label">Mortali</div>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid px-0 py-4">
   <div class="row">
     <section class="col-12">
       <div class="bg-white p-4 rounded shadow">
         <h4 class="mb-4 text-danger fw-bold">Elenco delle Patologie</h4>
         <div class="table-responsive">
-          <table class="table table-striped table-hover table-bordered w-100 text-center align-middle">
+          <table class="table table-striped table-hover table-bordered w-100 align-middle">
             <thead class="table-light">
-  <tr>
-    <th>
-      <a href="?sort=nome&order={% if current_sort == 'nome' and current_order == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
-        Nome
-        {% if current_sort == 'nome' %}
-          <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
-        {% endif %}
-      </a>
-    </th>
-    <th>
-      <a href="?sort=criticita&order={% if current_sort == 'criticita' and current_order == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
-        Criticità
-        {% if current_sort == 'criticita' %}
-          <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
-        {% endif %}
-      </a>
-    </th>
-    <th>
-      <a href="?sort=tipologia&order={% if current_sort == 'tipologia' and current_order == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">
-        Tipologia
-        {% if current_sort == 'tipologia' %}
-          <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
-        {% endif %}
-      </a>
-    </th>
-  </tr>
-</thead>
-
+              <tr>
+                <th>
+                  <a href="?sort=nome&order={% if current_sort == 'nome' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                    Nome
+                    {% if current_sort == 'nome' %}
+                      <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                    {% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a href="?sort=criticita&order={% if current_sort == 'criticita' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                    Criticità
+                    {% if current_sort == 'criticita' %}
+                      <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                    {% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a href="?sort=tipologia&order={% if current_sort == 'tipologia' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                    Tipologia
+                    {% if current_sort == 'tipologia' %}
+                      <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                    {% endif %}
+                  </a>
+                </th>
+                <th class="text-end">
+                  <a href="?sort=numero_ricoveri&order={% if current_sort == 'numero_ricoveri' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                    Ricoveri
+                    {% if current_sort == 'numero_ricoveri' %}
+                      <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                    {% endif %}
+                  </a>
+                </th>
+              </tr>
+            </thead>
             <tbody>
-  {% for patologia in patologie %}
-  <tr>
-    <td>{{ patologia.nome }}</td>
-    <td>{{ patologia.criticita }}</td>
-    <td>{{ patologia.tipologia }}</td>
-  </tr>
-  {% empty %}
-  <tr>
-    <td colspan="3" class="text-center text-muted">Nessuna patologia trovata.</td>
-  </tr>
-  {% endfor %}
-</tbody>
-
+              {% for patologia in page_obj.object_list %}
+              {# Modificato data-href per passare patologia.nome invece di patologia.cod #}
+              <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?nome_patologia={{ patologia.nome }}"> 
+                <td>{{ patologia.nome }}</td>
+                <td class="text-end">{{ patologia.criticita }}</td>
+                <td class="text-end">{{ patologia.tipologia }}</td>
+                <td class="text-end">{{ patologia.numero_ricoveri }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="4" class="text-center text-muted">Nessuna patologia trovata.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
           </table>
-          {% include 'partials/paginazione.html' %}
+          {% include 'partials/paginazione.html' with etichetta="patologie" %}
         </div>
       </div>
     </section>
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('.clickable-row').forEach(row => {
+      row.addEventListener('click', function (event) {
+        if (!event.target.closest('a') && !event.target.closest('button')) { 
+          window.location.href = row.dataset.href;
+        }
+      });
+    });
+  });
+</script>
+
 {% endblock %}

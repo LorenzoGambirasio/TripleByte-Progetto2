@@ -8,7 +8,6 @@
   <div class="row">
 
 
-    <!-- CONTENUTO principale -->
     <section class="col-12">
 
       <div class="bg-white p-4 rounded shadow">
@@ -19,8 +18,8 @@
             <thead class="table-light">
               <tr>
                 {% for col, label in columns %}
-                <th style="width: {{ colonne_larghezze|get_item:col }}">
-                  <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}"
+                <th style="width: {{ colonne_larghezze|get_item:col }}" {% if col == 'data_nascita' or col == 'ricoveri' %}class="text-end"{% endif %}> {# Allineamento a destra per Data e Ricoveri #}
+                  <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}"
                     class="text-decoration-none text-dark">
                     {{ label }}
                     {% if current_sort == col %}
@@ -29,34 +28,33 @@
                   </a>
                 </th>
                 {% endfor %}
-                <th style="width: {{ colonne_larghezze|get_item:'ricoveri' }}">Ricoveri</th>
+                <th style="width: {{ colonne_larghezze|get_item:'ricoveri' }}" class="text-end">Ricoveri</th> {# Allineamento a destra #}
               </tr>
             </thead>
 
 
             <tbody>
-              {% for cittadino in cittadini %}
-              <tr class="clickable-row" data-href="{% url 'ricoveri' %}?cssn={{ cittadino.CSSN }}">
+              {% for cittadino in page_obj.object_list %}
+              <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?cssn={{ cittadino.CSSN }}"> {# Aggiunto data-href per il reindirizzamento #}
                 <td style="width: {{ colonne_larghezze|get_item:'CSSN' }}">{{ cittadino.CSSN }}</td>
-                <td
-                  style="width: {{ colonne_larghezze|get_item:'nome_cognome' }}; word-break: break-word; white-space: normal;">
+                <td class="nome-cognome" style="width: {{ colonne_larghezze|get_item:'nome_cognome' }};">
                   {{ cittadino.nome }} {{ cittadino.cognome }}
                 </td>
-                <td style="width: {{ colonne_larghezze|get_item:'data_nascita' }}">
+                <td style="width: {{ colonne_larghezze|get_item:'data_nascita' }}" class="text-end"> {# Allineamento a destra #}
                   {{cittadino.data_nascita|date:"d/m/Y" }}</td>
                 <td
                   style="width: {{ colonne_larghezze|get_item:'città' }}; word-break: break-word; white-space: normal;">
                   {{ cittadino.città }}
                 </td>
-                <td style="width: {{ colonne_larghezze|get_item:'via' }}; word-break: break-word; white-space: normal;"
+                <td class="indirizzo-col" style="width: {{ colonne_larghezze|get_item:'via' }};"
                   data-bs-toggle="tooltip" data-bs-placement="top" title="{{ cittadino.via }}">
                   {{ cittadino.via }}
                 </td>
                 <td style="width: {{ colonne_larghezze|get_item:'stato' }}"
-                  class="stato {% if cittadino.stato == 'Ricoverato' %}text-dark{% elif cittadino.stato == 'Deceduto' %}text-danger{% else %}text-muted{% endif %}">
-                  {{ cittadino.stato }}
+                  class="stato {% if cittadino.stato_display == 'Ricoverato' %}text-dark{% elif cittadino.stato_display == 'Deceduto' %}text-danger{% else %}text-muted{% endif %}"> {# Usare stato_display #}
+                  {{ cittadino.stato_display }}
                 </td>
-                <td style="width: {{ colonne_larghezze|get_item:'ricoveri' }}; text-align: right;">{{ cittadino.numero_ricoveri }}</td>
+                <td style="width: {{ colonne_larghezze|get_item:'ricoveri' }};" class="text-end">{{ cittadino.numero_ricoveri }}</td> {# Allineamento a destra #}
               </tr>
               {% empty %}
               <tr>
@@ -66,7 +64,7 @@
             </tbody>
 
           </table>
-          {% include 'partials/paginazione.html' %}
+          {% include 'partials/paginazione.html' with etichetta="cittadini" %}
 
         </div>
 
@@ -78,8 +76,10 @@
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll('.clickable-row').forEach(row => {
-      row.addEventListener('click', function () {
-        window.location.href = row.dataset.href;
+      row.addEventListener('click', function (event) {
+        if (!event.target.closest('a') && !event.target.closest('button')) {
+          window.location.href = row.dataset.href;
+        }
       });
     });
   });

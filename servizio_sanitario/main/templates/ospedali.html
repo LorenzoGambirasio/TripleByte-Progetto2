@@ -5,12 +5,12 @@
 <div class="bg-white p-4 rounded shadow">
   <h4 class="mb-4 text-danger fw-bold">Elenco degli Ospedali</h4>
   <div class="table-responsive">
-    <table class="table table-striped table-hover table-bordered w-100 text-center align-middle">
+    <table class="table table-striped table-hover table-bordered w-100 align-middle"> {# Rimosso text-center per controllo più granulare #}
 <thead class="table-light">
   <tr>
     {% for col, label in columns %}
-      <th>
-        <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}"
+      <th {% if col == 'ricoveri' %}class="text-end"{% endif %}> {# Allineamento a destra per Ricoveri #}
+        <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}"
            class="text-decoration-none text-dark">
           {{ label }}
           {% if current_sort == col %}
@@ -24,22 +24,36 @@
 
 
       <tbody>
-        {% for ospedale in ospedali %}
-        <tr>
+        {% for ospedale in page_obj.object_list %}
+        <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?ospedale_cod={{ ospedale.codice }}"> {# Aggiunto data-href per il reindirizzamento #}
           <td>{{ ospedale.nome }}</td>
           <td>{{ ospedale.città }}</td>
           <td>{{ ospedale.indirizzo }}</td>
-          <td>{{ ospedale.CSSN_direttore.nome }} {{ ospedale.CSSN_direttore.cognome }}</td>
+          <td>{% if ospedale.CSSN_direttore %}{{ ospedale.CSSN_direttore.nome }} {{ ospedale.CSSN_direttore.cognome }}{% else %}N/D{% endif %}</td>
+          <td class="text-end">{{ ospedale.numero_ricoveri_ospedale }}</td> {# Nuova cella - Allineata a destra #}
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="text-center text-muted">Nessun ospedale trovato.</td>
+          <td colspan="5" class="text-center text-muted">Nessun ospedale trovato.</td> {# Aggiornato colspan #}
         </tr>
         {% endfor %}
       </tbody>
     </table>
 
-    {% include 'partials/paginazione.html' %}
+    {% include 'partials/paginazione.html' with etichetta="ospedali" %}
   </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('.clickable-row').forEach(row => {
+      row.addEventListener('click', function (event) {
+        if (!event.target.closest('a') && !event.target.closest('button')) { 
+          window.location.href = row.dataset.href;
+        }
+      });
+    });
+  });
+</script>
+
 {% endblock %}

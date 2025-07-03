@@ -1,341 +1,124 @@
 {% extends "base.html" %}
-{% load custom_filters %}
 {% block title %}Elenco dei Ricoveri{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-0 py-4">
-  <div class="row">
-    <section class="col-12">
-      <div class="bg-white p-4 rounded shadow">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="text-danger fw-bold m-0">Elenco dei Ricoveri</h4>
-          <a href="#" class="btn btn-success rounded-circle shadow" data-bs-toggle="modal"
-            data-bs-target="#modaleRicovero" title="Aggiungi nuovo ricovero">
-            <i class="bi bi-plus-lg"></i>
-          </a>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-bordered table-hover text-center text-nowrap"
-            style="table-layout: fixed; width: 100%;">
-            <thead>
-              <tr>
-                {% for col, label in colonne_ordinabili %}
-                <th style="width: {{ colonne_larghezze|get_item:col }}">
-                  <a href="{% if sort == col and dir == 'asc' %}?sort={{ col }}&dir=desc
-                 {% elif sort == col and dir == 'desc' %}?
-                 {% else %}?sort={{ col }}&dir=asc
-                 {% endif %}" class="text-decoration-none text-dark">
-                    {{ label }}
-                    {% if sort == col %}
-                    {% if dir == 'asc' %}
-                    <i class="bi bi-caret-up-fill text-dark"></i>
-                    {% elif dir == 'desc' %}
-                    <i class="bi bi-caret-down-fill text-dark"></i>
-                    {% endif %}
-                    {% endif %}
-                  </a>
-                </th>
-                {% endfor %}
-                <th style="width: 100px;">Patologie</th>
-              </tr>
-            </thead>
+<div class="row mb-4 g-3">
+  <div class="col-md-3"><div class="stat-card" style="border-color: #0d6efd;"><div class="stat-value">{{ statistiche.totali }}</div><div class="stat-label">Ricoveri Totali</div></div></div>
+  <div class="col-md-3"><div class="stat-card" style="border-color: #198754;"><div class="stat-value">{{ statistiche.attivi }}</div><div class="stat-label">Attivi</div></div></div>
+  <div class="col-md-3"><div class="stat-card" style="border-color: #ffc107;"><div class="stat-value">{{ statistiche.trasferiti }}</div><div class="stat-label">Trasferiti</div></div></div>
+  <div class="col-md-3"><div class="stat-card" style="border-color: #dc3545;"><div class="stat-value">{{ statistiche.dimessi }}</div><div class="stat-label">Dimessi</div></div></div>
+</div>
 
-            <tbody>
-              {% for ricovero in page_obj %}
-              <tr
-                class="clickable-row {% if ricovero.stato == 0 %}table-success{% elif ricovero.stato == 1 %}table-warning{% elif ricovero.stato == 2 %}table-danger{% elif ricovero.stato == 3 %}table-secondary{% endif %}"
-                data-bs-toggle="modal" data-bs-target="#ricoveroModal" data-id="{{ ricovero.codRicovero }}"
-                data-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" data-cssn="{{ ricovero.CSSN.CSSN }}"
-                data-data="{{ ricovero.data_ingresso|date:'d/m/Y' }}" data-costo="{{ ricovero.costo|floatformat:2 }}"
-                data-motivo="{{ ricovero.motivo|escapejs }}"
-                data-patologie='[{% for p in ricovero.patologie.all %}"{{ p.nome|escapejs }}"{% if not forloop.last %},{% endif %}{% endfor %}]'
-                data-stato="{{ ricovero.stato }}" data-url-modifica="{% url 'modifica_ricovero' ricovero.codRicovero %}"
-                data-url-elimina="{% url 'elimina_ricovero' ricovero.codRicovero %}"
-                data-url-deceduto="{% url 'inserisci_decesso' ricovero.codRicovero %}"
-                data-url-trasferisci="{% url 'trasferisci_ricovero' ricovero.codRicovero %}">
-
-                <td
-                  style="width: {{ colonne_larghezze|get_item:'codOspedale__nome' }} word-break: break-word; white-space: normal;">
-                  {{ ricovero.codOspedale.nome }}
-                </td>
-
-                <td
-                  style="width: {{ colonne_larghezze|get_item:'CSSN__cognome' }} word-break: break-word; white-space: normal;">
-                  {{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}
-                </td>
-
-                <td style="width: {{ colonne_larghezze|get_item:'CSSN__CSSN' }}">
-                  {{ ricovero.CSSN.CSSN }}
-                </td>
-
-                <td style="width: {{ colonne_larghezze|get_item:'data_ingresso' }}">
-                  {{ ricovero.data_ingresso|date:"d/m/Y" }}
-                </td>
-
-                <td style="width: {{ colonne_larghezze|get_item:'durata' }}">
-                  {{ ricovero.durata }}
-                </td>
-
-                <td style="width: {{ colonne_larghezze|get_item:'stato' }}">
-                  {% if ricovero.stato == 0 %} <span class="text-success">●</span>
-                  {% elif ricovero.stato == 1 %} <span class="text-warning">●</span>
-                  {% elif ricovero.stato == 2 %} <span class="text-danger">●</span>
-                  {% elif ricovero.stato == 3 %} <span class="text-black">●</span>
+<div class="bg-white p-4 rounded shadow">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="text-danger fw-bold m-0">Dettaglio Ricoveri</h4>
+    <a href="#" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modaleAggiungi"><i class="bi bi-plus-lg me-1"></i> Nuovo</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover table-striped">
+      <thead class="table-light">
+        <tr>
+          <th>
+            <a href="?sort=ospedale&order={% if current_sort == 'ospedale' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Ospedale
+              {% if current_sort == 'ospedale' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?sort=paziente&order={% if current_sort == 'paziente' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Paziente
+              {% if current_sort == 'paziente' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?sort=data_ingresso&order={% if current_sort == 'data_ingresso' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Data Inizio
+              {% if current_sort == 'data_ingresso' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?sort=durata&order={% if current_sort == 'durata' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Durata
+              {% if current_sort == 'durata' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?sort=stato&order={% if current_sort == 'stato' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Stato
+              {% if current_sort == 'stato' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?sort=costo&order={% if current_sort == 'costo' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Costo
+              {% if current_sort == 'costo' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+          <th class="text-center">
+            <a href="?sort=patologie&order={% if current_sort == 'patologie' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Patologie
+              {% if current_sort == 'patologie' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+          <th>
+            <a href="?sort=motivo&order={% if current_sort == 'motivo' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+              Motivo
+              {% if current_sort == 'motivo' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+            </a>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in ricoveri_items %}
+          {% with ricovero=item.ricovero max_criticita=item.max_criticita %}
+          <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#dettagliModal" 
+              data-pk="{{ ricovero.codRicovero }}" data-paziente-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" 
+              data-ospedale-nome="{{ ricovero.codOspedale.nome }}" data-stato="{{ ricovero.stato }}"
+              data-dettagli-json='{"Codice": "{{ ricovero.codRicovero }}", "Paziente": "{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}", "CSSN": "{{ ricovero.CSSN.CSSN }}", "Data Ingresso": "{{ ricovero.data_ingresso|date:"d/m/Y" }}", "Durata (gg)": "{{ ricovero.durata }}", "Costo": "€ {{ ricovero.costo|floatformat:2 }}"}'
+              data-patologie-json='[{% for p in ricovero.patologie.all %}{"nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+              data-url-modifica="{% url 'modifica_ricovero' ricovero.pk %}" data-url-elimina="{% url 'elimina_ricovero' ricovero.pk %}" data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}">
+            <td>{{ ricovero.codOspedale.nome }}</td>
+            <td>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</td>
+            <td>{{ ricovero.data_ingresso|date:"d/m/Y" }}</td>
+            <td>{{ ricovero.durata }} gg</td>
+            <td class="stato-col">
+              {# Codice per lo stato con solo icona e tooltip #}
+              {% if ricovero.stato == 0 %} 
+                <span class="badge border border-success-subtle rounded-pill status-icon-badge text-success-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Attivo"><i class="bi bi-check-circle"></i></span>
+              {% elif ricovero.stato == 1 %} 
+                <span class="badge border border-warning-subtle rounded-pill status-icon-badge text-warning-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Trasferito"><i class="bi bi-arrow-left-right"></i></span>
+              {% elif ricovero.stato == 2 %} 
+                <span class="badge border border-danger-subtle rounded-pill status-icon-badge text-danger-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Dimesso"><i class="bi bi-house"></i></span>
+              {% elif ricovero.stato == 3 %} 
+                <span class="badge border border-dark-subtle rounded-pill status-icon-badge text-dark-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Deceduto"><i class="bi bi-x-circle"></i></span>
+              {% endif %}
+            </td>
+            <td>€ {{ ricovero.costo|floatformat:2 }}</td>
+            <td class="text-center" data-bs-toggle="tooltip" data-bs-html="true" title="{% for p in ricovero.patologie.all %}{{ p.nome }}<br>{% empty %}Nessuna{% endfor %}">
+              {% with patologie_count=ricovero.patologie.all.count %}
+                {% if patologie_count > 0 %}
+                  {% if max_criticita >= 8 %} <span class="pathology-icon text-danger"><i class="bi bi-shield-fill-exclamation"></i></span>
+                  {% elif max_criticita >= 5 %} <span class="pathology-icon text-warning"><i class="bi bi-shield-exclamation"></i></span>
+                  {% else %} <span class="pathology-icon text-success"><i class="bi bi-shield-check"></i></span>
                   {% endif %}
-                </td>
-
-                <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                  data-bs-toggle="tooltip" data-bs-placement="top" title="{{ ricovero.motivo }}">
-                  {{ ricovero.motivo }}
-                </td>
-
-                <td style="width: {{ colonne_larghezze|get_item:'costo' }}">
-                  {{ ricovero.costo|floatformat:2 }}
-                </td>
-
-                <td style="max-width: 200px;">
-                  {% if ricovero.patologie.exists %}
-                  <div style="display: flex; flex-wrap: wrap; gap: 4px; justify-content: center;">
-                    {% for p in ricovero.patologie.all %}
-                    <div class="badge bg-secondary" style="display: inline-block; max-width: 100%; white-space: normal; word-break: break-word; overflow-wrap: break-word;">
-                      {{ p.nome }}
-                    </div>
-                    {% endfor %}
-                  </div>
-                  {% else %}
-                  <span class="text-muted">Nessuna</span>
-                  {% endif %}
-                </td>
-
-
-              </tr>
-              {% empty %}
-              <tr>
-                <td colspan="10" class="text-center text-muted">Nessun ricovero trovato.</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-
-          {% include 'partials/paginazione.html' %}
-        </div>
-      </div>
-    </section>
+                  <span class="ms-1 fw-bold">{{ patologie_count }}</span>
+                {% else %}
+                  <span class="text-muted small">--</span>
+                {% endif %}
+              {% endwith %}
+            </td>
+            <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" data-bs-toggle="tooltip" title="{{ ricovero.motivo }}">{{ ricovero.motivo }}</td>
+          </tr>
+          {% endwith %}
+        {% empty %}
+          <tr><td colspan="8" class="text-center p-4">Nessun ricovero trovato.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% include 'partials/paginazione.html' %}
   </div>
 </div>
 
-<!-- Modale Aggiungi Ricovero -->
-<div class="modal fade" id="modaleRicovero" tabindex="-1" aria-labelledby="modaleRicoveroLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content rounded-4 shadow">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title" id="modaleRicoveroLabel">Aggiungi ricovero</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
-      </div>
-      <div class="modal-body">
-        <form method="post" id="formAggiungiRicovero" nonvalidate>
-          {% csrf_token %}
-          {% include "ricoveri/aggiungi_ricovero.html" %}
-          <div class="text-center mt-3">
-            <button type="submit" class="btn btn-danger px-4 py-2">Salva</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Modale Dettagli -->
-<div class="modal fade" id="ricoveroModal" tabindex="-1" aria-labelledby="ricoveroModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg rounded-4">
-      <div class="modal-header bg-light border-0 rounded-top-4">
-        <h5 class="modal-title fw-bold text-danger" id="ricoveroModalLabel">
-          <i class="bi bi-hospital"></i> Dettagli Ricovero
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
-      </div>
-      <div class="modal-body px-4 py-3">
-        <ul class="list-unstyled mb-3">
-          <li><strong>Codice:</strong> <span id="modalCodice" class="text-secondary"></span></li>
-          <li><strong>Nome cittadino:</strong> <span id="modalNome" class="text-secondary"></span></li>
-          <li><strong>Codice fiscale:</strong> <span id="modalCSSN" class="text-secondary"></span></li>
-          <li><strong>Data ricovero:</strong> <span id="modalData" class="text-secondary"></span></li>
-          <li><strong>Costo:</strong> <span id="modalCosto" class="text-secondary"></span></li>
-          <li><strong>Motivo:</strong> <span id="modalMotivo" class="text-secondary"></span></li>
-          <li><strong>Patologie:</strong>
-            <div id="modalPatologie" class="d-flex flex-wrap gap-1 mt-1"></div>
-          </li>
-        </ul>
-        <p class="fw-semibold mb-2 text-muted">Azioni disponibili:</p>
-        <div class="d-flex flex-wrap gap-2">
-          <a href="#" id="btnModifica" class="btn btn-outline-primary btn-sm"><i class="bi bi-pencil-square me-1"></i>
-            Modifica</a>
-          <a href="#" id="btnTrasferisci" class="btn btn-outline-warning btn-sm"><i
-              class="bi bi-arrow-left-right me-1"></i> Trasferisci</a>
-          <a href="#" id="btnElimina" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash3 me-1"></i>
-            Elimina</a>
-          <a href="#" id="btnDeceduto" class="btn btn-outline-dark btn-sm"><i class="bi bi-x-circle me-1"></i> Segna
-            come deceduto</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Script -->
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const modal = document.getElementById('modaleRicovero');
-    const form = document.getElementById("formAggiungiRicovero");
-
-    modal.addEventListener('shown.bs.modal', function () {
-      $('#id_cittadino').select2({
-        placeholder: "Seleziona un paziente",
-        allowClear: true,
-        width: "100%",
-        dropdownParent: $('#modaleRicovero')
-      });
-      $('#id_patologie').select2({
-        placeholder: "Seleziona patologie",
-        allowClear: true,
-        width: "100%",
-        dropdownParent: $('#modaleRicovero')
-      });
-      $('#id_codOspedale').select2({
-        placeholder: "Seleziona un ospedale",
-        allowClear: true,
-        width: "100%",
-        dropdownParent: $('#modaleRicovero')
-      });
-    });
-
-    form.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  const cittadino = form.querySelector('#id_CSSN').value.trim();
-  const durata = form.querySelector('#id_durata').value.trim();
-  const ospedale = form.querySelector('#id_codOspedale').value.trim();
-  const data_ingresso = form.querySelector('#id_data_ingresso').value.trim();
-  const motivo = form.querySelector('#id_motivo').value.trim();
-  const costo = form.querySelector('#id_costo').value.trim();
-
-  let errori = [];
-
-  if (!cittadino) errori.push("Seleziona un paziente.");
-  if (!durata) errori.push("Durata obbligatoria.");
-  if (!ospedale) errori.push("Seleziona un ospedale.");
-  if (!data_ingresso) errori.push("Data di ingresso obbligatoria.");
-  if (!motivo) errori.push("Motivo del ricovero obbligatorio.");
-  if (!costo) errori.push("Costo obbligatorio.");
-
-  if (errori.length > 0) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Dati mancanti',
-      html: `<ul class='text-start'>${errori.map(e => `<li>${e}</li>`).join('')}</ul>`
-    });
-    return;
-  }
-
-  const formData = new FormData(form);
-
-  fetch("/ricoveri/aggiungi/", {
-    method: "POST",
-    headers: { "X-CSRFToken": "{{ csrf_token }}" },
-    body: formData
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data.success) {
-        Swal.fire({
-          icon: 'success',
-          title: 'Ricovero aggiunto',
-          text: 'Il ricovero è stato salvato con successo!',
-          timer: 2000,
-          showConfirmButton: false
-        }).then(() => window.location.reload());
-      } else {
-        Swal.fire({
-          icon: 'error',
-          title: 'Errore di validazione',
-          html: `<ul class='text-start'>${data.errors.map(e => `<li>${e}</li>`).join('')}</ul>`
-        });
-      }
-    })
-    .catch(err => {
-      Swal.fire("Errore", "Si è verificato un errore durante l'invio del form.", "error");
-    });
-});
-
-
-    document.querySelectorAll('.clickable-row').forEach(row => {
-      row.addEventListener('click', () => {
-        document.getElementById('modalCodice').textContent = row.dataset.id;
-        document.getElementById('modalNome').textContent = row.dataset.nome;
-        document.getElementById('modalCSSN').textContent = row.dataset.cssn;
-        document.getElementById('modalData').textContent = row.dataset.data;
-        document.getElementById('modalCosto').textContent = row.dataset.costo + ' €';
-        document.getElementById('modalMotivo').textContent = row.dataset.motivo;
-
-        const patologieContainer = document.getElementById('modalPatologie');
-        patologieContainer.innerHTML = "";
-        const patologie = JSON.parse(row.dataset.patologie || "[]");
-        patologie.forEach(p => {
-          const badge = document.createElement("span");
-          badge.className = "badge bg-secondary";
-          badge.textContent = p;
-          patologieContainer.appendChild(badge);
-        });
-
-        const btnModifica = document.getElementById('btnModifica');
-        const btnElimina = document.getElementById('btnElimina');
-        const btnDeceduto = document.getElementById('btnDeceduto');
-        const btnTrasferisci = document.getElementById('btnTrasferisci');
-
-        btnModifica.href = row.dataset.urlModifica;
-        btnElimina.href = row.dataset.urlElimina;
-        btnDeceduto.href = row.dataset.urlDeceduto;
-        btnTrasferisci.href = row.dataset.urlTrasferisci;
-
-        btnModifica.classList.remove('disabled');
-        btnElimina.classList.remove('disabled');
-        btnDeceduto.classList.remove('disabled');
-        btnTrasferisci.classList.remove('disabled');
-
-        const msg = document.getElementById("modalMsg");
-        if (msg) {
-          msg.remove();
-        }
-
-        const stato = parseInt(row.dataset.stato);
-        if (stato === 3 || stato === 1) {
-          [btnElimina, btnDeceduto, btnTrasferisci].forEach(btn => {
-            btn.classList.add('disabled');
-            btn.removeAttribute('href');
-          });
-          aggiungiMessaggio("Azioni non disponibili per ricoveri trasferiti o deceduti.");
-        } else if (stato === 2) {
-          btnDeceduto.classList.add('disabled');
-          btnDeceduto.removeAttribute('href');
-          btnTrasferisci.classList.add('disabled');
-          btnTrasferisci.removeAttribute('href');
-          aggiungiMessaggio("Segnalazione decesso e trasferimento non disponibili per ricoveri dimessi.");
-        }
-
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
-
-        function aggiungiMessaggio(testo) {
-          const msgDiv = document.createElement("div");
-          msgDiv.id = "modalMsg";
-          msgDiv.className = "alert alert-secondary mt-3 w-100";
-          msgDiv.textContent = testo;
-          document.querySelector("#ricoveroModal .modal-body").appendChild(msgDiv);
-        }
-      });
-    });
-  });
-</script>
+{% include 'partials/modals.html' %} 
 
 {% endblock %}

@@ -1,32 +1,48 @@
-<div class="bg-white p-3 rounded shadow mt-3">
-  <h5 class="text-center fw-bold mb-3">Filtri</h5>
-  <form method="get">
+<div class="card shadow-sm p-4 rounded-4 border-0">
+  <h5 class="text-center border-bottom pb-2 mb-3">Filtri</h5>
+
+  <form method="get" id="filtriPatologieForm">
     <div class="mb-3">
-      <label class="form-label fw-semibold">Nome:</label>
-      <input type="text" name="nome" class="form-control" placeholder="Es: Polmonite..." value="{{ request.GET.nome }}">
+      <label for="nome-filtro" class="form-label">Nome:</label>
+      <div class="input-group">
+        <input type="text" id="nome-filtro" name="nome" class="form-control" placeholder="Es: Polmonite..." value="{{ request.GET.nome }}">
+        <button type="button" class="btn btn-outline-secondary clear-filter-btn" data-target="nome-filtro" title="Svuota campo">
+          <i class="bi bi-x"></i>
+        </button>
+      </div>
     </div>
+    
     <div class="mb-3">
-      <label class="form-label fw-semibold">Livello di Criticità:</label>
-<select name="criticita" class="form-select">
-  <option value="">Tutti i livelli</option>
-  {% for i in range_criticita %}
-    <option value="{{ i }}" {% if request.GET.criticita == i|stringformat:"s" %}selected{% endif %}>{{ i }}</option>
-  {% endfor %}
-</select>
+      <label for="criticita-filtro" class="form-label">Livello di Criticità:</label>
+      <div class="input-group">
+        <select id="criticita-filtro" name="criticita" class="form-select select2-filter" data-placeholder="Tutti i livelli"> {# Aggiunto select2-filter e data-placeholder #}
+          <option value=""></option> {# Valore vuoto per il placeholder #}
+          {% for i in range_criticita %}
+            <option value="{{ i }}" {% if request.GET.criticita == i|stringformat:"s" %}selected{% endif %}>{{ i }}</option>
+          {% endfor %}
+        </select>
+        {# Il pulsante clear-filter-btn non è più necessario qui se Select2 ha il suo clear #}
+      </div>
     </div>
+    
     <div class="mb-3">
-      <label class="form-label fw-semibold">Tipologia:</label>
-      <select name="tipologia" class="form-select">
-        <option value="">Tutte</option>
-        <option value="Nessuna" {% if request.GET.tipologia == "Nessuna" %}selected{% endif %}>Nessuna</option>
-        <option value="Cronica" {% if request.GET.tipologia == 'Cronica' %}selected{% endif %}>Cronica</option>
-        <option value="Mortale" {% if request.GET.tipologia == 'Mortale' %}selected{% endif %}>Mortale</option>
-        <option value="Cronica e Mortale" {% if request.GET.tipologia == 'Cronica e Mortale' %}selected{% endif %}>Cronica e Mortale</option>
-      </select>
+      <label for="tipologia-filtro" class="form-label">Tipologia:</label>
+      <div class="input-group">
+        <select id="tipologia-filtro" name="tipologia" class="form-select select2-filter" data-placeholder="Tutte"> {# Aggiunto select2-filter e data-placeholder #}
+          <option value=""></option> {# Valore vuoto per il placeholder #}
+          <option value="Nessuna" {% if request.GET.tipologia == "Nessuna" %}selected{% endif %}>Nessuna</option>
+          <option value="Cronica" {% if request.GET.tipologia == 'Cronica' %}selected{% endif %}>Cronica</option>
+          <option value="Mortale" {% if request.GET.tipologia == 'Mortale' %}selected{% endif %}>Mortale</option>
+          <option value="Cronica e Mortale" {% if request.GET.tipologia == 'Cronica e Mortale' %}selected{% endif %}>Cronica e Mortale</option>
+        </select>
+        {# Il pulsante clear-filter-btn non è più necessario qui se Select2 ha il suo clear #}
+      </div>
     </div>
-    <div class="d-flex justify-content-between">
-      <button type="submit" class="btn btn-primary">Applica Filtri</button>
+    
+    <div class="d-grid gap-2 mt-4">
+      <button type="submit" class="btn btn-primary custom-apply-filters-btn">Applica Filtri</button>
       <a href="{% url 'patologie' %}" class="btn btn-secondary">Resetta Filtri</a>
     </div>
   </form>
 </div>
+
