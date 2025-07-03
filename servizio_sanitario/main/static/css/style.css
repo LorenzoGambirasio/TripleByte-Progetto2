@@ -558,3 +558,10 @@ box-sizing: border-box; /* Assicurati che padding e border siano inclusi nella d
 .select2-container--open {
 margin-bottom: 20px;
 }
+
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+

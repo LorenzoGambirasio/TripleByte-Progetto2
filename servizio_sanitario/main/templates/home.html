@@ -6,7 +6,8 @@
 <!-- INTRO -->
 <div class="bg-white p-4 rounded shadow mb-5">
   <h5 class="text-danger fw-bold">Benvenuto nel sistema di monitoraggio dei ricoveri ospedalieri</h5>
-  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera trasparente, efficiente e sicura.</p>
+  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera
+    trasparente, efficiente e sicura.</p>
   <ul class="mb-0">
     <li><strong>Cittadini</strong>: identificati tramite codice SSN</li>
     <li><strong>Ospedali</strong>: con indirizzo e direttore</li>
@@ -18,16 +19,108 @@
 <!-- SLOT GRAFICI -->
 <div class="row mt-5">
   <div class="col-md-6">
-    <div class="bg-white p-3 rounded shadow">
-      <h6 class="mb-3 text-muted">📊 Andamento ricoveri</h6>
-      <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Grafico qui</div>
+    <div class="bg-white p-3 rounded shadow" style="height: 500px;">
+      <h6 class="mb-3 text-muted">📊 Ricoveri ultima settimana</h6>
+      <canvas id="ricoveriStatoChart" style="height: 100%; width: 100%;"></canvas>
     </div>
   </div>
   <div class="col-md-6">
-    <div class="bg-white p-3 rounded shadow">
-      <h6 class="mb-3 text-muted">📈 Statistiche generali</h6>
-      <div class="placeholder-box d-flex align-items-center justify-content-center text-muted">Tabelle qui</div>
+    <div class="bg-white p-3 rounded shadow" style="height: 500px;">
+      <h6 class="mb-3 text-muted">📈 Top 5 ospedali per numero ricoveri</h6>
+      <canvas id="ospedaliTopChart" style="height: 100%; width: 100%;"></canvas>
     </div>
   </div>
 </div>
+
+
+<!-- CDN Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+
+<script>
+  // === Prendi i dati dal backend ===
+  const statistiche = JSON.parse('{{ statistiche_json|safe }}');
+  const topOspedali = JSON.parse('{{ top_ospedali_json|safe }}');
+
+
+
+  // === Grafico a Torta ===
+  const ricoveriConfig = {
+    type: 'doughnut',
+    data: {
+      labels: statistiche.labels,
+      datasets: [{
+        label: 'Stato Ricoveri (ultima settimana)',
+        data: statistiche.data,
+        backgroundColor: [
+          '#198754', // Attivi (verde)
+          '#ffc107', // Trasferiti (giallo)
+          '#dc3545', // Dimessi (rosso)
+          '#212529'  // Deceduti (nero)
+        ],
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      cutout: '40%',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            boxWidth: 20,
+            padding: 20,
+            bottom: 50,
+            font: {
+              family: "'Segoe UI', sans-serif",
+              size: 14
+            }
+          }
+        },
+        title: {
+          display: false
+        }
+      }
+    }
+  };
+
+
+  new Chart(
+    document.getElementById('ricoveriStatoChart'),
+    ricoveriConfig
+  );
+
+  // === Istogramma Ospedali ===
+  const ospedaliData = {
+    labels: topOspedali.labels,
+    datasets: [{
+      label: 'Numero Ricoveri',
+      data: topOspedali.data,
+      backgroundColor: '#0d6efd', // Blu come card Totali
+      borderWidth: 1
+    }]
+  };
+
+  new Chart(
+    document.getElementById('ospedaliTopChart'),
+    {
+      type: 'bar',
+      data: ospedaliData,
+      maintainAspectRatio: false,
+      options: {
+        indexAxis: 'y',
+        scales: {
+          x: {
+            beginAtZero: true
+          }
+        }
+      }
+    }
+  );
+</script>
+
+
 {% endblock %}

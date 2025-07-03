@@ -9,10 +9,40 @@ from django.utils import timezone # Importa timezone
 from django.db.models import Count, Max, Q
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_http_methods
+import json
 
 
 def dashboard(request):
-    return render(request, 'home.html')
+    oggi = timezone.now()
+    una_settimana_fa = oggi - timedelta(days=7)
+
+    statistiche = {
+        'labels': ['Attivi', 'Trasferiti', 'Dimessi', 'Deceduti'],
+        'data': [
+            models.Ricovero.objects.filter(stato=0, data_ingresso__gte=una_settimana_fa).count(),
+            models.Ricovero.objects.filter(stato=1, data_ingresso__gte=una_settimana_fa).count(),
+            models.Ricovero.objects.filter(stato=2, data_ingresso__gte=una_settimana_fa).count(),
+            models.Ricovero.objects.filter(stato=3, data_ingresso__gte=una_settimana_fa).count(),
+        ]
+    }
+
+    top_ospedali_qs = (
+        models.Ricovero.objects
+        .values('codOspedale__nome')
+        .annotate(numero=Count('codRicovero'))
+        .order_by('-numero')[:5]
+    )
+
+
+    top_ospedali = {
+        'labels': [x['codOspedale__nome'] for x in top_ospedali_qs],
+        'data': [x['numero'] for x in top_ospedali_qs]
+    }
+
+    return render(request, 'home.html', {
+        'statistiche_json': json.dumps(statistiche),
+        'top_ospedali_json': json.dumps(top_ospedali),
+    })
 
 def lista_cittadini(request):
     # Annotate i cittadini con il numero di ricoveri
@@ -387,8 +417,10 @@ def lista_ricoveri(request):
         'totali': ricoveri_filtrati.count(),
         'attivi': ricoveri_filtrati.filter(stato=0).count(),
         'trasferiti': ricoveri_filtrati.filter(stato=1).count(),
-        'dimessi': ricoveri_filtrati.filter(stato=2).count()
+        'dimessi': ricoveri_filtrati.filter(stato=2).count(),
+        'deceduti': ricoveri_filtrati.filter(stato=3).count()
     }
+    
 
     # --- LOGICA ORDINAMENTO TABELLA RICOVERI ---
     current_sort = request.GET.get('sort', 'codRicovero')
