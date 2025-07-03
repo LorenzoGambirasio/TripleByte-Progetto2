@@ -1,8 +1,9 @@
 from django import forms
 from . import models
 from django.core.exceptions import ValidationError
-from datetime import date, timedelta, datetime # Importa datetime qui
-# from django.utils import timezone # Rimuovi questo import se non lo usi più altrove
+from datetime import date, timedelta, datetime # Mantieni datetime per DateField e altri usi se necessario
+from django.utils import timezone # REINTRODUCI E USA PER DATETIME AWARE
+import pytz # Potrebbe servire per make_aware se il fuso orario non è UTC
 
 
 class RicoveroForm(forms.ModelForm):
@@ -111,11 +112,11 @@ class TrasferimentoForm(forms.ModelForm):
 class DecessoForm(forms.ModelForm):
     data_ora_decesso = forms.DateTimeField(
         label="Data e Ora del Decesso",
-        input_formats=['%Y-%m-%dT%H:%M'], 
+        input_formats=['%Y-%m-%dT%H:%M'], # Formato atteso da datetime-local input
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         error_messages={
             'required': 'Inserisci la data e ora del decesso.',
-            'invalid': 'Formato data e ora non valido. Assicurati che sia completo (es.বারে-MM-DDTHH:MM).'
+            'invalid': 'Formato data e ora non valido. Assicurati che sia completo (AAAA-MM-GGTHH:MM).'
         }
     )
     causa_decesso = forms.CharField(
@@ -135,14 +136,29 @@ class DecessoForm(forms.ModelForm):
         if not data_ora_input:
             return data_ora_input
         
-        # Ottieni l'ora attuale e tronca i secondi e i microsecondi
-        now_truncated = datetime.now().replace(second=0, microsecond=0)
+        # Se data_ora_input è naive, rendilo aware usando il fuso orario corrente del progetto
+        # e poi convertilo a UTC per il confronto.
+        if timezone.is_naive(data_ora_input):
+            # Interpreta il naive datetime come se fosse nel fuso orario di default di Django (settings.TIME_ZONE)
+            try:
+                # Usa get_default_timezone() per un timezone robusto, specialmente con USE_TZ=True
+                data_ora_aware = timezone.make_aware(data_ora_input, timezone.get_default_timezone())
+            except Exception as e:
+                raise ValidationError(f"Errore nella conversione del fuso orario: {e}")
+        else:
+            data_ora_aware = data_ora_input # Già aware
         
-        # Confronteremo l'input con l'ora attuale troncata
-        if data_ora_input > now_truncated:
+        # Ottieni l'ora attuale dal server, che sarà già aware (perché USE_TZ=True)
+        now_aware = timezone.now()
+        
+        # Confronteremo due datetime aware. Aggiungi un piccolo margine di tolleranza.
+        # Questo è per compensare latenze di rete o differenze minime.
+        now_plus_tolerance = now_aware + timedelta(seconds=2)
+        
+        if data_ora_aware > now_plus_tolerance:
             raise ValidationError("La data e ora del decesso non può essere nel futuro.")
         
-        return data_ora_input
+        return data_ora_aware
 
 
 # PasswordForm

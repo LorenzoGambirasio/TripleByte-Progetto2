@@ -76,7 +76,7 @@
               data-paziente-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" 
               data-ospedale-nome="{{ ricovero.codOspedale.nome }}" 
               data-stato="{{ ricovero.stato }}"
-              data-paziente-deceduto="{{ ricovero.CSSN.deceduto }}" {# NUOVO: Passa se il paziente è deceduto #}
+              data-paziente-deceduto="{{ ricovero.CSSN.deceduto }}" 
               data-dettagli-json='{"Codice": "{{ ricovero.codRicovero }}", "Paziente": "{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}", "CSSN": "{{ ricovero.CSSN.CSSN }}", "Data Ingresso": "{{ ricovero.data_ingresso|date:"d/m/Y" }}", "Durata (gg)": "{{ ricovero.durata }}", "Costo": "€ {{ ricovero.costo|floatformat:2 }}"}'
               data-patologie-json='[{% for p in ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
               data-url-modifica="{% url 'modifica_ricovero' ricovero.pk %}" 
@@ -84,7 +84,7 @@
               data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}"
               data-motivo="{{ ricovero.motivo|escapejs }}"
               {# NUOVO: Passa data e causa decesso dal CITTADINO #}
-              data-decesso-data="{{ ricovero.CSSN.dataoradecesso|date:"d/m/Y H:i"|default:"" }}" 
+              data-decesso-data="{{ ricovero.CSSN.dataoradecesso|date:"d/m/Y H:i"|default:"" }}" {# CAMBIATO FORMATO: ora include ora e minuti #}
               data-decesso-causa="{{ ricovero.CSSN.causadecesso|escapejs|default:"" }}"
               >
             <td>{{ ricovero.codOspedale.nome }}</td>

@@ -275,8 +275,8 @@
                     <input type="hidden" id="dichiaraDecessoRicoveroPk" name="ricovero_pk">
                     
                     <div class="mb-3">
-                        <label for="id_data_ora_decesso_dichiara" class="form-label fw-semibold">Data e Ora del Decesso:</label>
-                        <input type="datetime-local" id="id_data_ora_decesso_dichiara" name="data_ora_decesso" class="form-control" required>
+                        <label for="id_data_ora_decesso_dichiara" class="form-label fw-semibold">Data del Decesso:</label> {# CAMBIATO LABEL #}
+                        <input type="date" id="id_data_ora_decesso_dichiara" name="data_ora_decesso" class="form-control" required> {# CAMBIATO TYPE A DATE #}
                         <div class="invalid-feedback d-block mt-1" id="dichiaraDecessoDataOraError"></div>
                     </div>
 
@@ -310,7 +310,7 @@
                 <p class="fs-5 mb-3 text-dark">Informazioni sul decesso del paziente <strong id="riepilogoDecessoNomePaziente"></strong>:</p>
                 
                 <div class="mb-2">
-                    <strong class="text-secondary">Data e Ora Decesso:</strong> <span class="fw-bold" id="riepilogoDecessoDataOra"></span>
+                    <strong class="text-secondary">Data Decesso:</strong> <span class="fw-bold" id="riepilogoDecessoDataOra"></span> {# CAMBIATO LABEL #}
                 </div>
                 <div class="mb-4">
                     <strong class="text-secondary">Causa Decesso:</strong> <span class="fw-bold" id="riepilogoDecessoCausa"></span>
@@ -344,8 +344,8 @@
                     <input type="hidden" id="modificaCausaRicoveroPk" name="ricovero_pk">
                     
                     <div class="mb-3">
-                        <label for="id_data_ora_decesso_modifica" class="form-label fw-semibold">Data e Ora del Decesso:</label>
-                        <input type="datetime-local" id="id_data_ora_decesso_modifica" name="data_ora_decesso" class="form-control" readonly disabled>
+                        <label for="id_data_ora_decesso_modifica" class="form-label fw-semibold">Data del Decesso:</label> {# CAMBIATO LABEL #}
+                        <input type="date" id="id_data_ora_decesso_modifica" name="data_ora_decesso" class="form-control" readonly disabled> {# CAMBIATO TYPE A DATE #}
                         <div class="invalid-feedback d-block mt-1" id="modificaCausaDataOraError"></div>
                     </div>
 
@@ -486,12 +486,27 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     let activeRow; // Dichiarata all'inizio dello scope di DOMContentLoaded
-    let currentAction = ''; // Variabile per tracciare l'azione del modale password ('dichiara' o 'modificaCausa')
 
     $(document).on('click', '.clickable-row', function() {
         activeRow = $(this); // Assegna activeRow qui per essere sicuro che sia aggiornata
         
-        const statoRicovero = activeRow.data('stato'); // Stato del ricovero (0,1,2,3)
+        const dettagli = activeRow.data('dettagli-json');
+        const dettagliContenuto = $('#dettagliContenuto');
+        dettagliContenuto.empty();
+        $.each(dettagli, function(key, value) {
+            dettagliContenuto.append(`<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${value}</span></div>`);
+        });
+        
+        const patologie = activeRow.data('patologie-json');
+        const patologieContainer = $('#dettagliPatologie');
+        patologieContainer.empty();
+        if (patologie.length > 0) {
+            patologie.forEach(p => patologieContainer.append(`<span class="badge bg-info text-dark rounded-pill me-1 mb-1">${p.nome}</span>`));
+        } else {
+            patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
+        }
+        
+        const statoRicovero = activeRow.data('stato'); // Utilizzo statoRicovero per evitare conflitto con stato del paziente
         const pazienteDeceduto = activeRow.data('paziente-deceduto'); // Se il CITTADINO è deceduto (0 o 1)
         const pazienteNome = activeRow.data('paziente-nome');
 
@@ -507,22 +522,6 @@ document.addEventListener("DOMContentLoaded", function () {
             riepilogoDecessoModal.show();
         } else {
             // Altrimenti (se il paziente è vivo), mostra il modale delle azioni sul ricovero
-            const dettagli = activeRow.data('dettagli-json');
-            const dettagliContenuto = $('#dettagliContenuto');
-            dettagliContenuto.empty();
-            $.each(dettagli, function(key, value) {
-                dettagliContenuto.append(`<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${value}</span></div>`);
-            });
-            
-            const patologie = activeRow.data('patologie-json');
-            const patologieContainer = $('#dettagliPatologie');
-            patologieContainer.empty();
-            if (patologie.length > 0) {
-                patologie.forEach(p => patologieContainer.append(`<span class="badge bg-info text-dark rounded-pill me-1 mb-1">${p.nome}</span>`));
-            } else {
-                patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
-            }
-            
             const msgBox = $('#dettagliMsg').hide();
             
             // Imposta sempre href="#" e disabilita/abilita con JS
@@ -531,7 +530,7 @@ document.addEventListener("DOMContentLoaded", function () {
             $('#btnTrasferisci').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto');
             $('#btnDeceduto').prop('href', '#').removeClass('disabled').css('pointer-events', 'auto'); 
             
-            if (statoRicovero === 0) {
+            if (statoRicovero === 0) { // Se il ricovero è Attivo
                 $('#btnTrasferisci').removeClass('disabled').css('pointer-events', 'auto');
                 $('#btnDeceduto').removeClass('disabled').css('pointer-events', 'auto'); 
                 msgBox.hide();
@@ -546,23 +545,20 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // LISTENER PER IL PULSANTE "ELIMINA" NEL MODALE DETTAGLI
-    // Usiamo .off().on() per essere sicuri che un solo listener sia attivo per click su questo bottone
     $('#btnElimina').off('click').on('click', function(e) {
-        e.preventDefault(); // Impedisce il comportamento di default del link
-        if ($(this).hasClass('disabled')) return; // Non fare nulla se il pulsante è disabilitato
+        e.preventDefault(); 
+        if ($(this).hasClass('disabled')) return; 
         
-        // Usa activeRow per recuperare i dati, sicuri che sia aggiornata
         const ricoveroPk = activeRow.data('pk');
         const pazienteNome = activeRow.data('paziente-nome');
         const ospedaleNome = activeRow.data('ospedale-nome');
 
-        // Popola il modale di eliminazione
         $('#eliminaRicoveroPk').val(ricoveroPk);
         $('#eliminaNomePaziente').text(pazienteNome);
         $('#eliminaOspedaleNome').text(ospedaleNome);
         
-        dettagliModal.hide(); // Nascondi il modale dei dettagli
-        eliminaRicoveroModal.show(); // Mostra il modale di conferma eliminazione
+        dettagliModal.hide(); 
+        eliminaRicoveroModal.show(); 
     });
 
     // LISTENER PER IL PULSANTE "TRASFERISCI" NEL MODALE DETTAGLI
@@ -575,13 +571,11 @@ document.addEventListener("DOMContentLoaded", function () {
         const ospedaleNome = activeRow.data('ospedale-nome');
 
         $('#trasferisciRicoveroPk').val(ricoveroPk);
-        $('#trasferisciNomePaziente').val(pazienteNome); // Pre-popola il nome paziente nel modale trasferisci
-        $('#trasferisciOspedaleAttuale').val(ospedaleNome); // Pre-popola l'ospedale attuale
+        $('#trasferisciNomePaziente').val(pazienteNome); 
+        $('#trasferisciOspedaleAttuale').val(ospedaleNome); 
 
-        // Resetta Select2 e pulisci errori
         $('#id_nuovo_ospedale').val(null).trigger('change');
-        $('#id_nuovo_ospedale').removeClass('is-invalid'); // Rimuovi classi di errore
-        // Potresti voler pulire anche i div degli errori se ne hai specifici per il trasferimento
+        $('#id_nuovo_ospedale').removeClass('is-invalid'); 
         
         dettagliModal.hide();
         trasferisciModal.show();
@@ -644,14 +638,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         $('#dichiaraDecessoNomePaziente').text(pazienteNome);
                         $('#dichiaraDecessoRicoveroPk').val(ricoveroPk);
                         
-                        // Imposta la data/ora attuale come default, formattata per input datetime-local
-                        const now = new Date();
-                        const year = now.getFullYear();
-                        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                        const day = now.getDate().toString().padStart(2, '0');
-                        const hours = now.getHours().toString().padStart(2, '0');
-                        const minutes = now.getMinutes().toString().padStart(2, '0');
-                        $('#id_data_ora_decesso_dichiara').val(`${year}-${month}-${day}T${hours}:${minutes}`);
+                        // Imposta la data attuale come default
+                        const today = new Date().toISOString().slice(0,10); // Formato YYYY-MM-DD
+                        $('#id_data_ora_decesso_dichiara').val(today); 
                         
                         $('#id_causa_decesso_dichiara').val(''); // Pulisci la causa
                         $('#dichiaraDecessoDataOraError').text(''); // Pulisci errori
@@ -663,14 +652,9 @@ document.addEventListener("DOMContentLoaded", function () {
                         const decessoCausa = activeRow.data('decesso-causa'); // Dal paziente deceduto
                         
                         $('#modificaCausaRicoveroPk').val(ricoveroPk);
-                        // Converti dd/mm/yyyy HH:MM in AAAA-MM-GGTHH:MM per input datetime-local
-                        if (decessoData) {
-                            const [datePart, timePart] = decessoData.split(' ');
-                            const [day, month, year] = datePart.split('/');
-                            $('#id_data_ora_decesso_modifica').val(`${year}-${month}-${day}T${timePart}`);
-                        } else {
-                            $('#id_data_ora_decesso_modifica').val('');
-                        }
+                        
+                        // Popola il campo data
+                        $('#id_data_ora_decesso_modifica').val(decessoData || ''); 
                         
                         $('#id_causa_decesso_modifica').val(decessoCausa || '');
                         $('#modificaCausaDataOraError').text(''); // Pulisci errori

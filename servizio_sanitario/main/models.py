@@ -9,8 +9,8 @@ class Cittadino(models.Model):
     via = models.CharField(max_length=100, db_column='indirizzo')
     deceduto = models.IntegerField(db_column='deceduto')  # 0 = domiciliato, 1 = deceduto
 
-    # AGGIUNTA CORRETTA DEI CAMPI DECESSO SUL CITTADINO, SECONDO IL TUO DB
-    dataoradecesso = models.DateTimeField(null=True, blank=True, db_column='dataoradecesso')
+    # CAMPI DECESSO: dataoradecesso diventa DateTimeField
+    dataoradecesso = models.DateTimeField(null=True, blank=True, db_column='dataoradecesso') # CAMBIATO A DateTimeField
     causadecesso = models.TextField(max_length=500, null=True, blank=True, db_column='causadecesso')
 
     class Meta:
@@ -49,7 +49,6 @@ class Ricovero(models.Model):
     CSSN = models.ForeignKey(Cittadino, on_delete=models.CASCADE, db_column='cssn_id')
     data_ingresso = models.DateField(db_column='data_ingresso')
     durata = models.IntegerField(db_column='durata')
-    # AGGIUNTA DELLO STATO "DECEDUTO" (3) PER IL RICOVERO
     stato = models.IntegerField(default=0, db_column='stato') # Stato 3 sarà il decesso
     motivo = models.CharField(max_length=255, db_column='motivo')
     costo = models.DecimalField(max_digits=10, decimal_places=2, db_column='costo')
