@@ -110,25 +110,25 @@ class TrasferimentoForm(forms.ModelForm):
 
 # DecessoForm (basato su Cittadino)
 class DecessoForm(forms.ModelForm):
-    data_ora_decesso = forms.DateTimeField(
+    dataoradecesso = forms.DateTimeField( # NOME SENZA UNDERSCORE
         label="Data e Ora del Decesso",
-        input_formats=['%Y-%m-%dT%H:%M'], # Formato atteso da datetime-local input
+        input_formats=['%Y-%m-%dT%H:%M'],
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         error_messages={
             'required': 'Inserisci la data e ora del decesso.',
             'invalid': 'Formato data e ora non valido. Assicurati che sia completo (AAAA-MM-GGTHH:MM).'
         }
     )
-    causa_decesso = forms.CharField(
+    causadecesso = forms.CharField( # NOME SENZA UNDERSCORE
         label="Causa del Decesso",
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        required=False, 
+        required=False,
         max_length=500
     )
 
     class Meta:
         model = models.Cittadino
-        fields = ['data_ora_decesso', 'causa_decesso']
+        fields = ['dataoradecesso', 'causadecesso']
 
     def clean_data_ora_decesso(self):
         data_ora_input = self.cleaned_data['data_ora_decesso']
