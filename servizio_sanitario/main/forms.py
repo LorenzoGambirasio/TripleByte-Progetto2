@@ -73,7 +73,15 @@ class RicoveroForm(forms.ModelForm):
         self.is_edit_mode = kwargs.pop('is_edit_mode', False)
         super().__init__(*args, **kwargs)
 
-        self.fields['CSSN'].queryset = models.Cittadino.objects.filter(deceduto=0).order_by('cognome', 'nome')
+        # 1. Trova i CSSN di tutti i pazienti che hanno già un ricovero attivo (stato=0)
+        pazienti_ricoverati_ids = models.Ricovero.objects.filter(stato=0).values_list('CSSN_id', flat=True)
+
+        # 2. Filtra i cittadini: escludi i deceduti E quelli con un ricovero attivo
+        self.fields['CSSN'].queryset = models.Cittadino.objects.filter(
+            deceduto=0
+        ).exclude(
+            CSSN__in=pazienti_ricoverati_ids
+        ).order_by('cognome', 'nome')
         self.fields['CSSN'].label_from_instance = lambda obj: f"{obj.CSSN} - {obj.nome} {obj.cognome}"
         
         if self.is_edit_mode:

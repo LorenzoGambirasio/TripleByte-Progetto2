@@ -423,30 +423,85 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    // partials/modals.html -> CODICE AGGIORNATO
+
     $(document).on('click', '.clickable-row', function() {
-        activeRow = $(this);
+        activeRow = $(this); // Memorizza la riga cliccata
+
+        // Se il paziente è deceduto, mostra il modale riepilogativo del decesso
         if (activeRow.data('paziente-deceduto') === 1) {
             $('#riepilogoDecessoNomePaziente').text(activeRow.data('paziente-nome'));
             $('#riepilogoDecessoDataOra').text(activeRow.data('decesso-data').replace('T', ' ') || 'Non specificata');
             $('#riepilogoDecessoCausa').text(activeRow.data('decesso-causa') || 'Non specificata');
             modals.riepilogoDecesso.show();
-        } else {
-            const dettagli = activeRow.data('dettagli-json');
-            $('#dettagliContenuto').empty().append(Object.keys(dettagli).map(key => `<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${dettagli[key]}</span></div>`));
-            
-            const patologie = activeRow.data('patologie-json');
-            const patologieContainer = $('#dettagliPatologie').empty();
-            if (patologie.length > 0) {
-                patologie.forEach(p => patologieContainer.append(`<span class="badge badge-bordeaux rounded-pill me-1 mb-1">${p.nome}</span>`));
-            } else {
-                patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
-            }
-            
-            const canModify = activeRow.data('stato') === 0;
-            $('#btnTrasferisci, #btnDeceduto').toggleClass('disabled', !canModify).css('pointer-events', canModify ? 'auto' : 'none');
-            $('#dettagliMsg').toggle(!canModify).text("Azioni non disponibili per ricoveri non attivi.");
-            modals.dettagli.show();
+            return; // Esce dalla funzione
         }
+        
+        // --- NUOVA LOGICA PER GESTIRE I PULSANTI ---
+
+        // 1. Popola i dettagli del modale (invariato)
+        const dettagli = activeRow.data('dettagli-json');
+        $('#dettagliContenuto').empty().append(Object.keys(dettagli).map(key => `<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${dettagli[key]}</span></div>`));
+        
+        const patologie = activeRow.data('patologie-json');
+        const patologieContainer = $('#dettagliPatologie').empty();
+        if (patologie.length > 0) {
+            patologie.forEach(p => patologieContainer.append(`<span class="badge badge-bordeaux rounded-pill me-1 mb-1">${p.nome}</span>`));
+        } else {
+            patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
+        }
+
+        // 2. Prendi i riferimenti ai pulsanti e al messaggio
+        const statoRicovero = activeRow.data('stato');
+        const btnModifica = $('#btnModifica');
+        const btnTrasferisci = $('#btnTrasferisci');
+        const btnElimina = $('#btnElimina');
+        const btnDeceduto = $('#btnDeceduto');
+        const dettagliMsg = $('#dettagliMsg');
+        
+        // Funzione di utilità per abilitare/disabilitare un pulsante
+        const setButtonState = (button, enabled) => {
+            button.toggleClass('disabled', !enabled).css('pointer-events', enabled ? 'auto' : 'none');
+        };
+
+        // 3. Applica le regole in base allo stato
+        dettagliMsg.hide(); // Nascondi il messaggio di default
+
+        switch (statoRicovero) {
+            case 0: // Stato ATTIVO
+                setButtonState(btnModifica, true);
+                setButtonState(btnTrasferisci, true);
+                setButtonState(btnElimina, true);
+                setButtonState(btnDeceduto, true);
+                break;
+            
+            case 1: // Stato TRASFERITO
+                setButtonState(btnModifica, false);
+                setButtonState(btnTrasferisci, false);
+                setButtonState(btnElimina, true); // Solo Elimina è attivo
+                setButtonState(btnDeceduto, false);
+                dettagliMsg.text("Azioni limitate: il ricovero è stato trasferito.").show();
+                break;
+
+            case 2: // Stato DIMESSO
+                setButtonState(btnModifica, true); // Attivo
+                setButtonState(btnTrasferisci, false);
+                setButtonState(btnElimina, true); // Attivo
+                setButtonState(btnDeceduto, false);
+                dettagliMsg.text("Azioni limitate: il paziente è stato dimesso.").show();
+                break;
+                
+            default: // Altri stati (per sicurezza)
+                setButtonState(btnModifica, false);
+                setButtonState(btnTrasferisci, false);
+                setButtonState(btnElimina, true); // Lasciamo sempre la possibilità di eliminare
+                setButtonState(btnDeceduto, false);
+                dettagliMsg.text("Azioni non disponibili per questo ricovero.").show();
+                break;
+        }
+
+        // 4. Mostra il modale
+        modals.dettagli.show();
     });
     
     $('#btnModifica').on('click', function(e) {
