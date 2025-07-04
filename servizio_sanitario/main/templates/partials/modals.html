@@ -1,0 +1,826 @@
+<div class="modal fade" id="modaleAggiungi" tabindex="-1" aria-labelledby="modaleAggiungiLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow-lg border-0">
+            <div class="modal-header bg-bordeaux text-white py-3">
+                <h5 class="modal-title fw-bold fs-5" id="modaleAggiungiLabel"><i class="bi bi-plus-lg me-2"></i>Aggiungi
+                    ricovero</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body p-4 p-md-5">
+                <form method="post" id="formAggiungiRicovero" action="{% url 'lista_ricoveri' %}" novalidate>
+                    {% csrf_token %}
+                    {% include "ricoveri/aggiungi_ricovero.html" %}
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn bg-bordeaux px-5 py-2 fw-bold text-white">Salva
+                            Ricovero</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="dettagliModal" tabindex="-1" aria-labelledby="dettagliModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-light border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold text-danger fs-5" id="dettagliModalLabel"><i
+                        class="bi bi-hospital me-2"></i>Dettagli Ricovero</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <div id="dettagliContenuto" class="mb-2"></div>
+                <h6 class="fw-semibold mb-2 mt-3 text-muted">Patologie Associate:</h6>
+                <div id="dettagliPatologie" class="d-flex flex-wrap gap-2 mb-4"></div>
+                <hr class="my-3">
+                <h6 class="fw-semibold mb-3 text-muted">Azioni disponibili:</h6>
+                <div class="row row-cols-1 row-cols-md-2 g-2">
+                    <div class="col">
+                        <a href="#" id="btnModifica"
+                            class="btn btn-primary btn-sm w-100 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-pencil-square me-1"></i>Modifica
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="#" id="btnTrasferisci"
+                            class="btn btn-warning btn-sm text-dark w-100 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-arrow-left-right me-1"></i>Trasferisci
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="#" id="btnElimina"
+                            class="btn btn-danger btn-sm w-100 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-trash3 me-1"></i>Elimina
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="#" id="btnDeceduto"
+                            class="btn btn-dark btn-sm w-100 d-flex align-items-center justify-content-center">
+                            <i class="bi bi-x-circle me-1"></i>Deceduto
+                        </a>
+                    </div>
+                </div>
+                <div id="dettagliMsg" class="alert alert-secondary mt-3 w-100" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="trasferisciModal" tabindex="-1" aria-labelledby="trasferisciModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-warning border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold text-dark fs-5" id="trasferisciModalLabel"><i
+                        class="bi bi-arrow-left-right me-2"></i> Trasferisci Paziente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <form id="formTrasferisci" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="trasferisciRicoveroPk">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">Paziente:</label>
+                        <input type="text" id="trasferisciNomePaziente" class="form-control" disabled readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">Ospedale Attuale:</label>
+                        <input type="text" id="trasferisciOspedaleAttuale" class="form-control" disabled readonly>
+                    </div>
+                    <hr class="my-3">
+                    <div class="mb-4">
+                        <label for="selectOspedaleTrasferimento" class="form-label fs-6 fw-bold text-dark">Nuovo
+                            Ospedale di Destinazione:</label>
+                        <select id="selectOspedaleTrasferimento" name="codOspedale" class="form-select" required
+                            style="width: 100%;">
+                            <option></option>
+                            {% for o in ospedali %}
+                            <option value="{{ o.codice }}">{{ o.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-warning px-4 text-dark">Conferma Trasferimento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="eliminaRicoveroModal" tabindex="-1" aria-labelledby="eliminaRicoveroModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="eliminaRicoveroModalLabel"><i
+                        class="bi bi-trash3-fill me-2"></i>Conferma Eliminazione Ricovero</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <p class="fs-5 text-center mb-4 text-dark">Sei sicuro di voler eliminare
+                    <strong>definitivamente</strong> il ricovero del paziente <strong id="eliminaNomePaziente"></strong>
+                    presso l'ospedale <strong id="eliminaOspedaleNome"></strong>? L'azione non può essere annullata.</p>
+                <form id="formEliminaRicovero" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="eliminaRicoveroPk" name="ricovero_pk">
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-danger px-4 d-flex align-items-center">
+                            <i class="bi bi-trash3-fill me-2"></i>Sì, elimina
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modificaRicoveroModal" tabindex="-1" aria-labelledby="modificaRicoveroModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow-lg border-0">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold fs-5" id="modificaRicoveroModalLabel"><i
+                        class="bi bi-pencil-square me-2"></i>Modifica Ricovero</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body p-4 p-md-5">
+                <form method="post" id="formModificaRicovero" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="modificaRicoveroPk" name="pk_ricovero_modifica">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Paziente</label>
+                        <div class="input-group">
+                            <div id="pazienteDisplayContainer" class="form-control"
+                                style="background-color: #e9ecef; flex-grow: 1;">
+                                <span id="modificaPazienteNome"></span>
+                            </div>
+                            <button class="btn btn-outline-secondary" type="button" id="unlockPazienteBtn"
+                                title="Modifica Paziente (richiede password)">
+                                <i class="bi bi-lock-fill"></i>
+                            </button>
+                            <div id="pazienteSelectContainer" style="display: none; width: 100%;">
+                                {{ form.CSSN }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Ospedale</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-hospital"></i></span>
+                            <input type="text" class="form-control" id="modificaOspedaleNome" disabled readonly>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="modificaDataIngresso" class="form-label fw-semibold">Data Ingresso:</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                <input type="date" id="modificaDataIngresso" name="data_ingresso" class="form-control"
+                                    required readonly>
+                            </div>
+                            <div class="invalid-feedback d-block mt-1" id="modificaDataIngressoError"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modificaDurata" class="form-label fw-semibold">Durata (gg):</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-hourglass-split"></i></span>
+                                <input type="number" id="modificaDurata" name="durata" class="form-control" min="1"
+                                    max="60" required>
+                            </div>
+                            <div class="invalid-feedback d-block mt-1" id="modificaDurataError"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="modificaMotivo" class="form-label fw-semibold">Motivo:</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-card-text"></i></span>
+                            <input type="text" id="modificaMotivo" name="motivo" class="form-control" required>
+                        </div>
+                        <div class="invalid-feedback d-block mt-1" id="modificaMotivoError"></div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label for="modificaCosto" class="form-label fw-semibold">Costo (€):</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
+                                <input type="text" id="modificaCosto" name="costo" class="form-control" required>
+                            </div>
+                            <div class="invalid-feedback d-block mt-1" id="modificaCostoError"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_patologie" class="form-label fw-semibold">Patologie:</label>
+                            {{ form.patologie }}
+                            <div class="invalid-feedback d-block mt-1" id="modificaPatologieError"></div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary px-4 me-2"
+                            data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                            <i class="bi bi-check-lg me-2"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="decessoPasswordModal" tabindex="-1" aria-labelledby="decessoPasswordModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="decessoPasswordModalLabel"><i
+                        class="bi bi-lock-fill me-2"></i>Verifica Password</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <p class="fs-5 text-center mb-4 text-dark">Inserisci la password per procedere.</p>
+                <form id="formVerificaPassword" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="passwordAction" name="action">
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label fw-semibold">Password:</label>
+                        <input type="password" id="id_password" name="password" class="form-control" required>
+                        <div class="invalid-feedback d-block mt-1" id="passwordError"></div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-dark px-4 d-flex align-items-center">
+                            <i class="bi bi-check-lg me-2"></i>Verifica
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="dichiaraDecessoModal" tabindex="-1" aria-labelledby="dichiaraDecessoModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="dichiaraDecessoModalLabel"><i
+                        class="bi bi-x-circle me-2"></i>Dichiara Decesso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <p class="fs-5 text-center mb-4 text-dark">Confermi il decesso del paziente <strong
+                        id="dichiaraDecessoNomePaziente"></strong>?</p>
+                <form id="formDichiaraDecesso" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="dichiaraDecessoRicoveroPk" name="ricovero_pk">
+                    <div class="mb-3">
+                        <label for="id_data_ora_decesso_dichiara" class="form-label fw-semibold">Data e Ora del
+                            Decesso:</label>
+                        <input type="datetime-local" id="id_data_ora_decesso_dichiara" name="dataoradecesso"
+                            class="form-control" required>
+                        <div class="invalid-feedback d-block mt-1" id="dichiaraDecessoDataoradecessoError"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="id_causa_decesso_dichiara" class="form-label fw-semibold">Causa del Decesso
+                            (opzionale):</label>
+                        <textarea id="id_causa_decesso_dichiara" name="causadecesso" class="form-control" rows="3"
+                            maxlength="500"></textarea>
+                        <div class="invalid-feedback d-block mt-1" id="dichiaraDecessoCausadecessoError"></div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-dark px-4 d-flex align-items-center">
+                            <i class="bi bi-check-lg me-2"></i>Conferma Decesso
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="riepilogoDecessoModal" tabindex="-1" aria-labelledby="riepilogoDecessoModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="riepilogoDecessoModalLabel"><i
+                        class="bi bi-info-circle-fill me-2"></i>Dettagli Decesso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <p class="fs-5 mb-3 text-dark">Informazioni sul decesso del paziente <strong
+                        id="riepilogoDecessoNomePaziente"></strong>:</p>
+                <div class="mb-2">
+                    <strong class="text-secondary">Data e Ora Decesso:</strong> <span class="fw-bold"
+                        id="riepilogoDecessoDataOra"></span>
+                </div>
+                <div class="mb-4">
+                    <strong class="text-secondary">Causa Decesso:</strong> <span class="fw-bold"
+                        id="riepilogoDecessoCausa"></span>
+                </div>
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <button type="button" id="btnModificaCausaDecesso"
+                        class="btn btn-sm btn-primary px-3 d-flex align-items-center">
+                        <i class="bi bi-pencil-square me-1"></i>Modifica Causa
+                    </button>
+                    <button type="button" id="btnEliminaFromRiepilogo"
+                        class="btn btn-sm btn-danger px-3 d-flex align-items-center">
+                        <i class="bi bi-trash3 me-1"></i>Elimina Ricovero
+                    </button>
+                    <button type="button" class="btn btn-sm btn-secondary px-3" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modificaCausaDecessoModal" tabindex="-1" aria-labelledby="modificaCausaDecessoModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white border-0 rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="modificaCausaDecessoModalLabel"><i
+                        class="bi bi-pencil-square me-2"></i>Modifica Causa Decesso</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body px-4 py-4">
+                <form id="formModificaCausaDecesso" method="POST" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" id="modificaCausaRicoveroPk" name="ricovero_pk">
+                    <div class="mb-3">
+                        <label for="id_data_ora_decesso_modifica" class="form-label fw-semibold">Data e Ora del
+                            Decesso:</label>
+                        <input type="datetime-local" id="id_data_ora_decesso_modifica" name="dataoradecesso"
+                            class="form-control" required readonly>
+                        <div class="invalid-feedback d-block mt-1" id="modificaCausaDataoradecessoError"></div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="id_causa_decesso_modifica" class="form-label fw-semibold">Causa del Decesso:</label>
+                        <textarea id="id_causa_decesso_modifica" name="causadecesso" class="form-control" rows="3"
+                            maxlength="500"></textarea>
+                        <div class="invalid-feedback d-block mt-1" id="modificaCausaCausadecessoError"></div>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">
+                            <i class="bi bi-check-lg me-2"></i>Salva Modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // partials/modals.html -> NUOVO SCRIPT COMPLETO
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Definizione di tutti i modali (invariato)
+    const modals = {
+        aggiungi: new bootstrap.Modal(document.getElementById('modaleAggiungi')),
+        dettagli: new bootstrap.Modal(document.getElementById('dettagliModal')),
+        trasferisci: new bootstrap.Modal(document.getElementById('trasferisciModal')),
+        elimina: new bootstrap.Modal(document.getElementById('eliminaRicoveroModal')),
+        modifica: new bootstrap.Modal(document.getElementById('modificaRicoveroModal')),
+        password: new bootstrap.Modal(document.getElementById('decessoPasswordModal')),
+        dichiaraDecesso: new bootstrap.Modal(document.getElementById('dichiaraDecessoModal')),
+        riepilogoDecesso: new bootstrap.Modal(document.getElementById('riepilogoDecessoModal')),
+        modificaCausa: new bootstrap.Modal(document.getElementById('modificaCausaDecessoModal'))
+    };
+
+    let activeRow;
+
+    // Inizializzazione Tooltip (invariato)
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
+    
+    // --- INIZIO MODIFICA: PRE-INIZIALIZZAZIONE DEI CAMPI DEL MODALE DI AGGIUNTA ---
+    const addModal = $('#modaleAggiungi');
+    if (addModal.length) {
+        // Inizializza i Select2 per il modale di aggiunta subito, al caricamento della pagina
+        $('#id_cittadino', addModal).select2({ theme: "bootstrap-5", dropdownParent: addModal, placeholder: "Seleziona un paziente", allowClear: true, width: '100%' });
+        $('#id_codOspedale', addModal).select2({ theme: "bootstrap-5", dropdownParent: addModal, placeholder: "Seleziona un ospedale", allowClear: true, width: '100%' });
+        
+        // Inizializza il Select2 per le patologie con AJAX
+        $('#id_patologie', addModal).select2({
+            theme: "bootstrap-5",
+            dropdownParent: addModal,
+            placeholder: "Cerca e seleziona una o più patologie",
+            allowClear: true,
+            multiple: true,
+            closeOnSelect: false,
+            width: '100%',
+            ajax: {
+                url: "{% url 'cerca_patologie' %}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) { return { q: params.term }; },
+                processResults: function (data) { return { results: data.results }; },
+                cache: true
+            }
+        });
+    }
+    // --- FINE MODIFICA ---
+
+    // L'evento 'show.bs.modal' ora si occupa solo di resettare i valori del form
+    $('#modaleAggiungi').on('show.bs.modal', function () {
+        // 1. Resetta i valori del form
+        const form = $('#formAggiungiRicovero');
+        if (form.length > 0) form[0].reset();
+        $('#id_cittadino, #id_patologie, #id_codOspedale').val(null).trigger('change');
+
+        // 2. Imposta la data di default
+        const dataIngressoInput = document.getElementById('id_data_ingresso');
+        if (!dataIngressoInput.value) { dataIngressoInput.valueAsDate = new Date(); }
+        dataIngressoInput.max = new Date().toISOString().split("T")[0];
+
+        // 3. Rendi i select invisibili per evitare il "flash"
+        $('#id_cittadino, #id_codOspedale, #id_patologie').addClass('select2-pre-init');
+    });
+
+    // Evento che si attiva DOPO che il modale è diventato visibile
+    $('#modaleAggiungi').on('shown.bs.modal', function () {
+        const modal = $(this);
+
+        // 1. Inizializza i componenti Select2 (ora che il modale è visibile)
+        $('#id_cittadino').select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un paziente", allowClear: true, width: '100%' });
+        $('#id_codOspedale').select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un ospedale", allowClear: true, width: '100%' });
+        $('#id_patologie').select2({
+            theme: "bootstrap-5", dropdownParent: modal, placeholder: "Cerca e seleziona patologie", allowClear: true,
+            multiple: true, closeOnSelect: false, width: '100%',
+            ajax: {
+                url: "{% url 'cerca_patologie' %}", dataType: 'json', delay: 250,
+                data: function (params) { return { q: params.term }; },
+                processResults: function (data) { return { results: data.results }; },
+                cache: true
+            }
+        });
+
+        // 2. Ora che sono stati trasformati, rendili di nuovo visibili
+        $('#id_cittadino, #id_codOspedale, #id_patologie').removeClass('select2-pre-init');
+    });
+
+
+    // Inizializzazione Select2 per il modale di trasferimento (invariato)
+    $('#trasferisciModal').on('shown.bs.modal', function () {
+        $('#selectOspedaleTrasferimento').select2({
+            theme: "bootstrap-5",
+            dropdownParent: $(this),
+            placeholder: "Cerca e seleziona un ospedale"
+        });
+    });
+
+    // Gestione del submit per il form di aggiunta (invariato)
+    $("#formAggiungiRicovero").on("submit", function (e) {
+        e.preventDefault();
+        // ... (resto del codice di submit invariato)
+        const form = this;
+        const dataIngressoInput = document.getElementById('id_data_ingresso');
+        const dataSelezionata = new Date(dataIngressoInput.value);
+        const oggi = new Date();
+        oggi.setHours(0, 0, 0, 0);
+
+        function procediConInvio() {
+            $.ajax({
+                type: "POST", url: $(form).attr("action"), data: $(form).serialize(),
+                success: function (data) {
+                    if (data.success) {
+                        modals.aggiungi.hide();
+                        Swal.fire({ icon: 'success', title: 'Ricovero aggiunto!', timer: 2000, showConfirmButton: false }).then(() => window.location.reload());
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Errore', html: Object.values(data.errors || {'_':['Errore sconosciuto']}).flat().join('<br>') });
+                    }
+                },
+                error: function (xhr) {
+                    const response = xhr.responseJSON;
+                    const errorMsg = response && response.errors && response.errors.data_ingresso ? response.errors.data_ingresso.join('<br>') : 'Controlla i dati inseriti.';
+                    Swal.fire({ icon: 'error', title: 'Errore di Validazione', html: errorMsg });
+                }
+            });
+        }
+
+        if (dataSelezionata < oggi) {
+            Swal.fire({
+                title: 'Data nel Passato',
+                text: "Stai inserendo un ricovero con una data di ingresso passata. Sei sicuro?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sì, conferma!',
+                cancelButtonText: 'Annulla'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    procediConInvio();
+                }
+            });
+        } else {
+            procediConInvio();
+        }
+    });
+
+    // Gestione del click sulle righe e logica dei pulsanti (invariato)
+    $(document).on('click', '.clickable-row', function() {
+        // ... (resto del codice per la gestione dei modali dettagli, modifica, etc., rimane invariato)
+        activeRow = $(this);
+        if (activeRow.data('paziente-deceduto') === 1) {
+            $('#riepilogoDecessoNomePaziente').text(activeRow.data('paziente-nome'));
+            $('#riepilogoDecessoDataOra').text(activeRow.data('decesso-data').replace('T', ' ') || 'Non specificata');
+            $('#riepilogoDecessoCausa').text(activeRow.data('decesso-causa') || 'Non specificata');
+            modals.riepilogoDecesso.show();
+            return;
+        }
+        const dettagli = activeRow.data('dettagli-json');
+        $('#dettagliContenuto').empty().append(Object.keys(dettagli).map(key => `<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${dettagli[key]}</span></div>`));
+        const patologie = activeRow.data('patologie-json');
+        const patologieContainer = $('#dettagliPatologie').empty();
+        if (patologie.length > 0) {
+            patologie.forEach(p => patologieContainer.append(`<span class="badge badge-bordeaux rounded-pill me-1 mb-1">${p.nome}</span>`));
+        } else {
+            patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
+        }
+        const statoRicovero = activeRow.data('stato');
+        const btnModifica = $('#btnModifica');
+        const btnTrasferisci = $('#btnTrasferisci');
+        const btnElimina = $('#btnElimina');
+        const btnDeceduto = $('#btnDeceduto');
+        const dettagliMsg = $('#dettagliMsg');
+        const setButtonState = (button, enabled) => {
+            button.toggleClass('disabled', !enabled).css('pointer-events', enabled ? 'auto' : 'none');
+        };
+        dettagliMsg.hide();
+        switch (statoRicovero) {
+            case 0:
+                setButtonState(btnModifica, true);
+                setButtonState(btnTrasferisci, true);
+                setButtonState(btnElimina, true);
+                setButtonState(btnDeceduto, true);
+                break;
+            case 1:
+                setButtonState(btnModifica, false);
+                setButtonState(btnTrasferisci, false);
+                setButtonState(btnElimina, true);
+                setButtonState(btnDeceduto, false);
+                dettagliMsg.text("Azioni limitate: il ricovero è stato trasferito.").show();
+                break;
+            case 2:
+                setButtonState(btnModifica, true);
+                setButtonState(btnTrasferisci, false);
+                setButtonState(btnElimina, true);
+                setButtonState(btnDeceduto, false);
+                dettagliMsg.text("Azioni limitate: il paziente è stato dimesso.").show();
+                break;
+            default:
+                setButtonState(btnModifica, false);
+                setButtonState(btnTrasferisci, false);
+                setButtonState(btnElimina, true);
+                setButtonState(btnDeceduto, false);
+                dettagliMsg.text("Azioni non disponibili per questo ricovero.").show();
+                break;
+        }
+        modals.dettagli.show();
+    });
+
+    // Il resto del codice per la gestione dei form di modifica, elimina, decesso, etc.
+    // rimane esattamente lo stesso di prima.
+    // (Ometiamo per brevità, ma nel tuo file deve rimanere tutto il resto dello script)
+    $('#btnModifica').on('click', function(e) {
+        e.preventDefault();
+        if ($(this).hasClass('disabled')) return;
+        
+        const dettagli = activeRow.data('dettagli-json');
+        const dataIngressoParts = dettagli['Data Ingresso'].split('/');
+        
+        $('#modificaRicoveroPk').val(activeRow.data('pk'));
+        $('#modificaOspedaleNome').val(activeRow.data('ospedale-nome'));
+        $('#modificaDataIngresso').val(`${dataIngressoParts[2]}-${dataIngressoParts[1]}-${dataIngressoParts[0]}`);
+        $('#modificaDurata').val(parseInt(dettagli['Durata (gg)']));
+        $('#modificaMotivo').val(activeRow.data('motivo'));
+        $('#modificaCosto').val(parseFloat(dettagli['Costo'].replace('€ ', '').replace(',', '.')));
+        
+        const patologieCods = activeRow.data('patologie-json').map(p => p.cod).filter(Boolean);
+        
+        $('#modificaRicoveroModal').find('select[name="patologie"]').select2({
+            theme: "bootstrap-5",
+            dropdownParent: $('#modificaRicoveroModal'),
+            placeholder: "Seleziona patologie",
+            allowClear: true,
+            multiple: true,
+            closeOnSelect: false
+        }).val(patologieCods).trigger('change');
+        
+        $('#modificaDataIngresso').prop('readonly', true).css('box-shadow', '');
+        $('#pazienteDisplayContainer, #unlockPazienteBtn').show();
+        const $pazienteSelectContainer = $('#pazienteSelectContainer');
+        $pazienteSelectContainer.hide();
+        if ($pazienteSelectContainer.find('select[name="CSSN"]').data('select2')) {
+            $pazienteSelectContainer.find('select[name="CSSN"]').select2('destroy');
+        }
+        $('#modificaPazienteNome').text(activeRow.data('paziente-nome'));
+        
+        $('.invalid-feedback').text('');
+        modals.modifica.show();
+    });
+
+    $('#modificaDataIngresso[readonly]').on('click', function() {
+        if ($(this).is('[readonly]')) {
+            $('#id_password').val('');
+            $('#passwordError').text('');
+            $('#passwordAction').val('unlock_field');
+            $('#decessoPasswordModal').data('target-field', '#modificaDataIngresso');
+            modals.password.show();
+        }
+    });
+    
+    $('#unlockPazienteBtn').on('click', function() {
+        $('#id_password').val('');
+        $('#passwordError').text('');
+        $('#passwordAction').val('unlock_field');
+        $('#decessoPasswordModal').data('target-field', '#pazienteDisplayContainer');
+        modals.password.show();
+    });
+
+    $('#btnElimina, #btnEliminaFromRiepilogo').on('click', function(e){
+        e.preventDefault();
+        if ($(this).hasClass('disabled')) return;
+        
+        $('#eliminaRicoveroPk').val(activeRow.data('pk'));
+        $('#eliminaNomePaziente').text(activeRow.data('paziente-nome'));
+        $('#eliminaOspedaleNome').text(activeRow.data('ospedale-nome'));
+        
+        modals.dettagli.hide();
+        modals.riepilogoDecesso.hide();
+        modals.elimina.show();
+    });
+
+    $('#btnDeceduto, #btnModificaCausaDecesso').on('click', function(e) {
+        e.preventDefault();
+        $('#id_password').val('');
+        $('#passwordError').text('');
+        const isDeclare = $(this).is('#btnDeceduto');
+        $('#passwordAction').val(isDeclare ? 'dichiara' : 'modificaCausa');
+        modals.dettagli.hide();
+        modals.riepilogoDecesso.hide();
+        modals.password.show();
+    });
+    
+    $('#btnTrasferisci').on('click', function(e) {
+        e.preventDefault();
+        if ($(this).hasClass('disabled')) return;
+
+        $('#trasferisciRicoveroPk').val(activeRow.data('pk'));
+        $('#trasferisciNomePaziente').val(activeRow.data('paziente-nome'));
+        $('#trasferisciOspedaleAttuale').val(activeRow.data('ospedale-nome'));
+        
+        $('#selectOspedaleTrasferimento').val(null).trigger('change');
+
+        modals.dettagli.hide();
+        modals.trasferisci.show();
+    });
+    
+    function ajaxVerifyPassword() {
+        const password = $('#id_password').val();
+        const action = $('#passwordAction').val();
+
+        $('#passwordError').text('');
+
+        $.ajax({
+            type: "POST", url: "/verifica_password/",
+            data: { csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val(), password: password },
+            success: function(data) {
+                if (data.success) {
+                    modals.password.hide();
+                    $('#id_password').val('');
+                    
+                    if (action === 'unlock_field') {
+                        const targetSelector = $('#decessoPasswordModal').data('target-field');
+                        
+                        if (targetSelector === '#modificaDataIngresso') {
+                            $(targetSelector).prop('readonly', false).focus().css('box-shadow', '0 0 0 .25rem rgba(13, 110, 253, .25)');
+                            setTimeout(() => $(targetSelector).css('box-shadow', ''), 2000);
+                        } else if (targetSelector === '#pazienteDisplayContainer') {
+                            const selectPazienteContainer = $('#pazienteSelectContainer');
+                            const selectPaziente = selectPazienteContainer.find('select[name="CSSN"]');
+                            const currentPazienteCSSN = activeRow.data('dettagli-json')['CSSN'];
+                            
+                            $('#pazienteDisplayContainer, #unlockPazienteBtn').hide();
+                            selectPazienteContainer.show();
+                            
+                            selectPaziente.select2({
+                                theme: "bootstrap-5",
+                                dropdownParent: $('#modificaRicoveroModal')
+                            }).val(currentPazienteCSSN).trigger('change');
+                        }
+                    } else if (action === 'dichiara') {
+                        $('#dichiaraDecessoNomePaziente').text(activeRow.data('paziente-nome'));
+                        $('#dichiaraDecessoRicoveroPk').val(activeRow.data('pk'));
+                        
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                        const day = now.getDate().toString().padStart(2, '0');
+                        const hours = now.getHours().toString().padStart(2, '0');
+                        const minutes = now.getMinutes().toString().padStart(2, '0');
+                        const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}`;
+                        $('#id_data_ora_decesso_dichiara').val(localDateTimeString);
+
+                        $('#id_causa_decesso_dichiara').val('');
+                        modals.dichiaraDecesso.show();
+                    } else if (action === 'modificaCausa') {
+                        $('#modificaCausaRicoveroPk').val(activeRow.data('pk'));
+                        $('#id_data_ora_decesso_modifica').val(activeRow.data('decesso-data'));
+                        $('#id_causa_decesso_modifica').val(activeRow.data('decesso-causa'));
+                        modals.modificaCausa.show();
+                    }
+                } else {
+                    $('#passwordError').text((data.errors && data.errors[0]) || 'Password non corretta.').show();
+                }
+            },
+            error: () => $('#passwordError').text('Problema di comunicazione.').show()
+        });
+    }
+
+    $('form:not(#formAggiungiRicovero, #filtriRicoveriForm)').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        const formId = form.attr('id');
+
+        if (formId === 'formVerificaPassword') {
+            ajaxVerifyPassword();
+            return;
+        }
+
+        let url, pk, modalToHide, successTitle;
+
+        switch(formId) {
+            case 'formTrasferisci':
+                pk = $('#trasferisciRicoveroPk').val();
+                url = `/trasferisci_ricovero/${pk}/`;
+                modalToHide = modals.trasferisci;
+                successTitle = 'Trasferimento completato!';
+                break;
+            case 'formEliminaRicovero':
+                pk = $('#eliminaRicoveroPk').val();
+                url = `/elimina_ricovero/${pk}/`;
+                modalToHide = modals.elimina;
+                successTitle = 'Ricovero eliminato!';
+                break;
+            case 'formModificaRicovero':
+                pk = $('#modificaRicoveroPk').val();
+                url = `/modifica_ricovero/${pk}/`;
+                modalToHide = modals.modifica;
+                successTitle = 'Ricovero modificato!';
+                break;
+            case 'formDichiaraDecesso':
+                pk = $('#dichiaraDecessoRicoveroPk').val();
+                url = `/dichiara_decesso/${pk}/`;
+                modalToHide = modals.dichiaraDecesso;
+                successTitle = 'Decesso dichiarato!';
+                break;
+            case 'formModificaCausaDecesso':
+                pk = $('#modificaCausaRicoveroPk').val();
+                url = `/modifica_causa_decesso/${pk}/`;
+                modalToHide = modals.modificaCausa;
+                successTitle = 'Causa decesso modificata!';
+                break;
+            default: return;
+        }
+
+        $.ajax({
+            type: "POST", url: url, data: form.serialize(),
+            success: function(data) {
+                if (data.success) {
+                    modalToHide.hide();
+                    Swal.fire({ icon: 'success', title: successTitle, timer: 2000, showConfirmButton: false }).then(() => window.location.reload());
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Errore di validazione', html: Object.values(data.errors || {'_':['Operazione fallita.']}).flat().join('<br>') });
+                }
+            },
+            error: (xhr) => {
+                let errorMsg = "Problema di comunicazione con il server.";
+                if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    errorMsg = Object.values(xhr.responseJSON.errors).map(e => e.join('<br>')).join('<br>');
+                }
+                Swal.fire("Errore", errorMsg, "error");
+            }
+        });
+    });
+
+});
+</script>

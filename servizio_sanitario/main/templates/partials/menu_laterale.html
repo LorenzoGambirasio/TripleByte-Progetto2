@@ -1,15 +1,20 @@
- {% load static %}
-<div class="d-grid gap-3 mb-4">
-  <a href="{% url 'cittadini' %}" class="btn btn-outline-primary text-start fw-bold">
-    <i class="bi bi-person-vcard me-2"></i> Cittadini
-  </a>
-  <a href="{% url 'ospedali' %}" class="btn btn-outline-success text-start fw-bold">
-    <i class="bi bi-hospital me-2"></i> Ospedali
-  </a>
-  <a href="{% url 'ricoveri' %}" class="btn btn-outline-warning text-start fw-bold">
-    <i class="bi bi-journal-medical me-2"></i> Ricoveri
-  </a>
-  <a href="{% url 'patologie' %}" class="btn btn-outline-danger text-start fw-bold">
-    <i class="bi bi-virus me-2"></i> Patologie
-  </a>
+{% load static %}
+<div class="card shadow-sm rounded-4 border-0 mb-4">
+  <div class="card-body p-3">
+    <h5 class="text-center border-bottom pb-2 mb-3">Menu</h5> {# Titolo cambiato e stile come i filtri #}
+    <div class="list-group list-group-flush">
+      <a href="{% url 'cittadini' %}" class="list-group-item list-group-item-action border-0 py-2 {% if 'cittadini' in request.path %}active{% endif %} rounded-3 mb-1">
+        <i class="bi bi-person-vcard me-2 fs-5"></i> Cittadini
+      </a>
+      <a href="{% url 'ospedali' %}" class="list-group-item list-group-item-action border-0 py-2 {% if 'ospedali' in request.path %}active{% endif %} rounded-3 mb-1">
+        <i class="bi bi-hospital me-2 fs-5"></i> Ospedali
+      </a>
+      <a href="{% url 'lista_ricoveri' %}" class="list-group-item list-group-item-action border-0 py-2 {% if 'ricoveri' in request.path %}active{% endif %} rounded-3 mb-1">
+        <i class="bi bi-journal-medical me-2 fs-5"></i> Ricoveri
+      </a>
+      <a href="{% url 'patologie' %}" class="list-group-item list-group-item-action border-0 py-2 {% if 'patologie' in request.path %}active{% endif %} rounded-3">
+        <i class="bi bi-virus me-2 fs-5"></i> Patologie
+      </a>
+    </div>
+  </div>
 </div>

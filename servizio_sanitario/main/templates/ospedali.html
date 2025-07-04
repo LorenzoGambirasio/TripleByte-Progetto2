@@ -2,44 +2,77 @@
 {% block title %}Elenco Ospedali{% endblock %}
 
 {% block content %}
+<div class="row mb-4 g-3">
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="stat-card" style="border-color: #0d6efd;">
+      <div class="stat-value">{{ statistiche_ospedali.totali }}</div>
+      <div class="stat-label">Ospedali Totali</div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <div class="stat-card" style="border-color: #198754;">
+      <div class="stat-value">{{ statistiche_ospedali.con_direttore }}</div>
+      <div class="stat-label">Con Direttore</div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <a href="{% url 'lista_ricoveri' %}" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #6f42c1;">
+        <div class="stat-value">{{ statistiche_ospedali.totale_ricoveri_globale }}</div>
+        <div class="stat-label">Ricoveri nel Sistema</div>
+      </div>
+    </a>
+  </div>
+</div>
+
 <div class="bg-white p-4 rounded shadow">
   <h4 class="mb-4 text-danger fw-bold">Elenco degli Ospedali</h4>
   <div class="table-responsive">
-    <table class="table table-striped table-hover table-bordered w-100 text-center align-middle">
-<thead class="table-light">
-  <tr>
-    {% for col, label in columns %}
-      <th>
-        <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}"
-           class="text-decoration-none text-dark">
-          {{ label }}
-          {% if current_sort == col %}
-            <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
-          {% endif %}
-        </a>
-      </th>
-    {% endfor %}
-  </tr>
-</thead>
-
-
-      <tbody>
-        {% for ospedale in ospedali %}
+    <table class="table table-striped table-hover table-bordered w-100 align-middle">
+      <thead class="table-light">
         <tr>
+          {% for col, label in columns %}
+            <th {% if col == 'ricoveri' or col == 'incasso' %}class="text-end"{% endif %}>
+              <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}"
+                class="text-decoration-none text-dark">
+                {{ label }}
+                {% if current_sort == col %}
+                  <i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>
+                {% endif %}
+              </a>
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for ospedale in page_obj.object_list %}
+        <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?ospedale_cod={{ ospedale.codice }}">
           <td>{{ ospedale.nome }}</td>
           <td>{{ ospedale.città }}</td>
           <td>{{ ospedale.indirizzo }}</td>
-          <td>{{ ospedale.CSSN_direttore.nome }} {{ ospedale.CSSN_direttore.cognome }}</td>
+          <td>{% if ospedale.CSSN_direttore %}{{ ospedale.CSSN_direttore.nome }} {{ ospedale.CSSN_direttore.cognome }}{% else %}N/D{% endif %}</td>
+          <td class="text-end">{{ ospedale.numero_ricoveri_ospedale }}</td>
+          <td class="text-end">€ {{ ospedale.incasso_totale|floatformat:2 }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="text-center text-muted">Nessun ospedale trovato.</td>
+          <td colspan="6" class="text-center text-muted">Nessun ospedale trovato.</td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-
-    {% include 'partials/paginazione.html' %}
+    {% include 'partials/paginazione.html' with etichetta="ospedali" %}
   </div>
 </div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll('.clickable-row').forEach(row => {
+      row.addEventListener('click', function (event) {
+        if (!event.target.closest('a') && !event.target.closest('button')) {
+          window.location.href = row.dataset.href;
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}

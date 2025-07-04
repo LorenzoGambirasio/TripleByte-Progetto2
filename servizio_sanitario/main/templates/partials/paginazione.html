@@ -1,42 +1,136 @@
 {% if page_obj.paginator.count > 0 %}
 
-  <div class="total-count mt-3">Totale: <strong>{{ page_obj.paginator.count }}</strong> {{ etichetta }}</div>
+  <div class="total-count mt-3">
+    Totale: <strong>{{ page_obj.paginator.count }}</strong> {{ etichetta }}
+  </div>
 
-  <nav aria-label="Paginazione" class="mt-2">
-    <ul class="pagination justify-content-center">
+  <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-3">
+    {# Selettore Righe per Pagina #}
+    <div class="d-flex align-items-center me-3">
+      <label for="righe-per-pagina" class="form-label d-inline me-2 mb-0 fw-bold text-muted">Mostra:</label>
+      <select id="righe-per-pagina" class="form-select form-select-sm w-auto">
+        <option value="10" {% if request.GET.per_page == '10' %}selected{% endif %}>10</option>
+        <option value="15" {% if request.GET.per_page == '15' %}selected{% endif %}>15</option>
+        <option value="20" {% if request.GET.per_page == '20' %}selected{% endif %}>20</option>
+        <option value="50" {% if request.GET.per_page == '50' %}selected{% endif %}>50</option>
+        <option value="100" {% if request.GET.per_page == '100' %}selected{% endif %}>100</option>
+      </select>
+      <span class="ms-2 text-muted">righe</span>
+    </div>
 
-      {% if page_obj.has_previous %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">« Precedente</a>
-        </li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">« Precedente</span></li>
-      {% endif %}
+    {# Navigazione Paginazione #}
+    <nav aria-label="Paginazione" class="flex-grow-1 d-flex justify-content-center">
+      <ul class="pagination justify-content-center flex-wrap mb-0">
 
-      {% for num in page_obj.paginator.page_range %}
-        {% if num == page_obj.number %}
-          <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-        {% elif num >= page_obj.number|add:-2 and num <= page_obj.number|add:2 %}
+        {% if page_obj.has_previous %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+            <a class="page-link" href="?page=1{% for key,value in request.GET.items %}{% if key != 'page' %}&{{key}}={{value}}{% endif %}{% endfor %}">
+              <i class="bi bi-chevron-double-left"></i>
+            </a>
           </li>
-        {% elif num == 1 or num == page_obj.paginator.num_pages %}
           <li class="page-item">
-            <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{key}}={{value}}{% endif %}{% endfor %}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
           </li>
-        {% elif forloop.counter == 2 or forloop.counter == page_obj.paginator.num_pages|add:'-1' %}
-          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-left"></i></span></li>
+          <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-left"></i></span></li>
         {% endif %}
-      {% endfor %}
 
-      {% if page_obj.has_next %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Successiva »</a>
-        </li>
-      {% else %}
-        <li class="page-item disabled"><span class="page-link">Successiva »</span></li>
-      {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+          {% if num == page_obj.number %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{key}}={{value}}{% endif %}{% endfor %}">{{ num }}</a>
+            </li>
+          {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{key}}={{value}}{% endif %}{% endfor %}">{{ num }}</a>
+            </li>
+          {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+            {# Riga dei puntini, ora cliccabile con la classe "jump-to-page" #}
+            <li class="page-item jump-to-page" data-total-pages="{{ page_obj.paginator.num_pages }}" data-current-page="{{ page_obj.number }}">
+              <span class="page-link" style="cursor: pointer;">...</span>
+            </li>
+          {% endif %}
+        {% endfor %}
 
-    </ul>
-  </nav>
+        {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{key}}={{value}}{% endif %}{% endfor %}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{key}}={{value}}{% endif %}{% endfor %}">
+              <i class="bi bi-chevron-double-right"></i>
+            </a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-right"></i></span></li>
+          <li class="page-item disabled"><span class="page-link"><i class="bi bi-chevron-double-right"></i></span></li>
+        {% endif %}
+
+      </ul>
+    </nav>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestione cambio righe per pagina
+        const righePerPageSelect = document.getElementById('righe-per-pagina');
+        if (righePerPageSelect) {
+            righePerPageSelect.addEventListener('change', function() {
+                const perPage = this.value;
+                const currentUrl = new URL(window.location.href);
+                currentUrl.searchParams.set('per_page', perPage);
+                currentUrl.searchParams.set('page', 1); // Reset alla prima pagina quando cambia per_page
+                window.location.href = currentUrl.toString();
+            });
+        }
+
+        // Gestione "Vai a pagina..." (puntini)
+        const jumpToPageLinks = document.querySelectorAll('.jump-to-page .page-link');
+        jumpToPageLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const parentLi = this.closest('.jump-to-page');
+                const totalPages = parseInt(parentLi.dataset.totalPages);
+                const currentPage = parseInt(parentLi.dataset.currentPage);
+
+                Swal.fire({
+                    title: 'Vai a pagina',
+                    input: 'text', // CAMBIATO A type="text"
+                    inputLabel: `Inserisci un numero di pagina (da 1 a ${totalPages})`,
+                    inputPlaceholder: 'Numero pagina',
+                    inputValue: currentPage,
+                    showCancelButton: true,
+                    confirmButtonText: 'Vai',
+                    cancelButtonText: 'Annulla',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (value) => {
+                        const pageNum = parseInt(value);
+                        // Validazione più robusta per assicurarsi che sia un numero intero valido
+                        if (isNaN(pageNum) || !Number.isInteger(pageNum) || pageNum < 1 || pageNum > totalPages) {
+                            Swal.showValidationMessage(`Inserisci un numero intero valido tra 1 e ${totalPages}.`);
+                            return false;
+                        }
+                        return pageNum;
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const pageNumber = result.value;
+                        const currentUrl = new URL(window.location.href);
+                        currentUrl.searchParams.set('page', pageNumber);
+                        window.location.href = currentUrl.toString();
+                    }
+                });
+            });
+        });
+    });
+  </script>
+
 {% endif %}

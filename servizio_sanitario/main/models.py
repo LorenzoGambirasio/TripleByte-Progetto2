@@ -7,7 +7,9 @@ class Cittadino(models.Model):
     data_nascita = models.DateField(db_column='datanascita')
     città = models.CharField(max_length=100, db_column='luogonascita')
     via = models.CharField(max_length=100, db_column='indirizzo')
-    deceduto = models.IntegerField(db_column='deceduto')  # 0 = domiciliato, 1 = deceduto
+    deceduto = models.IntegerField(db_column='deceduto')
+    dataoradecesso = models.DateTimeField(null=True, blank=True, db_column='dataoradecesso')
+    causadecesso = models.TextField(max_length=500, null=True, blank=True, db_column='causadecesso')
 
     class Meta:
         db_table = 'main_cittadino'
@@ -62,6 +64,10 @@ class Ricovero(models.Model):
 
     def __str__(self):
         return f"{self.codRicovero} - {self.codOspedale.nome}"
+    
+    def get_stato_display(self):
+        stati = {0: 'Attivo', 1: 'Trasferito', 2: 'Dimesso', 3: 'Deceduto'}
+        return stati.get(self.stato, 'Sconosciuto')
 
 class Patologia(models.Model):
     cod = models.CharField(primary_key=True, max_length=10, db_column='codpatologia')
@@ -77,7 +83,7 @@ class Patologia(models.Model):
 
 
 class PatologiaCronica(models.Model):
-    cod = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
+    cod = models.OneToOneField(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id', primary_key=True)
 
     class Meta:
         db_table = 'main_patologiacronica'
@@ -88,7 +94,7 @@ class PatologiaCronica(models.Model):
 
 
 class PatologiaMortale(models.Model):
-    cod = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
+    cod = models.OneToOneField(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id', primary_key=True)
 
     class Meta:
         db_table = 'main_patologiamortale'
@@ -99,28 +105,15 @@ class PatologiaMortale(models.Model):
 
 
 class PatologiaRicovero(models.Model):
-    codRicovero = models.ForeignKey(Ricovero, on_delete=models.CASCADE, db_column='codricovero')
+    # Ripristino una chiave primaria fittizia per accontentare Django, ma il salvataggio sarà manuale
+    codRicovero = models.ForeignKey(Ricovero, on_delete=models.CASCADE, db_column='codricovero', primary_key=True)
     codOspedale = models.ForeignKey(Ospedale, on_delete=models.CASCADE, db_column='codospedale')
     codPatologia = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
 
     class Meta:
         db_table = 'main_patologiaricovero'
         managed = False
-        constraints = [
-            models.UniqueConstraint(fields=['codRicovero', 'codOspedale', 'codPatologia'], name='pk_patologiaricovero')
-        ]
+        unique_together = (('codRicovero', 'codOspedale', 'codPatologia'),)
 
     def __str__(self):
-        return f"{self.codRicovero} - {self.codOspedale} - {self.codPatologia.nome}"
-    
-    
-class PatologiaRicoveroView(models.Model):
-    id = models.IntegerField(primary_key=True)
-    codRicovero = models.CharField(db_column='codricovero')
-    codOspedale = models.CharField(db_column='codospedale')
-    codPatologia = models.CharField(db_column='codpatologia_id')
-
-    class Meta:
-        db_table = 'main_patologiaricovero_view'
-        managed = False
-
+        return f"{self.codRicovero} - {self.codOspedale} - {self.codPatologia}"
