@@ -79,9 +79,6 @@
               data-paziente-deceduto="{{ ricovero.CSSN.deceduto }}" 
               data-dettagli-json='{"Codice": "{{ ricovero.codRicovero }}", "Paziente": "{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}", "CSSN": "{{ ricovero.CSSN.CSSN }}", "Data Ingresso": "{{ ricovero.data_ingresso|date:"d/m/Y" }}", "Durata (gg)": "{{ ricovero.durata }}", "Costo": "€ {{ ricovero.costo|floatformat:2 }}"}'
               data-patologie-json='[{% for p in ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
-              data-url-modifica="{% url 'modifica_ricovero' ricovero.pk %}" 
-              data-url-elimina="{% url 'elimina_ricovero' ricovero.pk %}" 
-              data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}"
               data-motivo="{{ ricovero.motivo|escapejs }}"
               data-decesso-data="{{ ricovero.CSSN.dataoradecesso|date:"Y-m-d\TH:i"|default:"" }}"
               data-decesso-causa="{{ ricovero.CSSN.causadecesso|escapejs|default:"" }}"
@@ -91,14 +88,13 @@
             <td>{{ ricovero.data_ingresso|date:"d/m/Y" }}</td>
             <td>{{ ricovero.durata }} gg</td>
             <td class="stato-col">
-              {# Codice per lo stato con solo icona e tooltip #}
               {% if ricovero.stato == 0 %} 
                 <span class="badge border border-success-subtle rounded-pill status-icon-badge text-success-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Attivo"><i class="bi bi-check-circle"></i></span>
               {% elif ricovero.stato == 1 %} 
                 <span class="badge border border-warning-subtle rounded-pill status-icon-badge text-warning-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Trasferito"><i class="bi bi-arrow-left-right"></i></span>
               {% elif ricovero.stato == 2 %} 
                 <span class="badge border border-danger-subtle rounded-pill status-icon-badge text-danger-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Dimesso"><i class="bi bi-house"></i></span>
-              {% elif ricovero.stato == 3 %} {# NUOVO STATO DECEDUTO #}
+              {% elif ricovero.stato == 3 %}
                 <span class="badge border border-dark-subtle rounded-pill status-icon-badge text-dark-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Deceduto"><i class="bi bi-x-circle"></i></span>
               {% endif %}
             </td>

@@ -705,3 +705,16 @@ def verifica_paziente(request):
         except models.Cittadino.DoesNotExist:
             return JsonResponse({'trovato': False, 'message': 'Paziente non trovato.'})
     return JsonResponse({'error': 'Metodo non consentito'}, status=400)
+
+def verifica_paziente(request):
+    if request.method == "POST":
+        cssn = request.POST.get('cssn', '').strip().upper()
+        try:
+            cittadino = models.Cittadino.objects.get(CSSN=cssn)
+            if cittadino.deceduto == 1:
+                return JsonResponse({'trovato': False, 'message': 'Paziente già dichiarato deceduto.'})
+            
+            return JsonResponse({'trovato': True, 'nome': f"{cittadino.nome} {cittadino.cognome}"})
+        except models.Cittadino.DoesNotExist:
+            return JsonResponse({'trovato': False, 'message': 'Paziente non trovato.'})
+    return JsonResponse({'error': 'Metodo non consentito'}, status=400)

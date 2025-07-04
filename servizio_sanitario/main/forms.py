@@ -1,16 +1,17 @@
 from django import forms
 from . import models
 from django.core.exceptions import ValidationError
-from datetime import date, timedelta, datetime # Mantieni datetime per DateField e altri usi se necessario
-from django.utils import timezone # REINTRODUCI E USA PER DATETIME AWARE
-import pytz # Potrebbe servire per make_aware se il fuso orario non è UTC
+from datetime import date, timedelta
+from django.utils import timezone
 
 
 class RicoveroForm(forms.ModelForm):
     CSSN = forms.ModelChoiceField(
         queryset=models.Cittadino.objects.filter(deceduto=0).order_by('cognome', 'nome'),
-        label="CSSN",
-        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_cittadino'}),
+        label="Paziente",
+        # CORREZIONE: Impostiamo l'etichetta vuota a None per rimuovere i trattini
+        empty_label=None,
+        widget=forms.Select(attrs={'class': 'form-select'}),
         to_field_name="CSSN"
     )
 
@@ -30,7 +31,7 @@ class RicoveroForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
         error_messages={
             'required': 'Inserisci la durata del ricovero.',
-            'min_value': 'La durata deve be essere almeno 1 giorno.',
+            'min_value': 'La durata deve essere almeno 1 giorno.',
             'max_value': 'La durata massima è di 60 giorni.'
         }
     )
@@ -39,7 +40,7 @@ class RicoveroForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         error_messages={
             'required': 'Inserisci la data di ingresso.',
-            'invalid': 'Formato data non valido. Usa AAAA-MM-GGTHH:MM.'
+            'invalid': 'Formato data non valido.'
         }
     )
 
@@ -69,15 +70,25 @@ class RicoveroForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.is_edit_mode = kwargs.pop('is_edit_mode', False)
         super().__init__(*args, **kwargs)
 
         self.fields['CSSN'].queryset = models.Cittadino.objects.filter(deceduto=0).order_by('cognome', 'nome')
-
         self.fields['CSSN'].label_from_instance = lambda obj: f"{obj.CSSN} - {obj.nome} {obj.cognome}"
+        
+        if self.is_edit_mode:
+            self.fields['CSSN'].required = False
 
         self.fields['CSSN'].widget.attrs.update({'id': 'id_cittadino'})
         self.fields['patologie'].widget.attrs.update({'id': 'id_patologie'})
         self.fields['codOspedale'].widget.attrs.update({'id': 'id_codOspedale'})
+
+    def clean_data_ingresso(self):
+        data_inserita = self.cleaned_data.get('data_ingresso')
+        if data_inserita and data_inserita > timezone.now().date():
+            raise ValidationError("La data di ingresso non può essere nel futuro.", code='future_date')
+        return data_inserita
+
 
 class NuovoPazienteForm(forms.ModelForm):
     class Meta:
@@ -86,7 +97,8 @@ class NuovoPazienteForm(forms.ModelForm):
         widgets = {
             'data_nascita': forms.DateInput(attrs={'type': 'date'})
         }
-        
+
+
 class TrasferimentoForm(forms.ModelForm):
     class Meta:
         model = models.Ricovero
@@ -97,20 +109,16 @@ class TrasferimentoForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        
         nuovo_ospedale = cleaned_data.get("codOspedale")
-        
-        if self.instance:
-            if nuovo_ospedale == self.instance.codOspedale:
-                raise ValidationError(
-                    "L'ospedale di destinazione non può essere lo stesso di quello attuale. Seleziona un ospedale diverso."
-                )
-        
+        if self.instance and nuovo_ospedale == self.instance.codOspedale:
+            raise ValidationError(
+                "L'ospedale di destinazione non può essere lo stesso di quello attuale. Seleziona un ospedale diverso."
+            )
         return cleaned_data
 
-# DecessoForm (basato su Cittadino)
+
 class DecessoForm(forms.ModelForm):
-    dataoradecesso = forms.DateTimeField( # NOME SENZA UNDERSCORE
+    dataoradecesso = forms.DateTimeField(
         label="Data e Ora del Decesso",
         input_formats=['%Y-%m-%dT%H:%M'],
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
@@ -119,7 +127,7 @@ class DecessoForm(forms.ModelForm):
             'invalid': 'Formato data e ora non valido. Assicurati che sia completo (AAAA-MM-GGTHH:MM).'
         }
     )
-    causadecesso = forms.CharField( # NOME SENZA UNDERSCORE
+    causadecesso = forms.CharField(
         label="Causa del Decesso",
         widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         required=False,
@@ -130,29 +138,20 @@ class DecessoForm(forms.ModelForm):
         model = models.Cittadino
         fields = ['dataoradecesso', 'causadecesso']
 
-    def clean_data_ora_decesso(self):
-        data_ora_input = self.cleaned_data['data_ora_decesso']
-        
+    def clean_dataoradecesso(self):
+        data_ora_input = self.cleaned_data.get('dataoradecesso')
         if not data_ora_input:
             return data_ora_input
         
-        # Se data_ora_input è naive, rendilo aware usando il fuso orario corrente del progetto
-        # e poi convertilo a UTC per il confronto.
         if timezone.is_naive(data_ora_input):
-            # Interpreta il naive datetime come se fosse nel fuso orario di default di Django (settings.TIME_ZONE)
             try:
-                # Usa get_default_timezone() per un timezone robusto, specialmente con USE_TZ=True
                 data_ora_aware = timezone.make_aware(data_ora_input, timezone.get_default_timezone())
             except Exception as e:
                 raise ValidationError(f"Errore nella conversione del fuso orario: {e}")
         else:
-            data_ora_aware = data_ora_input # Già aware
+            data_ora_aware = data_ora_input
         
-        # Ottieni l'ora attuale dal server, che sarà già aware (perché USE_TZ=True)
         now_aware = timezone.now()
-        
-        # Confronteremo due datetime aware. Aggiungi un piccolo margine di tolleranza.
-        # Questo è per compensare latenze di rete o differenze minime.
         now_plus_tolerance = now_aware + timedelta(seconds=2)
         
         if data_ora_aware > now_plus_tolerance:
@@ -161,7 +160,6 @@ class DecessoForm(forms.ModelForm):
         return data_ora_aware
 
 
-# PasswordForm
 class PasswordForm(forms.Form):
     password = forms.CharField(
         label="Password",
