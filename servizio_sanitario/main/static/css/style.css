@@ -573,3 +573,22 @@ canvas {
   font-weight: 500;
 }
 
+/* Stili per il pulsante e header bordeaux */
+.btn-bordeaux {
+  background-color: #800020;
+  border-color: #800020;
+  color: #fff;
+}
+.btn-bordeaux:hover {
+  background-color: #66001A;
+  border-color: #66001A;
+  color: #fff;
+}
+.bg-bordeaux {
+  background-color: #800020 !important;
+}
+
+/* Rende il select invisibile prima che Select2 lo processi */
+.select2-pre-init {
+  opacity: 0;
+}

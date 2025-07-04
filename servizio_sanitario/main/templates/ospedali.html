@@ -32,7 +32,7 @@
       <thead class="table-light">
         <tr>
           {% for col, label in columns %}
-            <th {% if col == 'ricoveri' %}class="text-end"{% endif %}>
+            <th {% if col == 'ricoveri' or col == 'incasso' %}class="text-end"{% endif %}>
               <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}"
                 class="text-decoration-none text-dark">
                 {{ label }}
@@ -52,10 +52,11 @@
           <td>{{ ospedale.indirizzo }}</td>
           <td>{% if ospedale.CSSN_direttore %}{{ ospedale.CSSN_direttore.nome }} {{ ospedale.CSSN_direttore.cognome }}{% else %}N/D{% endif %}</td>
           <td class="text-end">{{ ospedale.numero_ricoveri_ospedale }}</td>
+          <td class="text-end">€ {{ ospedale.incasso_totale|floatformat:2 }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="text-center text-muted">Nessun ospedale trovato.</td>
+          <td colspan="6" class="text-center text-muted">Nessun ospedale trovato.</td>
         </tr>
         {% endfor %}
       </tbody>

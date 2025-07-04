@@ -6,8 +6,10 @@ from django.db import transaction
 from django.http import JsonResponse
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Count, Max, Q
 from django.views.decorators.http import require_POST, require_http_methods
+from django.db.models import Count, Max, Q, Sum # Aggiungi Sum
+from django.db.models.functions import Coalesce # Aggiungi Coalesce
+from django.db.models import Value, DecimalField # Aggiungi Value e DecimalField
 import json
 
 ADMIN_PASSWORD = 'admin'
@@ -120,9 +122,13 @@ def lista_cittadini(request):
 
 
 def lista_ospedali(request):
+    # --- INIZIO MODIFICA: AGGIUNTA ANNOTAZIONE INCASSO ---
     ospedali_base = models.Ospedale.objects.select_related('CSSN_direttore').annotate(
-        numero_ricoveri_ospedale=Count('ricovero')
+        numero_ricoveri_ospedale=Count('ricovero'),
+        # Calcola la somma dei costi, se non ci sono ricoveri, imposta l'incasso a 0.
+        incasso_totale=Coalesce(Sum('ricovero__costo'), Value(0, output_field=DecimalField()))
     ).all()
+    # --- FINE MODIFICA ---
 
     nome_filtro = request.GET.get('nome', '').strip()
     citta_filtro = request.GET.get('città', '').strip()
@@ -137,36 +143,49 @@ def lista_ospedali(request):
             Q(CSSN_direttore__nome__icontains=direttore_filtro) |
             Q(CSSN_direttore__cognome__icontains=direttore_filtro)
         )
-    
+
     statistiche_ospedali = {
         'totali': models.Ospedale.objects.count(),
         'con_direttore': models.Ospedale.objects.filter(CSSN_direttore__isnull=False).count(),
         'totale_ricoveri_globale': models.Ricovero.objects.count(),
     }
-    
+
+    # --- INIZIO MODIFICA: AGGIUNTA NUOVA COLONNA E LARGHEZZE ---
     colonne_larghezze = {
-        'nome': '22%', 'città': '22%', 'indirizzo': '22%', 'direttore': '22%', 'ricoveri': '12%',
+        'nome': '20%', 'città': '18%', 'indirizzo': '20%', 
+        'direttore': '18%', 'ricoveri': '10%', 'incasso': '14%',
     }
     columns = [
         ('nome', 'Nome Ospedale'), ('città', 'Città'), ('indirizzo', 'Indirizzo'),
         ('direttore', 'Direttore Sanitario'), ('ricoveri', 'Ricoveri'),
+        ('incasso', 'Incasso Totale (€)'), # Nuova colonna
     ]
+    # --- FINE MODIFICA ---
+
     current_sort = request.GET.get('sort', 'nome')
     current_order = request.GET.get('order', 'asc')
+
+    # --- INIZIO MODIFICA: AGGIUNTA ORDINAMENTO PER INCASSO ---
     sort_mapping = {
         'nome': 'nome', 'città': 'città', 'indirizzo': 'indirizzo',
         'direttore': 'CSSN_direttore__cognome', 'ricoveri': 'numero_ricoveri_ospedale',
+        'incasso': 'incasso_totale', # Nuovo ordinamento
     }
+    # --- FINE MODIFICA ---
+
     sort_field = sort_mapping.get(current_sort, 'nome')
     if current_order == 'desc':
         ospedali_base = ospedali_base.order_by(f'-{sort_field}')
     else:
         ospedali_base = ospedali_base.order_by(sort_field)
+
     per_page = request.GET.get('per_page', 20)
     try: per_page = int(per_page)
     except ValueError: per_page = 20
+
     paginator = Paginator(ospedali_base, per_page)
     page_obj = paginator.get_page(request.GET.get("page"))
+
     context = {
         'page_obj': page_obj, 'ospedali': page_obj.object_list, 'columns': columns,
         'colonne_larghezze': colonne_larghezze, 'current_sort': current_sort,
@@ -634,3 +653,11 @@ def verifica_paziente(request):
         except models.Cittadino.DoesNotExist:
             return JsonResponse({'trovato': False, 'message': 'Paziente non trovato.'})
     return JsonResponse({'error': 'Metodo non consentito'}, status=400)
+
+def cerca_patologie(request):
+    term = request.GET.get('q', '').strip()
+    patologie = models.Patologia.objects.filter(nome__icontains=term).order_by('nome')[:20]
+    
+    results = [{'id': p.cod, 'text': p.nome} for p in patologie]
+    
+    return JsonResponse({'results': results})

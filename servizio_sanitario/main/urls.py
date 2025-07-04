@@ -17,4 +17,5 @@ urlpatterns = [
     path('modifica_causa_decesso/<str:pk>/', views.modifica_causa_decesso, name='modifica_causa_decesso'),
 
     path('verifica_paziente/', views.verifica_paziente, name='verifica_paziente'),
+    path('cerca-patologie/', views.cerca_patologie, name='cerca_patologie'),
 ]
