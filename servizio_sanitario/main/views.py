@@ -7,10 +7,15 @@ from django.http import JsonResponse
 from datetime import timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
-from django.db.models import Count, Max, Q, Sum # Aggiungi Sum
+from django.db.models import Count, Max, Q, Sum, Subquery, OuterRef # Aggiungi Sum
 from django.db.models.functions import Coalesce # Aggiungi Coalesce
 from django.db.models import Value, DecimalField # Aggiungi Value e DecimalField
 import json
+
+
+
+
+
 
 ADMIN_PASSWORD = 'admin'
 
@@ -310,6 +315,7 @@ def genera_nuovo_codice_ricovero():
 
 
 def lista_ricoveri(request):
+    # Logica per l'aggiunta di un nuovo ricovero via AJAX
     if request.method == 'POST':
         form = RicoveroForm(request.POST)
         if form.is_valid():
@@ -333,9 +339,9 @@ def lista_ricoveri(request):
             errors = [error for field, field_errors in form.errors.items() for error in field_errors]
             return JsonResponse({"success": False, "errors": errors})
 
-    # Logica GET
-    form = RicoveroForm()
+    # --- Inizio Logica GET per visualizzare la lista ---
     
+    # 1. Calcolo statistiche iniziali
     ricoveri_base = models.Ricovero.objects.all()
     statistiche = {
         'totali': ricoveri_base.count(),
@@ -344,13 +350,21 @@ def lista_ricoveri(request):
         'dimessi': ricoveri_base.filter(stato=2).count(),
         'deceduti': ricoveri_base.filter(stato=3).count()
     }
-
+    
     ricoveri_filtrati = ricoveri_base.select_related('CSSN', 'codOspedale').prefetch_related('patologie')
 
-    # --- LETTURA DEI PARAMETRI DAL FORM DEI FILTRI ---
+    # 2. Annotazione per calcolare il totale dei ricoveri per ogni paziente
+    conteggio_ricoveri_subquery = models.Ricovero.objects.filter(
+        CSSN_id=OuterRef('CSSN_id')
+    ).values('CSSN_id').annotate(c=Count('pk')).values('c')
+    
+    ricoveri_filtrati = ricoveri_filtrati.annotate(
+        totale_ricoveri_paziente=Subquery(conteggio_ricoveri_subquery)
+    )
+
+    # 3. Lettura dei parametri dei filtri dalla richiesta GET
     cssn_from_url = request.GET.get('cssn', '').strip()
     ospedale_from_url = request.GET.get('ospedale_cod', '').strip()
-
     cssn_from_form = request.GET.get('cssn_form', '').strip()
     nome_from_form = request.GET.get('nome', '').strip()
     cognome_from_form = request.GET.get('cognome', '').strip()
@@ -360,12 +374,10 @@ def lista_ricoveri(request):
     data_a_from_form = request.GET.get('data_a', '').strip()
     motivo_from_form = request.GET.get('motivo', '').strip()
     
-    # --- INIZIO MODIFICA CORRETTA ---
-    # Questa è la riga chiave: usiamo getlist per leggere correttamente TUTTI
-    # i valori di 'nome_patologia' inviati dal form multi-selezione.
+    # Logica corretta per leggere valori multipli dal filtro delle patologie
     final_nome_patologia_filters = request.GET.getlist('nome_patologia')
-    # --- FINE MODIFICA CORRETTA ---
 
+    # Unione dei filtri (da URL e da form)
     final_cssn_filter = cssn_from_url if cssn_from_url else cssn_from_form
     final_nome_filter = nome_from_form
     final_cognome_filter = cognome_from_form
@@ -375,6 +387,7 @@ def lista_ricoveri(request):
     final_data_a_filter = data_a_from_form
     final_motivo_filter = motivo_from_form
     
+    # 4. Applicazione dei filtri al queryset
     if final_cssn_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__CSSN__icontains=final_cssn_filter)
     if final_nome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__nome__icontains=final_nome_filter)
     if final_cognome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__cognome__icontains=final_cognome_filter)
@@ -383,46 +396,45 @@ def lista_ricoveri(request):
     if final_data_da_filter: ricoveri_filtrati = ricoveri_filtrati.filter(data_ingresso__gte=final_data_da_filter)
     if final_data_a_filter: ricoveri_filtrati = ricoveri_filtrati.filter(data_ingresso__lte=final_data_a_filter)
     if final_motivo_filter: ricoveri_filtrati = ricoveri_filtrati.filter(motivo__icontains=final_motivo_filter)
-    
     if final_nome_patologia_filters:
         ricoveri_filtrati = ricoveri_filtrati.filter(patologie__nome__in=final_nome_patologia_filters).distinct()
     
+    # 5. Ordinamento
     current_sort = request.GET.get('sort', 'codRicovero')
     current_order = request.GET.get('order', 'desc')
-
     sort_mapping = {
-        'ospedale': 'codOspedale__nome', 'paziente': 'CSSN__cognome',
-        'data_ingresso': 'data_ingresso', 'durata': 'durata',
-        'stato': 'stato', 'costo': 'costo', 'motivo': 'motivo',
+        'ospedale': 'codOspedale__nome', 'paziente': 'CSSN__cognome', 'data_ingresso': 'data_ingresso',
+        'durata': 'durata', 'stato': 'stato', 'costo': 'costo', 'motivo': 'motivo',
         'patologie': 'patologie__criticita', 'codRicovero': 'codRicovero',
     }
     sort_field = sort_mapping.get(current_sort, 'codRicovero')
-    
     if current_order == 'desc':
         ricoveri_ordinati = ricoveri_filtrati.order_by(f'-{sort_field}')
     else:
         ricoveri_ordinati = ricoveri_filtrati.order_by(sort_field)
     
+    # 6. Paginazione
     per_page = request.GET.get('per_page', 15)
     try:
         per_page = int(per_page)
     except ValueError:
         per_page = 15
-
     paginator = Paginator(ricoveri_ordinati, per_page)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(request.GET.get("page"))
 
     ricoveri_con_dati = []
     for ricovero in page_obj.object_list:
         max_criticita = ricovero.patologie.aggregate(max_c=Max('criticita'))['max_c'] or 0
         ricoveri_con_dati.append({'ricovero': ricovero, 'max_criticita': max_criticita})
-
+    
+    # 7. Preparazione del contesto per il template
     context = {
-        'form': form, 'page_obj': page_obj, 'ricoveri_items': ricoveri_con_dati,
-        'ospedali': models.Ospedale.objects.all(), 
+        'form': RicoveroForm(),
+        'page_obj': page_obj,
+        'ricoveri_items': ricoveri_con_dati,
+        'ospedali': models.Ospedale.objects.all(),
         'statistiche': statistiche,
-        'patologie': models.Patologia.objects.all(), 
+        'patologie': models.Patologia.objects.all(),
         'filtro_template': 'filtri/filtro_ricovero.html',
         'current_sort': current_sort,
         'current_order': current_order,

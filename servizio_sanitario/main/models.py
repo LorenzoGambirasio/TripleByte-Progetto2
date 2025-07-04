@@ -64,6 +64,10 @@ class Ricovero(models.Model):
 
     def __str__(self):
         return f"{self.codRicovero} - {self.codOspedale.nome}"
+    
+    def get_stato_display(self):
+        stati = {0: 'Attivo', 1: 'Trasferito', 2: 'Dimesso', 3: 'Deceduto'}
+        return stati.get(self.stato, 'Sconosciuto')
 
 class Patologia(models.Model):
     cod = models.CharField(primary_key=True, max_length=10, db_column='codpatologia')
