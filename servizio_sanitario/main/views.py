@@ -298,6 +298,7 @@ def genera_nuovo_codice_ricovero():
 
 
 def lista_ricoveri(request):
+    print(request.GET)
     if request.method == 'POST':
         form = RicoveroForm(request.POST)
         if form.is_valid():
