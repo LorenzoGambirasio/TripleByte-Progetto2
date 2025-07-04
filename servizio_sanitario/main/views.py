@@ -457,31 +457,33 @@ def trasferisci_ricovero(request, pk):
         if form.is_valid():
             nuovo_ospedale = form.cleaned_data['codOspedale']
             
-            # --- CLONAZIONE DEL RICOVERO PER IL TRASFERIMENTO ---
-            ricovero_nuovo = ricovero_originale
-            ricovero_nuovo.pk = None # Stacca l'istanza dal database
-            ricovero_nuovo._state.adding = True # Indica che è un nuovo oggetto
+            # --- INIZIO MODIFICA ---
+            # 1. Recupera le patologie PRIMA di qualsiasi altra operazione.
+            #    Le "congeliamo" in una lista per sicurezza.
+            patologie_da_copiare = list(ricovero_originale.patologie.all())
+            # --- FINE MODIFICA ---
 
+            # 2. Ora clona il ricovero e salvalo come nuovo
+            ricovero_nuovo = ricovero_originale
+            ricovero_nuovo.pk = None
+            ricovero_nuovo._state.adding = True
             ricovero_nuovo.codRicovero = genera_nuovo_codice_ricovero()
             ricovero_nuovo.codOspedale = nuovo_ospedale
-            ricovero_nuovo.data_ingresso = timezone.now().date() # La data di ingresso per il nuovo ricovero è oggi
-            ricovero_nuovo.stato = 0 # Il nuovo ricovero è "Attivo"
-            ricovero_nuovo.save() # Salva il nuovo ricovero
+            ricovero_nuovo.data_ingresso = timezone.now().date()
+            ricovero_nuovo.stato = 0
+            ricovero_nuovo.save()
 
-            # Aggiorna lo stato del ricovero originale a "Trasferito"
+            # 3. Aggiorna lo stato del ricovero originale a "Trasferito"
             models.Ricovero.objects.filter(codRicovero=pk).update(stato=1)
 
-            # Trasferisci le patologie al nuovo ricovero manualmente, dato il modello through
-            # Prima, recupera le patologie del ricovero originale (prima che venga aggiornato lo stato)
-            patologie_da_copiare = ricovero_originale.patologie.all() # Queryset di oggetti Patologia
-            
-            # Associa le patologie al nuovo ricovero tramite PatologiaRicovero
-            for patologia_obj in patologie_da_copiare:
-                models.PatologiaRicovero.objects.create(
-                    codRicovero=ricovero_nuovo,
-                    codOspedale=ricovero_nuovo.codOspedale, # Usa l'ospedale del nuovo ricovero
-                    codPatologia=patologia_obj # L'oggetto Patologia
-                )
+            # 4. Associa le patologie (che avevamo salvato) al nuovo ricovero
+            if patologie_da_copiare:
+                for patologia_obj in patologie_da_copiare:
+                    models.PatologiaRicovero.objects.create(
+                        codRicovero=ricovero_nuovo,
+                        codOspedale=ricovero_nuovo.codOspedale,
+                        codPatologia=patologia_obj
+                    )
             
             return JsonResponse({'success': True})
         else:
