@@ -15,9 +15,11 @@ import json
 # Password per i modali protetti
 ADMIN_PASSWORD = 'admin' # Impostiamo una password fissa
 
+
 def dashboard(request):
     oggi = timezone.now()
     una_settimana_fa = oggi - timedelta(days=7)
+    un_mese_fa = oggi - timedelta(days=30)  # 👈 aggiunto
 
     statistiche = {
         'labels': ['Attivi', 'Trasferiti', 'Dimessi', 'Deceduti'],
@@ -29,17 +31,27 @@ def dashboard(request):
         ]
     }
 
+    # 👇 Top 5 ospedali del mese scorso
     top_ospedali_qs = (
         models.Ricovero.objects
+        .filter(data_ingresso__gte=un_mese_fa)   # 👈 filtro aggiunto
         .values('codOspedale__nome')
-        .annotate(numero=Count('codRicovero'))
-        .order_by('-numero')[:5]
+        .annotate(
+            totali=Count('codRicovero'),
+            attivi=Count('codRicovero', filter=Q(stato=0)),
+            trasferiti=Count('codRicovero', filter=Q(stato=1)),
+            dimessi=Count('codRicovero', filter=Q(stato=2)),
+            deceduti=Count('codRicovero', filter=Q(stato=3)),
+        )
+        .order_by('-totali')[:5]
     )
-
 
     top_ospedali = {
         'labels': [x['codOspedale__nome'] for x in top_ospedali_qs],
-        'data': [x['numero'] for x in top_ospedali_qs]
+        'attivi': [x['attivi'] for x in top_ospedali_qs],
+        'trasferiti': [x['trasferiti'] for x in top_ospedali_qs],
+        'dimessi': [x['dimessi'] for x in top_ospedali_qs],
+        'deceduti': [x['deceduti'] for x in top_ospedali_qs],
     }
 
     return render(request, 'home.html', {
