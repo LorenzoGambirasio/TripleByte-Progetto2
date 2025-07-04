@@ -17,6 +17,7 @@ ADMIN_PASSWORD = 'admin'
 def dashboard(request):
     oggi = timezone.now()
     una_settimana_fa = oggi - timedelta(days=7)
+    un_mese_fa = oggi - timedelta(days=30)
 
     statistiche = {
         'labels': ['Attivi', 'Trasferiti', 'Dimessi', 'Deceduti'],
@@ -25,19 +26,30 @@ def dashboard(request):
             models.Ricovero.objects.filter(stato=1, data_ingresso__gte=una_settimana_fa).count(),
             models.Ricovero.objects.filter(stato=2, data_ingresso__gte=una_settimana_fa).count(),
             models.Ricovero.objects.filter(stato=3, data_ingresso__gte=una_settimana_fa).count(),
+            
         ]
     }
 
-    top_ospedali_qs = (
-        models.Ricovero.objects
+    top_ospedali_stats = (
+        models.Ricovero.objects.filter(data_ingresso__gte=un_mese_fa)
         .values('codOspedale__nome')
-        .annotate(numero=Count('codRicovero'))
-        .order_by('-numero')[:5]
+        .annotate(
+            total=Count('codRicovero'),
+            attivi=Count('codRicovero', filter=Q(stato=0)),
+            trasferiti=Count('codRicovero', filter=Q(stato=1)),
+            dimessi=Count('codRicovero', filter=Q(stato=2)),
+            deceduti=Count('codRicovero', filter=Q(stato=3))
+        )
+        .order_by('-total')[:5]
     )
 
+    # Ristrutturiamo i dati nel formato atteso dal grafico
     top_ospedali = {
-        'labels': [x['codOspedale__nome'] for x in top_ospedali_qs],
-        'data': [x['numero'] for x in top_ospedali_qs]
+        'labels': [s['codOspedale__nome'] for s in top_ospedali_stats],
+        'attivi': [s['attivi'] for s in top_ospedali_stats],
+        'trasferiti': [s['trasferiti'] for s in top_ospedali_stats],
+        'dimessi': [s['dimessi'] for s in top_ospedali_stats],
+        'deceduti': [s['deceduti'] for s in top_ospedali_stats],
     }
 
     return render(request, 'home.html', {
@@ -298,7 +310,6 @@ def genera_nuovo_codice_ricovero():
 
 
 def lista_ricoveri(request):
-    print(request.GET)
     if request.method == 'POST':
         form = RicoveroForm(request.POST)
         if form.is_valid():
@@ -325,8 +336,6 @@ def lista_ricoveri(request):
     # Logica GET
     form = RicoveroForm()
     
-    # ***** INIZIO MODIFICA *****
-    # Calcola le statistiche SUL TOTALE, prima di applicare i filtri.
     ricoveri_base = models.Ricovero.objects.all()
     statistiche = {
         'totali': ricoveri_base.count(),
@@ -336,14 +345,11 @@ def lista_ricoveri(request):
         'deceduti': ricoveri_base.filter(stato=3).count()
     }
 
-    # Applica i filtri al queryset che verrà mostrato nella tabella
     ricoveri_filtrati = ricoveri_base.select_related('CSSN', 'codOspedale').prefetch_related('patologie')
-    # ***** FINE MODIFICA *****
 
-    # --- LOGICA DEI FILTRI (invariata) ---
+    # --- LETTURA DEI PARAMETRI DAL FORM DEI FILTRI ---
     cssn_from_url = request.GET.get('cssn', '').strip()
     ospedale_from_url = request.GET.get('ospedale_cod', '').strip()
-    nome_patologia_from_url = request.GET.get('nome_patologia', '').strip()
 
     cssn_from_form = request.GET.get('cssn_form', '').strip()
     nome_from_form = request.GET.get('nome', '').strip()
@@ -353,7 +359,12 @@ def lista_ricoveri(request):
     data_da_from_form = request.GET.get('data_da', '').strip()
     data_a_from_form = request.GET.get('data_a', '').strip()
     motivo_from_form = request.GET.get('motivo', '').strip()
-    nome_patologia_list_from_form = request.GET.getlist('nome_patologia')
+    
+    # --- INIZIO MODIFICA CORRETTA ---
+    # Questa è la riga chiave: usiamo getlist per leggere correttamente TUTTI
+    # i valori di 'nome_patologia' inviati dal form multi-selezione.
+    final_nome_patologia_filters = request.GET.getlist('nome_patologia')
+    # --- FINE MODIFICA CORRETTA ---
 
     final_cssn_filter = cssn_from_url if cssn_from_url else cssn_from_form
     final_nome_filter = nome_from_form
@@ -364,12 +375,6 @@ def lista_ricoveri(request):
     final_data_a_filter = data_a_from_form
     final_motivo_filter = motivo_from_form
     
-    final_nome_patologia_filters = []
-    if nome_patologia_from_url:
-        final_nome_patologia_filters = [nome_patologia_from_url]
-    elif nome_patologia_list_from_form:
-        final_nome_patologia_filters = nome_patologia_list_from_form
-
     if final_cssn_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__CSSN__icontains=final_cssn_filter)
     if final_nome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__nome__icontains=final_nome_filter)
     if final_cognome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__cognome__icontains=final_cognome_filter)
@@ -382,24 +387,15 @@ def lista_ricoveri(request):
     if final_nome_patologia_filters:
         ricoveri_filtrati = ricoveri_filtrati.filter(patologie__nome__in=final_nome_patologia_filters).distinct()
     
-    # --- Calcolo Statistiche RIMOSSO da qui ---
-    
-    # --- LOGICA ORDINAMENTO TABELLA RICOVERI ---
     current_sort = request.GET.get('sort', 'codRicovero')
     current_order = request.GET.get('order', 'desc')
 
     sort_mapping = {
-        'ospedale': 'codOspedale__nome',
-        'paziente': 'CSSN__cognome',
-        'data_ingresso': 'data_ingresso',
-        'durata': 'durata',
-        'stato': 'stato',
-        'costo': 'costo',
-        'motivo': 'motivo',
-        'patologie': 'patologie__criticita',
-        'codRicovero': 'codRicovero',
+        'ospedale': 'codOspedale__nome', 'paziente': 'CSSN__cognome',
+        'data_ingresso': 'data_ingresso', 'durata': 'durata',
+        'stato': 'stato', 'costo': 'costo', 'motivo': 'motivo',
+        'patologie': 'patologie__criticita', 'codRicovero': 'codRicovero',
     }
-
     sort_field = sort_mapping.get(current_sort, 'codRicovero')
     
     if current_order == 'desc':
@@ -407,7 +403,6 @@ def lista_ricoveri(request):
     else:
         ricoveri_ordinati = ricoveri_filtrati.order_by(sort_field)
     
-    # Gestione righe per pagina
     per_page = request.GET.get('per_page', 15)
     try:
         per_page = int(per_page)
@@ -426,11 +421,11 @@ def lista_ricoveri(request):
     context = {
         'form': form, 'page_obj': page_obj, 'ricoveri_items': ricoveri_con_dati,
         'ospedali': models.Ospedale.objects.all(), 
-        'statistiche': statistiche, # Usa le statistiche calcolate all'inizio
-        'patologie': models.Patologia.objects.all(), 'filtro_template': 'filtri/filtro_ricovero.html',
+        'statistiche': statistiche,
+        'patologie': models.Patologia.objects.all(), 
+        'filtro_template': 'filtri/filtro_ricovero.html',
         'current_sort': current_sort,
         'current_order': current_order,
-        # Passa i filtri attivi al template per pre-popolare il form
         'filtri_attivi': {
             'cssn': final_cssn_filter, 'nome': final_nome_filter, 'cognome': final_cognome_filter,
             'ospedale': final_ospedale_filter, 'stato': final_stato_filter, 'data_da': final_data_da_filter,
@@ -439,6 +434,7 @@ def lista_ricoveri(request):
         }
     }
     return render(request, "ricoveri/ricovero.html", context)
+
 
 
 @transaction.atomic
