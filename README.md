@@ -150,6 +150,101 @@ FATALE: autenticazione con password fallita per l'utente "postgres"
 
 ---
 
+## Versione di test
+# 🚑 TripleByte Progetto2
+
+## 📋 Descrizione
+
+**TripleByte Progetto2** è un’applicazione web basata su **Django** con **PostgreSQL** come database.
+Contiene uno **schema strutturato** con **chiavi composite** e **dati reali** già precaricati.
+
+---
+
+## ✅ Requisiti
+
+* ✅ **Python 3.x** installato
+* ✅ **PostgreSQL** installato e funzionante (porta predefinita: `5432`)
+* ✅ Utente PostgreSQL con permessi di creazione database (es. `postgres`)
+* ✅ `psql` e `createdb` devono essere nel `PATH` di sistema
+
+---
+
+## 📦 Contenuto del pacchetto
+
+All’interno della cartella troverai:
+
+```
+TripleByte-Progetto2/
+│
+├── setup.sh         # Script di installazione automatica
+├── .env.example     # Esempio di configurazione DB
+├── db_dump.sql      # Dump SQL: schema + dati reali
+├── requirements.txt # Librerie Python necessarie
+├── manage.py        # Progetto Django
+├── [cartella progetto]
+├── [app principale]
+```
+
+---
+
+## ⚙️ Configurazione ambiente
+
+### 1️⃣ Crea `.env`
+
+Copia il file di esempio `.env.example` e rinominalo `.env`:
+
+```bash
+cp .env.example .env
+```
+
+---
+
+### 2️⃣ Modifica `.env` se necessario
+
+Apri `.env` con un editor e imposta le variabili:
+
+```
+DB_NAME=serviziosanitario
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+---
+
+## 🚀 Installazione e avvio
+
+### 3️⃣ Rendi eseguibile lo script
+
+```bash
+chmod +x setup.sh
+```
+
+---
+
+### 4️⃣ Avvia l’installer
+
+Esegui:
+
+```bash
+./setup.sh
+```
+
+---
+
+## ⚙️ Cosa fa lo `setup.sh`
+
+* Verifica se esiste il database `$DB_NAME` specificato.
+* Se non esiste, lo crea con `createdb`.
+* Importa **schema e dati reali** da `db_dump.sql` tramite `psql`.
+* Installa tutte le dipendenze Python (`requirements.txt`).
+* Esegue un check del progetto Django.
+* Avvia il server di sviluppo su [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+---
+
+
 ## 📄 Licenza
 
 Distribuito per scopi educativi.
