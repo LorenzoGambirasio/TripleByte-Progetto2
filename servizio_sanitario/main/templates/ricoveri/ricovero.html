@@ -31,6 +31,10 @@
     <h4 class="text-danger fw-bold m-0">Dettaglio Ricoveri</h4>
     <a href="#" class="btn btn-bordeaux" data-bs-toggle="modal" data-bs-target="#modaleAggiungi"><i class="bi bi-plus-lg me-1"></i> Nuovo</a>
   </div>
+
+  <p class="text-muted small fst-italic mb-3">
+      <i class="bi bi-info-circle me-1"></i>Per visualizzare i dettagli ed eseguire azioni, fare clic sulla riga del ricovero corrispondente.
+  </p>
   <div class="table-responsive">
     <table class="table table-hover table-striped">
       <thead class="table-light">
@@ -82,23 +86,34 @@
               {% if current_sort == 'motivo' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
             </a>
           </th>
+           
         </tr>
+        
       </thead>
       <tbody>
         {% for item in ricoveri_items %}
           {% with ricovero=item.ricovero max_criticita=item.max_criticita %}
           <tr class="clickable-row" 
-              data-pk="{{ ricovero.codRicovero }}" 
-              data-paziente-nome="{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}" 
-              data-ospedale-nome="{{ ricovero.codOspedale.nome }}" 
-              data-stato="{{ ricovero.stato }}"
-              data-paziente-deceduto="{{ ricovero.CSSN.deceduto }}" 
-              data-dettagli-json='{"Codice": "{{ ricovero.codRicovero }}", "Paziente": "{{ ricovero.CSSN.nome }} {{ ricovero.CSSN.cognome }}", "CSSN": "{{ ricovero.CSSN.CSSN }}", "Data Ingresso": "{{ ricovero.data_ingresso|date:"d/m/Y" }}", "Durata (gg)": "{{ ricovero.durata }}", "Costo": "€ {{ ricovero.costo|floatformat:2 }}"}'
-              data-patologie-json='[{% for p in ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
-              data-motivo="{{ ricovero.motivo|escapejs }}"
-              data-decesso-data="{{ ricovero.CSSN.dataoradecesso|date:"Y-m-d\TH:i"|default:"" }}"
-              data-decesso-causa="{{ ricovero.CSSN.causadecesso|escapejs|default:"" }}"
-              >
+                data-pk="{{ item.ricovero.codRicovero }}" 
+                data-paziente-nome="{{ item.ricovero.CSSN.nome }} {{ item.ricovero.CSSN.cognome }}" 
+                data-ospedale-nome="{{ item.ricovero.codOspedale.nome }}" 
+                data-stato="{{ item.ricovero.stato }}"
+                data-paziente-deceduto="{{ item.ricovero.CSSN.deceduto }}" 
+                data-patologie-json='[{% for p in item.ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+                data-motivo="{{ item.ricovero.motivo|escapejs }}"
+                data-decesso-data="{{ item.ricovero.CSSN.dataoradecesso|date:"Y-m-d\TH:i"|default:"" }}"
+                data-decesso-causa="{{ item.ricovero.CSSN.causadecesso|escapejs|default:"" }}"
+                data-dettagli-json='{
+                    "Codice": "{{ item.ricovero.codRicovero }}",
+                    "Paziente": "{{ item.ricovero.CSSN.nome }} {{ item.ricovero.CSSN.cognome }}",
+                    "CSSN": "{{ item.ricovero.CSSN.CSSN }}",
+                    "Stato": "{{ item.ricovero.get_stato_display }}",
+                    "Data Ingresso": "{{ item.ricovero.data_ingresso|date:"d/m/Y" }}",
+                    "Durata (gg)": "{{ item.ricovero.durata }}",
+                    "Costo": "€ {{ item.ricovero.costo|floatformat:2 }}",
+                    "Ricoveri totali paziente": "{{ item.ricovero.totale_ricoveri_paziente }}"
+                }'
+            >
             <td>{{ ricovero.codOspedale.nome }}</td>
             <td>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</td>
             <td class="text-end">{{ ricovero.data_ingresso|date:"d/m/Y" }}</td> <td class="text-end">{{ ricovero.durata }}</td> <td class="text-center stato-col"> {% if ricovero.stato == 0 %} 
@@ -125,6 +140,7 @@
               {% endwith %}
             </td>
             <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" data-bs-toggle="tooltip" title="{{ ricovero.motivo }}">{{ ricovero.motivo }}</td>
+            
           </tr>
           {% endwith %}
         {% empty %}
