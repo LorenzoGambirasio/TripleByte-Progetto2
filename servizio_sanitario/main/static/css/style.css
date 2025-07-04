@@ -565,3 +565,11 @@ canvas {
   display: block;
 }
 
+.badge-bordeaux {
+  background-color: #800020; /* Colore bordeaux del tema */
+  color: #fff; /* Testo bianco */
+  padding: 0.5em 0.8em;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+

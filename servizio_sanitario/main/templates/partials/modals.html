@@ -140,8 +140,8 @@
                             <div id="pazienteDisplayContainer" class="form-control" style="background-color: #e9ecef; flex-grow: 1;">
                                 <span id="modificaPazienteNome"></span>
                             </div>
-                            <button class="btn btn-outline-secondary" type="button" id="unlockPazienteBtn" title="Modifica Paziente">
-                                <i class="bi bi-pencil-fill"></i>
+                            <button class="btn btn-outline-secondary" type="button" id="unlockPazienteBtn" title="Modifica Paziente (richiede password)">
+                                <i class="bi bi-lock-fill"></i>
                             </button>
                             <div id="pazienteSelectContainer" style="display: none; width: 100%;">
                                 {{ form.CSSN }}
@@ -497,7 +497,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
     
-    // CORREZIONE: Listener per il lucchetto del paziente ripristinato
     $('#unlockPazienteBtn').on('click', function() {
         $('#id_password').val('');
         $('#passwordError').text('');
@@ -529,8 +528,7 @@ document.addEventListener("DOMContentLoaded", function () {
         modals.riepilogoDecesso.hide();
         modals.password.show();
     });
-
-    // CORREZIONE: Listener reinserito per il modale di trasferimento
+    
     $('#btnTrasferisci').on('click', function(e) {
         e.preventDefault();
         if ($(this).hasClass('disabled')) return;
@@ -538,7 +536,9 @@ document.addEventListener("DOMContentLoaded", function () {
         $('#trasferisciRicoveroPk').val(activeRow.data('pk'));
         $('#trasferisciNomePaziente').val(activeRow.data('paziente-nome'));
         $('#trasferisciOspedaleAttuale').val(activeRow.data('ospedale-nome'));
-        $('#formTrasferisci').find('select[name="codOspedale"]').val(null).trigger('change');
+        
+        $('#selectOspedaleTrasferimento').val(null).trigger('change');
+
         modals.dettagli.hide();
         modals.trasferisci.show();
     });
