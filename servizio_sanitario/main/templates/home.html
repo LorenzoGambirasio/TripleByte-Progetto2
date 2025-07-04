@@ -2,162 +2,144 @@
 
 {% block title %}Dashboard – Servizio Sanitario{% endblock %}
 
+{% block sidebar_extra %}
+<!-- NUOVO RIQUADRO CON GRAFICO PATOLOGIE -->
+<div class="card shadow-sm rounded-4 border-0">
+  <div class="card-body p-3">
+    <h5 class="text-center border-bottom pb-2 mb-3">Patologie Frequenti</h5>
+    <div style="height: 220px; position: relative;">
+      <canvas id="topPatologieChart"></canvas>
+    </div>
+    <p class="small text-muted text-center mt-2 mb-0">
+        Le 3 patologie più comuni tra i ricoveri attualmente attivi.
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+
 {% block content %}
-<!-- INTRO -->
-<div class="bg-white p-4 rounded shadow mb-5">
-  <h5 class="text-danger fw-bold">Benvenuto nel sistema di monitoraggio dei ricoveri ospedalieri</h5>
-  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera
-    trasparente, efficiente e sicura.</p>
-  <ul class="mb-0">
-    <li><strong>Cittadini</strong>: identificati tramite codice SSN</li>
-    <li><strong>Ospedali</strong>: con indirizzo e direttore</li>
-    <li><strong>Ricoveri</strong>: con date, stato e struttura</li>
-    <li><strong>Patologie</strong>: croniche o mortali associate al paziente</li>
+<!-- Riquadro di benvenuto -->
+<div class="bg-white p-4 rounded shadow mb-4">
+  <h4 class="text-danger fw-bold">Benvenuto nel sistema di monitoraggio dei ricoveri ospedalieri</h4>
+  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera trasparente, efficiente e sicura.</p>
+  <ul class="mb-0 mt-3">
+    <li><strong>Cittadini</strong>: identificati tramite codice SSN.</li>
+    <li><strong>Ospedali</strong>: con indirizzo e direttore sanitario.</li>
+    <li><strong>Ricoveri</strong>: con date, stato e struttura di riferimento.</li>
+    <li><strong>Patologie</strong>: croniche o mortali associate al paziente.</li>
   </ul>
 </div>
 
-<!-- SLOT GRAFICI -->
-<div class="row mt-5">
-  <div class="col-md-6">
-    <div class="bg-white p-3 rounded shadow" style="height: 550px;">
-      <h6 class="mb-3 text-muted">📊 Ricoveri ultima settimana</h6>
-      <canvas id="ricoveriStatoChart" style="height: 100%; width: 100%;"></canvas>
-    </div>
+<!-- SEZIONE Pulsanti di Azione Rapida - AGGIORNATA A 4 RIQUADRI -->
+<div class="row g-3 mb-4 text-center">
+  <div class="col-lg-3 col-md-6">
+    <a href="{% url 'lista_ricoveri' %}" class="text-decoration-none d-block card-section p-3 rounded-3 text-dark">
+      <i class="bi bi-journal-medical icon-lg text-danger"></i>
+      <h6 class="mt-2 mb-0 fw-bold">Gestisci Ricoveri</h6>
+    </a>
   </div>
-  <div class="col-md-6">
-    <div class="bg-white p-3 rounded shadow" style="height: 400px; width: 100%; max-width: 500px; overflow: hidden;">
-      <h6 class="mb-3 text-muted">📈 Ospedali con più ricoveri ultimo mese</h6>
-      <canvas id="ospedaliTopChart" style="width: 100%; height: 100%;"></canvas>
-    </div>
+  <div class="col-lg-3 col-md-6">
+    <a href="{% url 'cittadini' %}" class="text-decoration-none d-block card-section p-3 rounded-3 text-dark">
+      <i class="bi bi-people icon-lg text-danger"></i>
+      <h6 class="mt-2 mb-0 fw-bold">Anagrafica Pazienti</h6>
+    </a>
   </div>
+  <div class="col-lg-3 col-md-6">
+    <a href="{% url 'ospedali' %}" class="text-decoration-none d-block card-section p-3 rounded-3 text-dark">
+      <i class="bi bi-hospital icon-lg text-danger"></i>
+      <h6 class="mt-2 mb-0 fw-bold">Elenco Ospedali</h6>
+    </a>
+  </div>
+  <div class="col-lg-3 col-md-6">
+    <a href="{% url 'patologie' %}" class="text-decoration-none d-block card-section p-3 rounded-3 text-dark">
+      <i class="bi bi-virus icon-lg text-danger"></i>
+      <h6 class="mt-2 mb-0 fw-bold">Elenco Patologie</h6>
+    </a>
+  </div>
+</div>
+<!-- FINE SEZIONE -->
 
+<!-- Sezione Grafici Principali -->
+<div class="row g-4 mt-3">
+  <div class="col-lg-6 d-flex flex-column">
+    <div class="bg-white p-4 rounded shadow flex-fill">
+      <h6 class="text-muted border-bottom pb-2">📊 Ricoveri ultima settimana</h6>
+      <p class="small text-muted mb-3">Un riepilogo visivo dello stato dei ricoveri avvenuti negli ultimi 7 giorni.</p>
+      <div style="height: 350px;">
+        <canvas id="ricoveriStatoChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6 d-flex flex-column">
+    <div class="bg-white p-4 rounded shadow flex-fill">
+      <h6 class="text-muted border-bottom pb-2">📈 Ospedali con più ricoveri (ultimo mese)</h6>
+      <p class="small text-muted mb-3">Classifica dei 5 ospedali con il maggior numero di ricoveri totali nell'ultimo mese.</p>
+      <div style="height: 350px;">
+        <canvas id="ospedaliTopChart"></canvas>
+      </div>
+    </div>
+  </div>
 </div>
 
+<!-- Script per i grafici -->
 <script>
-  // === Prendi i dati dal backend ===
   const statistiche = JSON.parse('{{ statistiche_json|safe }}');
   const topOspedali = JSON.parse('{{ top_ospedali_json|safe }}');
+  const topPatologie = JSON.parse('{{ top_patologie_json|safe }}');
 
-  // === Grafico a Torta ===
-  const ricoveriConfig = {
-    type: 'doughnut',
-    data: {
-      labels: statistiche.labels,
-      datasets: [{
-        label: 'Stato Ricoveri (ultima settimana)',
-        data: statistiche.data,
-        backgroundColor: [
-          '#198754', // Attivi
-          '#ffc107', // Trasferiti
-          '#dc3545', // Dimessi
-          '#212529'  // Deceduti
-        ],
-        borderColor: '#fff',
-        borderWidth: 2
-      }]
-    },
-    options: {
-      cutout: '40%',
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: {
-        padding: {
-          bottom: 50 // SPAZIO EXTRA per farci stare la legenda
-        }
-      },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: {
-            boxWidth: 20,
-            padding: 20,
-            font: {
-              family: "'Segoe UI', sans-serif",
-              size: 14
+  // Grafico Ricoveri
+  new Chart(document.getElementById('ricoveriStatoChart'),{type: 'doughnut',data: {labels: statistiche.labels,datasets: [{label: 'Stato Ricoveri',data: statistiche.data,backgroundColor: ['#198754', '#ffc107', '#dc3545', '#212529'],borderColor: '#fff',borderWidth: 2}]},options: {responsive: true,maintainAspectRatio: false,plugins: {legend: {position: 'bottom',labels: { padding: 20 }}} }});
+  
+  // Grafico Ospedali
+  new Chart(document.getElementById('ospedaliTopChart'),{type: 'bar',data: {labels: topOspedali.labels,datasets: [{ label: 'Attivi', data: topOspedali.attivi, backgroundColor: '#198754' },{ label: 'Dimessi', data: topOspedali.dimessi, backgroundColor: '#dc3545' },{ label: 'Trasferiti', data: topOspedali.trasferiti, backgroundColor: '#ffc107' },{ label: 'Deceduti', data: topOspedali.deceduti, backgroundColor: '#212529' },]},options: {indexAxis: 'y',responsive: true,maintainAspectRatio: false,scales: {x: { stacked: true, beginAtZero: true },y: { stacked: true }},plugins: {legend: { display: true, position: 'top' }}}});
+
+  // NUOVO GRAFICO: Patologie più frequenti
+  if (topPatologie.labels.length > 0) {
+    new Chart(document.getElementById('topPatologieChart'), {
+        type: 'bar',
+        data: {
+            labels: topPatologie.labels,
+            datasets: [{
+                label: 'Numero di Ricoveri',
+                data: topPatologie.data,
+                backgroundColor: 'rgba(128, 0, 32, 0.7)',
+                borderColor: 'rgba(128, 0, 32, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                },
+                y: {
+                    ticks: {
+                        callback: function(value) {
+                            const label = this.getLabelForValue(value);
+                            return label.length > 20 ? label.substring(0, 20) + '...' : label;
+                        }
+                    }
+                }
             }
-          }
-        },
-        title: {
-          display: false
         }
-      }
-    }
-  };
-
-  new Chart(
-    document.getElementById('ricoveriStatoChart'),
-    ricoveriConfig
-  );
-
-  // === Istogramma Ospedali ===
-const ospedaliData = {
-  labels: topOspedali.labels,
-  datasets: [
-    {
-      label: 'Attivi',
-      data: topOspedali.attivi,
-      backgroundColor: '#198754',
-      barThickness: 15,    // 👈 fisso
-      maxBarThickness: 15, // 👈 fallback
-    },
-    {
-      label: 'Dimessi',
-      data: topOspedali.dimessi,
-      backgroundColor: '#dc3545',
-      barThickness: 15,
-      maxBarThickness: 15,
-    },
-    {
-      label: 'Trasferiti',
-      data: topOspedali.trasferiti,
-      backgroundColor: '#ffc107',
-      barThickness: 15,
-      maxBarThickness: 15,
-    },
-    {
-      label: 'Deceduti',
-      data: topOspedali.deceduti,
-      backgroundColor: '#212529',
-      barThickness: 15,
-      maxBarThickness: 15,
-    },
-  ]
-};
-
-new Chart(
-  document.getElementById('ospedaliTopChart'),
-  {
-    type: 'bar',
-    data: ospedaliData,
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'top' }
-      },
-      scales: {
-        y: {
-          stacked: false,
-          ticks: {
-            autoSkip: false,
-            padding: 8
-          },
-          // 👇 blocca lo spazio categoria per uniformare
-          categoryPercentage: 0.6,
-          barPercentage: 0.9
-        },
-        x: {
-          beginAtZero: true,
-          suggestedMax: 30
-        }
-      }
-    }
+    });
+  } else {
+    // Se non ci sono dati, mostra un messaggio di fallback
+    const canvas = document.getElementById('topPatologieChart');
+    const ctx = canvas.getContext('2d');
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#6c757d';
+    ctx.textAlign = 'center';
+    ctx.fillText('Nessun dato disponibile', canvas.width / 2, canvas.height / 2);
   }
-);
-
-
 </script>
-
 
 {% endblock %}

@@ -2,6 +2,7 @@
   <h5 class="text-center border-bottom pb-2 mb-3">Filtri</h5>
 
   <form method="get" id="filtriCittadiniForm">
+    <!-- Campi esistenti (nome, cognome, etc.) -->
     <div class="mb-3">
       <label for="nome-cittadino" class="form-label">Nome:</label>
       <div class="input-group">
@@ -47,7 +48,7 @@
         </button>
       </div>
     </div>
-    <div class="mb-4">
+    <div class="mb-3">
       <label for="stato-cittadino" class="form-label">Stato:</label>
       <div class="input-group">
         <select class="form-select select2-filter" id="stato-cittadino" name="stato" data-placeholder="Tutti gli stati">
@@ -58,6 +59,18 @@
         </select>
       </div>
     </div>
+
+    <!-- NUOVO BLOCCO PER IL FILTRO SUI RICOVERI -->
+    <div class="mb-4">
+        <label class="form-label">Numero Ricoveri:</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-journal-medical"></i></span>
+            <input type="number" class="form-control" name="ricoveri_min" placeholder="Da" value="{{ request.GET.ricoveri_min }}" min="0" step="1">
+            <input type="number" class="form-control" name="ricoveri_max" placeholder="A" value="{{ request.GET.ricoveri_max }}" min="0" step="1">
+        </div>
+    </div>
+    <!-- FINE NUOVO BLOCCO -->
+
     <div class="d-grid gap-2">
       <button type="submit" class="btn btn-primary custom-apply-filters-btn">Applica Filtri</button>
       <a href="{% url 'cittadini' %}" class="btn btn-secondary">Resetta Filtri</a>

@@ -36,7 +36,9 @@
             <aside class="col-md-3">
                 {% include 'partials/menu_laterale.html' %}
                 {% if filtro_template %}
-                {% include filtro_template %}
+                    {% include filtro_template %}
+                {% else %}
+                    {% block sidebar_extra %}{% endblock %}
                 {% endif %}
             </aside>
 

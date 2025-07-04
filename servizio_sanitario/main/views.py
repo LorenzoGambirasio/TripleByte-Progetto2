@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from datetime import timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
-from django.db.models import Count, Max, Q, Sum, Subquery, OuterRef # Aggiungi Sum
+from django.db.models import Count, Max, Q, Sum, Subquery, OuterRef, Exists # Aggiungi Sum
 from django.db.models.functions import Coalesce # Aggiungi Coalesce
 from django.db.models import Value, DecimalField # Aggiungi Value e DecimalField
 import json
@@ -24,6 +24,7 @@ def dashboard(request):
     una_settimana_fa = oggi - timedelta(days=7)
     un_mese_fa = oggi - timedelta(days=30)
 
+    # Dati per il grafico a torta "Ricoveri ultima settimana"
     statistiche = {
         'labels': ['Attivi', 'Trasferiti', 'Dimessi', 'Deceduti'],
         'data': [
@@ -31,10 +32,10 @@ def dashboard(request):
             models.Ricovero.objects.filter(stato=1, data_ingresso__gte=una_settimana_fa).count(),
             models.Ricovero.objects.filter(stato=2, data_ingresso__gte=una_settimana_fa).count(),
             models.Ricovero.objects.filter(stato=3, data_ingresso__gte=una_settimana_fa).count(),
-            
         ]
     }
 
+    # Dati per il grafico a barre "Ospedali con più ricoveri"
     top_ospedali_stats = (
         models.Ricovero.objects.filter(data_ingresso__gte=un_mese_fa)
         .values('codOspedale__nome')
@@ -48,7 +49,6 @@ def dashboard(request):
         .order_by('-total')[:5]
     )
 
-    # Ristrutturiamo i dati nel formato atteso dal grafico
     top_ospedali = {
         'labels': [s['codOspedale__nome'] for s in top_ospedali_stats],
         'attivi': [s['attivi'] for s in top_ospedali_stats],
@@ -57,21 +57,49 @@ def dashboard(request):
         'deceduti': [s['deceduti'] for s in top_ospedali_stats],
     }
 
-    return render(request, 'home.html', {
+    # NUOVO: Dati per il grafico delle patologie più frequenti nella sidebar
+    top_patologie_attive = (
+        models.PatologiaRicovero.objects
+        .filter(codRicovero__stato=0)  # Considera solo i ricoveri attivi
+        .values('codPatologia__nome')
+        .annotate(conteggio=Count('codPatologia'))
+        .order_by('-conteggio')[:3]
+    )
+
+    top_patologie_data = {
+        'labels': [p['codPatologia__nome'] for p in top_patologie_attive],
+        'data': [p['conteggio'] for p in top_patologie_attive],
+    }
+
+    # Contesto completo per il template
+    context = {
         'statistiche_json': json.dumps(statistiche),
         'top_ospedali_json': json.dumps(top_ospedali),
-    })
+        'top_patologie_json': json.dumps(top_patologie_data),
+    }
+
+    return render(request, 'home.html', context)
+
 
 def lista_cittadini(request):
-    cittadini_base = models.Cittadino.objects.annotate(numero_ricoveri_cittadino=Count('ricovero')).all()
+    # Annotiamo il queryset con il conteggio dei ricoveri e se il cittadino è attualmente ricoverato
+    ricovero_attivo_subquery = models.Ricovero.objects.filter(CSSN=OuterRef('CSSN'), stato=0)
+    cittadini_base = models.Cittadino.objects.annotate(
+        numero_ricoveri_cittadino=Count('ricovero'),
+        is_ricoverato=Exists(ricovero_attivo_subquery)
+    )
 
+    # Lettura di tutti i parametri del filtro
     nome_filtro = request.GET.get('nome', '').strip()
     cognome_filtro = request.GET.get('cognome', '').strip()
     luogo_nascita_filtro = request.GET.get('luogo', '').strip()
     indirizzo_filtro = request.GET.get('indirizzo', '').strip()
     cssn_filtro = request.GET.get('cssn', '').strip()
     stato_filtro = request.GET.get('stato', '').strip()
+    ricoveri_min_filtro = request.GET.get('ricoveri_min', '').strip()
+    ricoveri_max_filtro = request.GET.get('ricoveri_max', '').strip()
 
+    # Applicazione dei filtri testuali
     if nome_filtro:
         cittadini_base = cittadini_base.filter(nome__icontains=nome_filtro)
     if cognome_filtro:
@@ -82,58 +110,74 @@ def lista_cittadini(request):
         cittadini_base = cittadini_base.filter(via__icontains=indirizzo_filtro)
     if cssn_filtro:
         cittadini_base = cittadini_base.filter(CSSN__icontains=cssn_filtro)
-    
-    cittadini_list = []
-    for c in cittadini_base:
-        cittadini_list.append({
-            'CSSN': c.CSSN,
-            'nome': c.nome,
-            'cognome': c.cognome,
-            'data_nascita': c.data_nascita,
-            'città': c.città,
-            'via': c.via,
-            'deceduto': c.deceduto,
-            'stato_display': c.stato,
-            'numero_ricoveri': c.numero_ricoveri_cittadino,
-        })
 
-    if stato_filtro:
-        cittadini_list = [c for c in cittadini_list if c['stato_display'] == stato_filtro]
+    # Applicazione dei filtri numerici per i ricoveri
+    if ricoveri_min_filtro.isdigit():
+        cittadini_base = cittadini_base.filter(numero_ricoveri_cittadino__gte=int(ricoveri_min_filtro))
+    if ricoveri_max_filtro.isdigit():
+        cittadini_base = cittadini_base.filter(numero_ricoveri_cittadino__lte=int(ricoveri_max_filtro))
 
+    # Applicazione del filtro per lo stato (ora gestito a livello di database)
+    if stato_filtro == 'Deceduto':
+        cittadini_base = cittadini_base.filter(deceduto=1)
+    elif stato_filtro == 'Ricoverato':
+        cittadini_base = cittadini_base.filter(deceduto=0, is_ricoverato=True)
+    elif stato_filtro == 'Domicilio':
+        cittadini_base = cittadini_base.filter(deceduto=0, is_ricoverato=False)
+
+    # Statistiche
     statistiche_cittadini = {
         'totali': models.Cittadino.objects.count(),
-        'domicilio': models.Cittadino.objects.filter(deceduto=0).exclude(ricovero__stato=0).count(),
-        'ricoverati': models.Ricovero.objects.filter(stato=0).count(),
+        'domicilio': models.Cittadino.objects.annotate(is_ricoverato=Exists(ricovero_attivo_subquery)).filter(deceduto=0, is_ricoverato=False).count(),
+        'ricoverati': models.Cittadino.objects.filter(deceduto=0, ricovero__stato=0).distinct().count(),
         'deceduti': models.Cittadino.objects.filter(deceduto=1).count(),
     }
 
-    colonne_larghezze = {
-        'CSSN': '18%', 'nome_cognome': '18%', 'data_nascita': '12%',
-        'città': '13%', 'via': '15%', 'stato': '10%', 'ricoveri': '8%',
-    }
-    columns = [
-        ('CSSN', 'CSSN'), ('nome_cognome', 'Nome e Cognome'),
-        ('data_nascita', 'Data di Nascita'), ('città', 'Città'),
-        ('via', 'Indirizzo'), ('stato', 'Stato'), ('ricoveri', 'Ricoveri'),
-    ]
+    # Ordinamento
     current_sort = request.GET.get('sort', 'cognome')
     current_order = request.GET.get('order', 'asc')
-    reverse_order = current_order == 'desc'
-    sort_key = 'stato_display' if current_sort == 'stato' else 'numero_ricoveri' if current_sort == 'ricoveri' else 'cognome'
-    if current_sort == 'nome_cognome':
-        cittadini_list.sort(key=lambda x: (x['cognome'], x['nome']), reverse=reverse_order)
+    sort_key = {
+        'CSSN': 'CSSN',
+        'nome_cognome': 'cognome',
+        'data_nascita': 'data_nascita',
+        'città': 'città',
+        'via': 'via',
+        'ricoveri': 'numero_ricoveri_cittadino',
+        'stato': 'deceduto'
+    }.get(current_sort, 'cognome')
+
+    if current_order == 'desc':
+        cittadini_ordinati = cittadini_base.order_by(f'-{sort_key}')
     else:
-        cittadini_list.sort(key=lambda x: (x.get(sort_key) is None, x.get(sort_key, '')), reverse=reverse_order)
-        
+        cittadini_ordinati = cittadini_base.order_by(sort_key)
+    
+    if current_sort == 'nome_cognome':
+        cittadini_ordinati = cittadini_ordinati.order_by(f'{"-" if current_order == "desc" else ""}cognome', f'{"-" if current_order == "desc" else ""}nome')
+
+    # Paginazione
     per_page = request.GET.get('per_page', 20)
     try: per_page = int(per_page)
     except ValueError: per_page = 20
-    paginator = Paginator(cittadini_list, per_page)
+    paginator = Paginator(cittadini_ordinati, per_page)
     page_obj = paginator.get_page(request.GET.get("page"))
+
+    # Preparazione del contesto per il template
     context = {
-        'page_obj': page_obj, 'colonne_larghezze': colonne_larghezze, 'columns': columns,
-        'current_sort': current_sort, 'current_order': current_order, 'etichetta': 'cittadini',
-        'filtro_template': 'filtri/filtro_cittadini.html', 'statistiche_cittadini': statistiche_cittadini,
+        'page_obj': page_obj,
+        'colonne_larghezze': {
+            'CSSN': '18%', 'nome_cognome': '18%', 'data_nascita': '12%',
+            'città': '13%', 'via': '15%', 'stato': '10%', 'ricoveri': '8%',
+        },
+        'columns': [
+            ('CSSN', 'CSSN'), ('nome_cognome', 'Nome e Cognome'),
+            ('data_nascita', 'Data di Nascita'), ('città', 'Città'),
+            ('via', 'Indirizzo'), ('stato', 'Stato'), ('ricoveri', 'Ricoveri'),
+        ],
+        'current_sort': current_sort,
+        'current_order': current_order,
+        'etichetta': 'cittadini',
+        'filtro_template': 'filtri/filtro_cittadini.html',
+        'statistiche_cittadini': statistiche_cittadini,
     }
     return render(request, 'cittadini.html', context)
 

@@ -75,11 +75,23 @@
               data-bs-toggle="tooltip" data-bs-placement="top" title="{{ cittadino.via }}">
               {{ cittadino.via }}
             </td>
-            <td style="width: {{ colonne_larghezze|get_item:'stato' }}"
-              class="stato {% if cittadino.stato_display == 'Ricoverato' %}text-dark{% elif cittadino.stato_display == 'Deceduto' %}text-danger{% else %}text-muted{% endif %}">
-              {{ cittadino.stato_display }}
+            
+            <!-- INIZIO MODIFICA: Logica per mostrare lo stato -->
+            <td style="width: {{ colonne_larghezze|get_item:'stato' }}">
+                {% if cittadino.deceduto == 1 %}
+                    <span class="text-danger">Deceduto</span>
+                {% elif cittadino.is_ricoverato %}
+                    <span class="text-dark">Ricoverato</span>
+                {% else %}
+                    <span class="text-muted">Domicilio</span>
+                {% endif %}
             </td>
-            <td class="text-end" style="width: {{ colonne_larghezze|get_item:'ricoveri' }};">{{ cittadino.numero_ricoveri }}</td>
+            <!-- FINE MODIFICA -->
+
+            <!-- INIZIO MODIFICA: Nome del campo corretto -->
+            <td class="text-end" style="width: {{ colonne_larghezze|get_item:'ricoveri' }};">{{ cittadino.numero_ricoveri_cittadino }}</td>
+            <!-- FINE MODIFICA -->
+
           </tr>
           {% empty %}
           <tr>
