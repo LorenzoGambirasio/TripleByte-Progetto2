@@ -83,8 +83,7 @@
               data-url-elimina="{% url 'elimina_ricovero' ricovero.pk %}" 
               data-url-deceduto="{% url 'dichiara_decesso' ricovero.pk %}"
               data-motivo="{{ ricovero.motivo|escapejs }}"
-              {# NUOVO: Passa data e causa decesso dal CITTADINO #}
-              data-decesso-data="{{ ricovero.CSSN.dataoradecesso|date:"d/m/Y H:i"|default:"" }}" {# CAMBIATO FORMATO: ora include ora e minuti #}
+              data-decesso-data="{{ ricovero.CSSN.dataoradecesso|date:"Y-m-d\TH:i"|default:"" }}"
               data-decesso-causa="{{ ricovero.CSSN.causadecesso|escapejs|default:"" }}"
               >
             <td>{{ ricovero.codOspedale.nome }}</td>

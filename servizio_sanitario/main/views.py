@@ -108,14 +108,13 @@ def lista_cittadini(request):
         'deceduti': models.Cittadino.objects.filter(deceduto=1).count(),
     }
 
-    # Dizionario per le larghezze delle colonne
     colonne_larghezze = {
-        'CSSN': '18%',         
-        'nome_cognome': '18%', 
+        'CSSN': '18%',
+        'nome_cognome': '18%',
         'data_nascita': '12%',
-        'città': '15%',
-        'via': '15%',          
-        'stato': '8%',
+        'città': '13%',          # <-- Ridotta
+        'via': '15%',
+        'stato': '10%',         # <-- Aumentata
         'ricoveri': '8%',
     }
 

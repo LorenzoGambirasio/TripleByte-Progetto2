@@ -40,7 +40,7 @@
         <thead class="table-light">
           <tr>
             {% for col, label in columns %}
-            <th {% if col == 'ricoveri' or col == 'data_nascita' %}class="text-end"{% endif %} style="width: {{ colonne_larghezze|get_item:col }}">
+            <th {% if col == 'ricoveri' %}class="text-end"{% endif %} style="width: {{ colonne_larghezze|get_item:col }}">
               <a href="?sort={{ col }}&order={% if current_sort == col and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}"
                 class="text-decoration-none text-dark">
                 {{ label }}
