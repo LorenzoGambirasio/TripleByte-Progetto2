@@ -3,11 +3,28 @@
 
 {% block content %}
 <div class="row mb-4 g-3">
-  <div class="col-md-3"><div class="stat-card" style="border-color: #0d6efd;"><div class="stat-value">{{ statistiche.totali }}</div><div class="stat-label">Ricoveri Totali</div></div></div>
-  <div class="col-md-3"><div class="stat-card" style="border-color: #198754;"><div class="stat-value">{{ statistiche.attivi }}</div><div class="stat-label">Attivi</div></div></div>
-  <div class="col-md-3"><div class="stat-card" style="border-color: #ffc107;"><div class="stat-value">{{ statistiche.trasferiti }}</div><div class="stat-label">Trasferiti</div></div></div>
-  <div class="col-md-3"><div class="stat-card" style="border-color: #dc3545;"><div class="stat-value">{{ statistiche.dimessi }}</div><div class="stat-label">Dimessi</div></div></div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <a href="{% url 'lista_ricoveri' %}" class="text-decoration-none">
+        <div class="stat-card" style="border-color: #0d6efd;"><div class="stat-value">{{ statistiche.totali }}</div><div class="stat-label">Ricoveri Totali</div></div>
+    </a>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <a href="{% url 'lista_ricoveri' %}?stato=0" class="text-decoration-none">
+        <div class="stat-card" style="border-color: #198754;"><div class="stat-value">{{ statistiche.attivi }}</div><div class="stat-label">Attivi</div></div>
+    </a>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <a href="{% url 'lista_ricoveri' %}?stato=1" class="text-decoration-none">
+        <div class="stat-card" style="border-color: #ffc107;"><div class="stat-value">{{ statistiche.trasferiti }}</div><div class="stat-label">Trasferiti</div></div>
+    </a>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <a href="{% url 'lista_ricoveri' %}?stato=2" class="text-decoration-none">
+        <div class="stat-card" style="border-color: #dc3545;"><div class="stat-value">{{ statistiche.dimessi }}</div><div class="stat-label">Dimessi</div></div>
+    </a>
+  </div>
 </div>
+
 
 <div class="bg-white p-4 rounded shadow">
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -38,11 +55,10 @@
           </th>
           <th>
             <a href="?sort=durata&order={% if current_sort == 'durata' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Durata
-              {% if current_sort == 'durata' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              Durata (gg) {% if current_sort == 'durata' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
             </a>
           </th>
-          <th>
+          <th class="text-center">
             <a href="?sort=stato&order={% if current_sort == 'stato' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
               Stato
               {% if current_sort == 'stato' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
@@ -85,10 +101,7 @@
               >
             <td>{{ ricovero.codOspedale.nome }}</td>
             <td>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</td>
-            <td>{{ ricovero.data_ingresso|date:"d/m/Y" }}</td>
-            <td>{{ ricovero.durata }} gg</td>
-            <td class="stato-col">
-              {% if ricovero.stato == 0 %} 
+            <td class="text-end">{{ ricovero.data_ingresso|date:"d/m/Y" }}</td> <td class="text-end">{{ ricovero.durata }}</td> <td class="text-center stato-col"> {% if ricovero.stato == 0 %} 
                 <span class="badge border border-success-subtle rounded-pill status-icon-badge text-success-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Attivo"><i class="bi bi-check-circle"></i></span>
               {% elif ricovero.stato == 1 %} 
                 <span class="badge border border-warning-subtle rounded-pill status-icon-badge text-warning-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Trasferito"><i class="bi bi-arrow-left-right"></i></span>
@@ -98,8 +111,7 @@
                 <span class="badge border border-dark-subtle rounded-pill status-icon-badge text-dark-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Deceduto"><i class="bi bi-x-circle"></i></span>
               {% endif %}
             </td>
-            <td>€ {{ ricovero.costo|floatformat:2 }}</td>
-            <td class="text-center" data-bs-toggle="tooltip" data-bs-html="true" title="{% for p in ricovero.patologie.all %}{{ p.nome }}<br>{% empty %}Nessuna{% endfor %}">
+            <td class="text-end">€ {{ ricovero.costo|floatformat:2 }}</td> <td class="text-center" data-bs-toggle="tooltip" data-bs-html="true" title="{% for p in ricovero.patologie.all %}{{ p.nome }}<br>{% empty %}Nessuna{% endfor %}">
               {% with patologie_count=ricovero.patologie.all.count %}
                 {% if patologie_count > 0 %}
                   {% if max_criticita >= 8 %} <span class="pathology-icon text-danger"><i class="bi bi-shield-fill-exclamation"></i></span>
@@ -116,7 +128,7 @@
           </tr>
           {% endwith %}
         {% empty %}
-          <tr><td colspan="8" class="text-center p-4">Nessun ricovero trovato.</td></tr>
+          <tr><td colspan="9" class="text-center p-4">Nessun ricovero trovato.</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -7,10 +7,8 @@ class Cittadino(models.Model):
     data_nascita = models.DateField(db_column='datanascita')
     città = models.CharField(max_length=100, db_column='luogonascita')
     via = models.CharField(max_length=100, db_column='indirizzo')
-    deceduto = models.IntegerField(db_column='deceduto')  # 0 = domiciliato, 1 = deceduto
-
-    # CAMPI DECESSO: dataoradecesso diventa DateTimeField
-    dataoradecesso = models.DateTimeField(null=True, blank=True, db_column='dataoradecesso') # CAMBIATO A DateTimeField
+    deceduto = models.IntegerField(db_column='deceduto')
+    dataoradecesso = models.DateTimeField(null=True, blank=True, db_column='dataoradecesso')
     causadecesso = models.TextField(max_length=500, null=True, blank=True, db_column='causadecesso')
 
     class Meta:
@@ -24,7 +22,7 @@ class Cittadino(models.Model):
     def stato(self):
         if self.deceduto == 1:
             return 'Deceduto'
-        from .models import Ricovero # Import locale per evitare dipendenze circolari
+        from .models import Ricovero
         return 'Ricoverato' if Ricovero.objects.filter(CSSN=self.CSSN, stato=0).exists() else 'Domicilio'
 
 
@@ -49,7 +47,7 @@ class Ricovero(models.Model):
     CSSN = models.ForeignKey(Cittadino, on_delete=models.CASCADE, db_column='cssn_id')
     data_ingresso = models.DateField(db_column='data_ingresso')
     durata = models.IntegerField(db_column='durata')
-    stato = models.IntegerField(default=0, db_column='stato') # Stato 3 sarà il decesso
+    stato = models.IntegerField(default=0, db_column='stato')
     motivo = models.CharField(max_length=255, db_column='motivo')
     costo = models.DecimalField(max_digits=10, decimal_places=2, db_column='costo')
     
@@ -81,7 +79,7 @@ class Patologia(models.Model):
 
 
 class PatologiaCronica(models.Model):
-    cod = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
+    cod = models.OneToOneField(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id', primary_key=True)
 
     class Meta:
         db_table = 'main_patologiacronica'
@@ -92,7 +90,7 @@ class PatologiaCronica(models.Model):
 
 
 class PatologiaMortale(models.Model):
-    cod = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
+    cod = models.OneToOneField(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id', primary_key=True)
 
     class Meta:
         db_table = 'main_patologiamortale'
@@ -103,6 +101,7 @@ class PatologiaMortale(models.Model):
 
 
 class PatologiaRicovero(models.Model):
+    # Ripristino una chiave primaria fittizia per accontentare Django, ma il salvataggio sarà manuale
     codRicovero = models.ForeignKey(Ricovero, on_delete=models.CASCADE, db_column='codricovero', primary_key=True)
     codOspedale = models.ForeignKey(Ospedale, on_delete=models.CASCADE, db_column='codospedale')
     codPatologia = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
@@ -114,14 +113,3 @@ class PatologiaRicovero(models.Model):
 
     def __str__(self):
         return f"{self.codRicovero} - {self.codOspedale} - {self.codPatologia}"
- 
-    
-class PatologiaRicoveroView(models.Model):
-    id = models.IntegerField(primary_key=True)
-    codRicovero = models.CharField(db_column='codricovero')
-    codOspedale = models.CharField(db_column='codospedale')
-    codPatologia = models.CharField(db_column='codpatologia_id')
-
-    class Meta:
-        db_table = 'main_patologiaricovero_view'
-        managed = False

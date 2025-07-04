@@ -3,28 +3,33 @@
 
 {% block content %}
 <div class="row mb-4 g-3">
-  <div class="col-md-4">
-    <div class="stat-card" style="border-color: #dc3545;">{# Colore rosso per le patologie #}
-      <div class="stat-value">{{ statistiche_patologie.totali }}</div>
-      <div class="stat-label">Patologie Totali</div>
-    </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <a href="{% url 'patologie' %}" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #dc3545;">
+        <div class="stat-value">{{ statistiche_patologie.totali }}</div>
+        <div class="stat-label">Patologie Totali</div>
+      </div>
+    </a>
   </div>
-  <div class="col-md-4">
-    <div class="stat-card" style="border-color: #ffc107;">{# Colore giallo/arancio per croniche #}
-      <div class="stat-value">{{ statistiche_patologie.croniche }}</div>
-      <div class="stat-label">Croniche</div>
-    </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <a href="{% url 'patologie' %}?tipologia=Cronica" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #ffc107;">
+        <div class="stat-value">{{ statistiche_patologie.croniche }}</div>
+        <div class="stat-label">Croniche</div>
+      </div>
+    </a>
   </div>
-  <div class="col-md-4">
-    <div class="stat-card" style="border-color: #6f42c1;">{# Colore viola/blu per mortali #}
-      <div class="stat-value">{{ statistiche_patologie.mortali }}</div>
-      <div class="stat-label">Mortali</div>
-    </div>
+  <div class="col-lg-4 col-md-6 mb-3">
+    <a href="{% url 'patologie' %}?tipologia=Mortale" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #6f42c1;">
+        <div class="stat-value">{{ statistiche_patologie.mortali }}</div>
+        <div class="stat-label">Mortali</div>
+      </div>
+    </a>
   </div>
 </div>
 
-{# Ho rimosso il container-fluid px-0 py-4 esterno che era presente qui e che poteva causare spaziatura extra #}
-<section class="col-12 px-0 py-0"> {# Rimosso il padding eccessivo da qui #}
+<section class="col-12 px-0 py-0">
   <div class="bg-white p-4 rounded shadow">
     <h4 class="mb-4 text-danger fw-bold">Elenco delle Patologie</h4>
     <div class="table-responsive">
@@ -67,7 +72,7 @@
             </thead>
             <tbody>
               {% for patologia in page_obj.object_list %}
-              <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?nome_patologia={{ patologia.nome }}">
+              <tr class="clickable-row" data-href="{% url 'lista_ricoveri' %}?nome_patologia={{ patologia.nome|urlencode }}">
                 <td>{{ patologia.nome }}</td>
                 <td class="text-end">{{ patologia.criticita }}</td>
                 <td class="text-end">{{ patologia.tipologia }}</td>
@@ -83,9 +88,7 @@
           {% include 'partials/paginazione.html' with etichetta="patologie" %}
         </div>
       </div>
-    </section>
-  </div>
-</div>
+</section>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {

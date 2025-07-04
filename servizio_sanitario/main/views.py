@@ -1,25 +1,20 @@
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404
 from . import models
 from django.core.paginator import Paginator
-# MODIFICA QUESTA RIGA PER INCLUDERE DecessoForm e PasswordForm
 from .forms import RicoveroForm, NuovoPazienteForm, TrasferimentoForm, DecessoForm, PasswordForm 
 from django.db import transaction
 from django.http import JsonResponse
-from datetime import date, timedelta # Importa timedelta
-from django.utils import timezone # Importa timezone
+from datetime import timedelta
+from django.utils import timezone
 from django.db.models import Count, Max, Q
-from django.views.decorators.http import require_POST
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_POST, require_http_methods
 import json
 
-# Password per i modali protetti
-ADMIN_PASSWORD = 'admin' # Impostiamo una password fissa
-
+ADMIN_PASSWORD = 'admin'
 
 def dashboard(request):
     oggi = timezone.now()
     una_settimana_fa = oggi - timedelta(days=7)
-    un_mese_fa = oggi - timedelta(days=30)  # 👈 aggiunto
 
     statistiche = {
         'labels': ['Attivi', 'Trasferiti', 'Dimessi', 'Deceduti'],
@@ -31,27 +26,16 @@ def dashboard(request):
         ]
     }
 
-    # 👇 Top 5 ospedali del mese scorso
     top_ospedali_qs = (
         models.Ricovero.objects
-        .filter(data_ingresso__gte=un_mese_fa)   # 👈 filtro aggiunto
         .values('codOspedale__nome')
-        .annotate(
-            totali=Count('codRicovero'),
-            attivi=Count('codRicovero', filter=Q(stato=0)),
-            trasferiti=Count('codRicovero', filter=Q(stato=1)),
-            dimessi=Count('codRicovero', filter=Q(stato=2)),
-            deceduti=Count('codRicovero', filter=Q(stato=3)),
-        )
-        .order_by('-totali')[:5]
+        .annotate(numero=Count('codRicovero'))
+        .order_by('-numero')[:5]
     )
 
     top_ospedali = {
         'labels': [x['codOspedale__nome'] for x in top_ospedali_qs],
-        'attivi': [x['attivi'] for x in top_ospedali_qs],
-        'trasferiti': [x['trasferiti'] for x in top_ospedali_qs],
-        'dimessi': [x['dimessi'] for x in top_ospedali_qs],
-        'deceduti': [x['deceduti'] for x in top_ospedali_qs],
+        'data': [x['numero'] for x in top_ospedali_qs]
     }
 
     return render(request, 'home.html', {
@@ -60,10 +44,8 @@ def dashboard(request):
     })
 
 def lista_cittadini(request):
-    # Annotate i cittadini con il numero di ricoveri
     cittadini_base = models.Cittadino.objects.annotate(numero_ricoveri_cittadino=Count('ricovero')).all()
 
-    # Logica dei filtri
     nome_filtro = request.GET.get('nome', '').strip()
     cognome_filtro = request.GET.get('cognome', '').strip()
     luogo_nascita_filtro = request.GET.get('luogo', '').strip()
@@ -82,7 +64,6 @@ def lista_cittadini(request):
     if cssn_filtro:
         cittadini_base = cittadini_base.filter(CSSN__icontains=cssn_filtro)
     
-    # Pre-processa i cittadini per aggiungere la proprietà 'stato' e il conteggio ricoveri
     cittadini_list = []
     for c in cittadini_base:
         cittadini_list.append({
@@ -93,93 +74,56 @@ def lista_cittadini(request):
             'città': c.città,
             'via': c.via,
             'deceduto': c.deceduto,
-            'stato_display': c.stato, # Usa un nome diverso per la proprietà visualizzata
+            'stato_display': c.stato,
             'numero_ricoveri': c.numero_ricoveri_cittadino,
         })
 
     if stato_filtro:
         cittadini_list = [c for c in cittadini_list if c['stato_display'] == stato_filtro]
 
-    # Calcolo delle statistiche per i riquadri della pagina Cittadini
     statistiche_cittadini = {
         'totali': models.Cittadino.objects.count(),
-        'domicilio': models.Cittadino.objects.filter(deceduto=0).exclude(ricovero__stato=0).count(), # Non deceduto e non ricoverato
-        'ricoverati': models.Ricovero.objects.filter(stato=0).count(), # Ricoveri attivi
+        'domicilio': models.Cittadino.objects.filter(deceduto=0).exclude(ricovero__stato=0).count(),
+        'ricoverati': models.Ricovero.objects.filter(stato=0).count(),
         'deceduti': models.Cittadino.objects.filter(deceduto=1).count(),
     }
 
     colonne_larghezze = {
-        'CSSN': '18%',
-        'nome_cognome': '18%',
-        'data_nascita': '12%',
-        'città': '13%',          # <-- Ridotta
-        'via': '15%',
-        'stato': '10%',         # <-- Aumentata
-        'ricoveri': '8%',
+        'CSSN': '18%', 'nome_cognome': '18%', 'data_nascita': '12%',
+        'città': '13%', 'via': '15%', 'stato': '10%', 'ricoveri': '8%',
     }
-
-    # Definisci le colonne e le etichette per l'intestazione della tabella
     columns = [
-        ('CSSN', 'CSSN'),
-        ('nome_cognome', 'Nome e Cognome'),
-        ('data_nascita', 'Data di Nascita'),
-        ('città', 'Città'),
-        ('via', 'Indirizzo'),
-        ('stato', 'Stato'),
-        ('ricoveri', 'Ricoveri'), # Colonna per il conteggio ricoveri
+        ('CSSN', 'CSSN'), ('nome_cognome', 'Nome e Cognome'),
+        ('data_nascita', 'Data di Nascita'), ('città', 'Città'),
+        ('via', 'Indirizzo'), ('stato', 'Stato'), ('ricoveri', 'Ricoveri'),
     ]
-
-    # Logica di ordinamento (sort) per i cittadini
-    current_sort = request.GET.get('sort', 'cognome') # Default sort
-    current_order = request.GET.get('order', 'asc') # Default order
-
-    # Mappa i nomi delle colonne nel template ai campi del modello o proprietà
-    # Ora ordiniamo la lista processata
-    if current_sort == 'stato':
-        cittadini_list.sort(key=lambda x: x['stato_display'], reverse=(current_order == 'desc'))
-    elif current_sort == 'nome_cognome':
-        cittadini_list.sort(key=lambda x: (x['cognome'], x['nome']), reverse=(current_order == 'desc'))
-    elif current_sort == 'CSSN':
-        cittadini_list.sort(key=lambda x: x['CSSN'], reverse=(current_order == 'desc'))
-    elif current_sort == 'data_nascita':
-        cittadini_list.sort(key=lambda x: x['data_nascita'], reverse=(current_order == 'desc'))
-    elif current_sort == 'città':
-        cittadini_list.sort(key=lambda x: x['città'], reverse=(current_order == 'desc'))
-    elif current_sort == 'via':
-        cittadini_list.sort(key=lambda x: x['via'], reverse=(current_order == 'desc'))
-    elif current_sort == 'ricoveri':
-        cittadini_list.sort(key=lambda x: x['numero_ricoveri'], reverse=(current_order == 'desc'))
-
-    # Gestione righe per pagina
+    current_sort = request.GET.get('sort', 'cognome')
+    current_order = request.GET.get('order', 'asc')
+    reverse_order = current_order == 'desc'
+    sort_key = 'stato_display' if current_sort == 'stato' else 'numero_ricoveri' if current_sort == 'ricoveri' else 'cognome'
+    if current_sort == 'nome_cognome':
+        cittadini_list.sort(key=lambda x: (x['cognome'], x['nome']), reverse=reverse_order)
+    else:
+        cittadini_list.sort(key=lambda x: (x.get(sort_key) is None, x.get(sort_key, '')), reverse=reverse_order)
+        
     per_page = request.GET.get('per_page', 20)
-    try:
-        per_page = int(per_page)
-    except ValueError:
-        per_page = 20
-
+    try: per_page = int(per_page)
+    except ValueError: per_page = 20
     paginator = Paginator(cittadini_list, per_page)
     page_obj = paginator.get_page(request.GET.get("page"))
-
     context = {
-        'page_obj': page_obj,
-        'colonne_larghezze': colonne_larghezze,
-        'columns': columns,
-        'current_sort': current_sort,
-        'current_order': current_order,
-        'etichetta': 'cittadini',
-        'filtro_template': 'filtri/filtro_cittadini.html',
-        'statistiche_cittadini': statistiche_cittadini, # Passa le statistiche
+        'page_obj': page_obj, 'colonne_larghezze': colonne_larghezze, 'columns': columns,
+        'current_sort': current_sort, 'current_order': current_order, 'etichetta': 'cittadini',
+        'filtro_template': 'filtri/filtro_cittadini.html', 'statistiche_cittadini': statistiche_cittadini,
     }
     return render(request, 'cittadini.html', context)
 
 
 def lista_ospedali(request):
-    # Annotate gli ospedali con il numero di ricoveri
     ospedali_base = models.Ospedale.objects.select_related('CSSN_direttore').annotate(
         numero_ricoveri_ospedale=Count('ricovero')
     ).all()
 
-    # Logica dei filtri
     nome_filtro = request.GET.get('nome', '').strip()
     citta_filtro = request.GET.get('città', '').strip()
     direttore_filtro = request.GET.get('direttore', '').strip()
@@ -193,72 +137,44 @@ def lista_ospedali(request):
             Q(CSSN_direttore__nome__icontains=direttore_filtro) |
             Q(CSSN_direttore__cognome__icontains=direttore_filtro)
         )
-
-    # Calcolo delle statistiche per i riquadri della pagina Ospedali
+    
     statistiche_ospedali = {
         'totali': models.Ospedale.objects.count(),
         'con_direttore': models.Ospedale.objects.filter(CSSN_direttore__isnull=False).count(),
-        'senza_direttore': models.Ospedale.objects.filter(CSSN_direttore__isnull=True).count(),
+        'totale_ricoveri_globale': models.Ricovero.objects.count(),
     }
-
-
+    
     colonne_larghezze = {
-        'nome': '22%',
-        'città': '22%',
-        'indirizzo': '22%',
-        'direttore': '22%',
-        'ricoveri': '12%',
+        'nome': '22%', 'città': '22%', 'indirizzo': '22%', 'direttore': '22%', 'ricoveri': '12%',
     }
-
     columns = [
-        ('nome', 'Nome Ospedale'),
-        ('città', 'Città'),
-        ('indirizzo', 'Indirizzo'),
-        ('direttore', 'Direttore Sanitario'),
-        ('ricoveri', 'Ricoveri'),
+        ('nome', 'Nome Ospedale'), ('città', 'Città'), ('indirizzo', 'Indirizzo'),
+        ('direttore', 'Direttore Sanitario'), ('ricoveri', 'Ricoveri'),
     ]
-
-    # Logica di ordinamento
     current_sort = request.GET.get('sort', 'nome')
     current_order = request.GET.get('order', 'asc')
-
     sort_mapping = {
-        'nome': 'nome',
-        'città': 'città',
-        'indirizzo': 'indirizzo',
-        'direttore': 'CSSN_direttore__cognome',
-        'ricoveri': 'numero_ricoveri_ospedale',
+        'nome': 'nome', 'città': 'città', 'indirizzo': 'indirizzo',
+        'direttore': 'CSSN_direttore__cognome', 'ricoveri': 'numero_ricoveri_ospedale',
     }
-
     sort_field = sort_mapping.get(current_sort, 'nome')
     if current_order == 'desc':
         ospedali_base = ospedali_base.order_by(f'-{sort_field}')
     else:
         ospedali_base = ospedali_base.order_by(sort_field)
-
-    # Gestione righe per pagina
     per_page = request.GET.get('per_page', 20)
-    try:
-        per_page = int(per_page)
-    except ValueError:
-        per_page = 20
-
+    try: per_page = int(per_page)
+    except ValueError: per_page = 20
     paginator = Paginator(ospedali_base, per_page)
     page_obj = paginator.get_page(request.GET.get("page"))
-
     context = {
-        'page_obj': page_obj,
-        'ospedali': page_obj.object_list,
-        'columns': columns,
-        'colonne_larghezze': colonne_larghezze,
-        'current_sort': current_sort,
-        'current_order': current_order,
-        'etichetta': 'ospedali',
+        'page_obj': page_obj, 'ospedali': page_obj.object_list, 'columns': columns,
+        'colonne_larghezze': colonne_larghezze, 'current_sort': current_sort,
+        'current_order': current_order, 'etichetta': 'ospedali',
         'filtro_template': 'filtri/filtro_ospedali.html',
         'statistiche_ospedali': statistiche_ospedali,
     }
     return render(request, 'ospedali.html', context)
-
 
 def lista_patologie(request):
     # Annotate le patologie con il conteggio dei ricoveri
@@ -370,24 +286,16 @@ def lista_ricoveri(request):
             ricovero.codRicovero = genera_nuovo_codice_ricovero()
             ricovero.save()
             
-            # --- GESTIONE MANUALE DELLE PATOLOGIE (TABELLA THROUGH) ---
-            # Questo è il punto cruciale. Assicurati che l'istanza di ricovero sia salvata prima
-            # di tentare di creare le istanze di PatologiaRicovero.
-            patologie_selezionate_cods = form.cleaned_data.get('patologie') # Sono i codici delle patologie
-            
-            # Prima, elimina tutte le relazioni esistenti per questo ricovero
-            # (utile in caso di modifica, ma anche sicuro per l'aggiunta)
+            patologie_selezionate_cods = form.cleaned_data.get('patologie')
             models.PatologiaRicovero.objects.filter(codRicovero=ricovero).delete()
             
-            # Poi, crea nuove istanze di PatologiaRicovero per ogni patologia selezionata
             if patologie_selezionate_cods:
                 for patologia_obj in patologie_selezionate_cods:
                     models.PatologiaRicovero.objects.create(
                         codRicovero=ricovero,
-                        codOspedale=ricovero.codOspedale, # Assicurati di usare l'Ospedale del ricovero
-                        codPatologia=patologia_obj # L'oggetto Patologia
+                        codOspedale=ricovero.codOspedale,
+                        codPatologia=patologia_obj
                     )
-            # --- FINE GESTIONE MANUALE DELLE PATOLOGIE ---
 
             return JsonResponse({"success": True})
         else:
@@ -396,16 +304,27 @@ def lista_ricoveri(request):
 
     # Logica GET
     form = RicoveroForm()
-    # Pre-carica le patologie associate per la visualizzazione nella lista e il tooltip
-    ricoveri_filtrati = models.Ricovero.objects.select_related('CSSN', 'codOspedale').prefetch_related('patologie')
     
-    # --- LOGICA DEI FILTRI (Adattata ai tuoi nuovi nomi e all'uso di filtri_attivi) ---
-    # Parametri che potrebbero arrivare da un click su riga (URL)
+    # ***** INIZIO MODIFICA *****
+    # Calcola le statistiche SUL TOTALE, prima di applicare i filtri.
+    ricoveri_base = models.Ricovero.objects.all()
+    statistiche = {
+        'totali': ricoveri_base.count(),
+        'attivi': ricoveri_base.filter(stato=0).count(),
+        'trasferiti': ricoveri_base.filter(stato=1).count(),
+        'dimessi': ricoveri_base.filter(stato=2).count(),
+        'deceduti': ricoveri_base.filter(stato=3).count()
+    }
+
+    # Applica i filtri al queryset che verrà mostrato nella tabella
+    ricoveri_filtrati = ricoveri_base.select_related('CSSN', 'codOspedale').prefetch_related('patologie')
+    # ***** FINE MODIFICA *****
+
+    # --- LOGICA DEI FILTRI (invariata) ---
     cssn_from_url = request.GET.get('cssn', '').strip()
     ospedale_from_url = request.GET.get('ospedale_cod', '').strip()
     nome_patologia_from_url = request.GET.get('nome_patologia', '').strip()
 
-    # Parametri che arrivano dal form di filtro (possono essere singoli o liste per Select2)
     cssn_from_form = request.GET.get('cssn_form', '').strip()
     nome_from_form = request.GET.get('nome', '').strip()
     cognome_from_form = request.GET.get('cognome', '').strip()
@@ -416,8 +335,6 @@ def lista_ricoveri(request):
     motivo_from_form = request.GET.get('motivo', '').strip()
     nome_patologia_list_from_form = request.GET.getlist('nome_patologia')
 
-
-    # Determinazione dei valori finali dei filtri, dando priorità ai parametri da URL per i click su riga
     final_cssn_filter = cssn_from_url if cssn_from_url else cssn_from_form
     final_nome_filter = nome_from_form
     final_cognome_filter = cognome_from_form
@@ -433,8 +350,6 @@ def lista_ricoveri(request):
     elif nome_patologia_list_from_form:
         final_nome_patologia_filters = nome_patologia_list_from_form
 
-
-    # Applica i filtri al queryset
     if final_cssn_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__CSSN__icontains=final_cssn_filter)
     if final_nome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__nome__icontains=final_nome_filter)
     if final_cognome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__cognome__icontains=final_cognome_filter)
@@ -447,15 +362,8 @@ def lista_ricoveri(request):
     if final_nome_patologia_filters:
         ricoveri_filtrati = ricoveri_filtrati.filter(patologie__nome__in=final_nome_patologia_filters).distinct()
     
-    statistiche = {
-        'totali': ricoveri_filtrati.count(),
-        'attivi': ricoveri_filtrati.filter(stato=0).count(),
-        'trasferiti': ricoveri_filtrati.filter(stato=1).count(),
-        'dimessi': ricoveri_filtrati.filter(stato=2).count(),
-        'deceduti': ricoveri_filtrati.filter(stato=3).count()
-    }
+    # --- Calcolo Statistiche RIMOSSO da qui ---
     
-
     # --- LOGICA ORDINAMENTO TABELLA RICOVERI ---
     current_sort = request.GET.get('sort', 'codRicovero')
     current_order = request.GET.get('order', 'desc')
@@ -497,20 +405,16 @@ def lista_ricoveri(request):
 
     context = {
         'form': form, 'page_obj': page_obj, 'ricoveri_items': ricoveri_con_dati,
-        'ospedali': models.Ospedale.objects.all(), 'statistiche': statistiche,
+        'ospedali': models.Ospedale.objects.all(), 
+        'statistiche': statistiche, # Usa le statistiche calcolate all'inizio
         'patologie': models.Patologia.objects.all(), 'filtro_template': 'filtri/filtro_ricovero.html',
         'current_sort': current_sort,
         'current_order': current_order,
         # Passa i filtri attivi al template per pre-popolare il form
         'filtri_attivi': {
-            'cssn': final_cssn_filter,
-            'nome': final_nome_filter,
-            'cognome': final_cognome_filter,
-            'ospedale': final_ospedale_filter,
-            'stato': final_stato_filter,
-            'data_da': final_data_da_filter,
-            'data_a': final_data_a_filter,
-            'motivo': final_motivo_filter,
+            'cssn': final_cssn_filter, 'nome': final_nome_filter, 'cognome': final_cognome_filter,
+            'ospedale': final_ospedale_filter, 'stato': final_stato_filter, 'data_da': final_data_da_filter,
+            'data_a': final_data_a_filter, 'motivo': final_motivo_filter,
             'nome_patologia': final_nome_patologia_filters,
         }
     }

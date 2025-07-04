@@ -5,34 +5,40 @@
 {% block content %}
 <div class="row mb-4 g-3">
   <div class="col-md-3">
-    <div class="stat-card" style="border-color: #0d6efd;">{# Blu #}
-      <div class="stat-value">{{ statistiche_cittadini.totali }}</div>
-      <div class="stat-label">Cittadini Totali</div>
-    </div>
+    <a href="{% url 'cittadini' %}" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #0d6efd;">
+        <div class="stat-value">{{ statistiche_cittadini.totali }}</div>
+        <div class="stat-label">Cittadini Totali</div>
+      </div>
+    </a>
   </div>
   <div class="col-md-3">
-    <div class="stat-card" style="border-color: #198754;">{# Verde #}
-      <div class="stat-value">{{ statistiche_cittadini.domicilio }}</div>
-      <div class="stat-label">Domicilio</div>
-    </div>
+    <a href="{% url 'cittadini' %}?stato=Domicilio" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #198754;">
+        <div class="stat-value">{{ statistiche_cittadini.domicilio }}</div>
+        <div class="stat-label">Domicilio</div>
+      </div>
+    </a>
   </div>
   <div class="col-md-3">
-    <div class="stat-card" style="border-color: #ffc107;">{# Giallo #}
-      <div class="stat-value">{{ statistiche_cittadini.ricoverati }}</div>
-      <div class="stat-label">Ricoverati</div>
-    </div>
+    <a href="{% url 'cittadini' %}?stato=Ricoverato" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #ffc107;">
+        <div class="stat-value">{{ statistiche_cittadini.ricoverati }}</div>
+        <div class="stat-label">Ricoverati</div>
+      </div>
+    </a>
   </div>
   <div class="col-md-3">
-    <div class="stat-card" style="border-color: #dc3545;">{# Rosso #}
-      <div class="stat-value">{{ statistiche_cittadini.deceduti }}</div>
-      <div class="stat-label">Deceduti</div>
-    </div>
+    <a href="{% url 'cittadini' %}?stato=Deceduto" class="text-decoration-none">
+      <div class="stat-card" style="border-color: #dc3545;">
+        <div class="stat-value">{{ statistiche_cittadini.deceduti }}</div>
+        <div class="stat-label">Deceduti</div>
+      </div>
+    </a>
   </div>
 </div>
 
-{# Ho rimosso il container-fluid px-0 py-4 esterno che era presente qui e che poteva causare spaziatura extra #}
-{# La sezione principale ora inizia direttamente con la card che contiene la tabella #}
-<section class="col-12 px-0 py-0"> {# Rimosso il padding eccessivo da qui #}
+<section class="col-12 px-0 py-0">
   <div class="bg-white p-4 rounded shadow">
     <h4 class="mb-4 text-danger fw-bold">Anagrafica dei Cittadini</h4>
     <div class="table-responsive">
@@ -85,7 +91,7 @@
       {% include 'partials/paginazione.html' with etichetta="cittadini" %}
     </div>
   </div>
-</section> {# Chiusura della sezione principale della tabella #}
+</section>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -98,6 +104,5 @@
     });
   });
 </script>
-
 
 {% endblock %}
