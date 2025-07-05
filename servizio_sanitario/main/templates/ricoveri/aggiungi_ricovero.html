@@ -1,53 +1,45 @@
-{% if form.errors %}
-<div class="alert alert-danger alert-dismissible fade show" role="alert">
-  <strong class="d-block mb-2">Errore!</strong>
-  <ul class="mb-0">
-    {% for field, errors in form.errors.items %}
-      {% for error in errors %}
-        <li>{{ field|capfirst }}: {{ error }}</li> {# Mostra il nome del campo #}
-      {% endfor %}
-    {% endfor %}
-  </ul>
-  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Chiudi"></button>
-</div>
-{% endif %}
-
-<div class="mb-3">
-  <label for="id_cittadino" class="form-label fw-semibold">Paziente:</label>
-  {{ form.CSSN }} {# Questo campo è un Select2 #}
+<!-- Sezione per selezionare un paziente esistente o aprirne uno nuovo -->
+<div class="d-flex align-items-end mb-3"> <!-- Modificato: align-items-end per allineare in basso -->
+  <div class="flex-grow-1">
+      <label for="id_cittadino" class="form-label fw-semibold">Paziente Esistente:</label>
+      <!-- Questo è il menu a tendina per i pazienti esistenti -->
+      {{ form.CSSN }}
+  </div>
+  <!-- Modificato: rimosso mt-3 e aggiunto mb-1 per un piccolo margine dal basso -->
+  <button type="button" class="btn btn-outline-success ms-3 mb-1 px-2 py-2 lh-1" data-bs-toggle="modal" data-bs-target="#modaleNuovoPaziente">
+      <i class="bi bi-plus-lg"></i> Nuovo
+  </button>
 </div>
 
+<hr>
+
+<!-- Campi specifici del ricovero -->
 <div class="row g-3 mb-3">
   <div class="col-md-6">
-    <label for="id_durata" class="form-label fw-semibold">{{ form.durata.label }}:</label>
-    {# Aggiunto placeholder #}
-    <input type="number" id="id_durata" name="{{ form.durata.name }}" value="{{ form.durata.value|default_if_none:'' }}" class="form-control" placeholder="Es: 15"> 
+      <label for="id_codOspedale" class="form-label fw-semibold">Ospedale:</label>
+      {{ form.codOspedale }}
   </div>
   <div class="col-md-6">
-    <label for="id_data_ingresso" class="form-label fw-semibold">{{ form.data_ingresso.label }}:</label>
-    {# Ho aggiunto l'attributo placeholder qui, anche se non sempre visibile per i campi date a seconda del browser #}
-    <input type="date" id="id_data_ingresso" name="{{ form.data_ingresso.name }}" value="{{ form.data_ingresso.value|date:'Y-m-d'|default_if_none:'' }}" class="form-control" placeholder="gg/mm/aaaa">
+      <label for="id_data_ingresso" class="form-label fw-semibold">Data Ingresso:</label>
+      {{ form.data_ingresso }}
   </div>
   <div class="col-md-6">
-    <label for="id_codOspedale" class="form-label fw-semibold">{{ form.codOspedale.label }}:</label>
-    {{ form.codOspedale }} {# Select2 #}
+      <label for="id_durata" class="form-label fw-semibold">Durata (gg):</label>
+      {{ form.durata }}
   </div>
   <div class="col-md-6">
-    <label for="id_costo" class="form-label fw-semibold">{{ form.costo.label }}:</label>
-    {# Aggiunto placeholder #}
-    <input type="text" id="id_costo" name="{{ form.costo.name }}" value="{{ form.costo.value|default_if_none:'' }}" class="form-control" placeholder="Es: 1234.50">
+      <label for="id_costo" class="form-label fw-semibold">Costo (€):</label>
+      {{ form.costo }}
   </div>
 </div>
-
 <div class="mb-3">
-  <label for="id_motivo" class="form-label fw-semibold">{{ form.motivo.label }}:</label>
-  {# Aggiunto placeholder #}
-  <input type="text" id="id_motivo" name="{{ form.motivo.name }}" value="{{ form.motivo.value|default_if_none:'' }}" class="form-control" placeholder="Es: Influenza stagionale">
+  <label for="id_motivo" class="form-label fw-semibold">Motivo:</label>
+  {{ form.motivo }}
 </div>
-
 <div class="mb-3">
-  <label for="id_patologie" class="form-label fw-semibold">{{ form.patologie.label }}:</label>
-  {{ form.patologie }} {# Select2 Multiple #}
+  <label for="id_patologie" class="form-label fw-semibold">Patologie:</label>
+  {{ form.patologie }}
 </div>
 
+<!-- Campo nascosto per lo stato del ricovero -->
 {{ form.stato.as_hidden }}

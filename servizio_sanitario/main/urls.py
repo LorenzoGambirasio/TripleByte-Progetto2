@@ -18,4 +18,5 @@ urlpatterns = [
 
     path('verifica_paziente/', views.verifica_paziente, name='verifica_paziente'),
     path('cerca-patologie/', views.cerca_patologie, name='cerca_patologie'),
+    path('aggiungi-nuovo-paziente/', views.aggiungi_nuovo_paziente, name='aggiungi_nuovo_paziente'),
 ]

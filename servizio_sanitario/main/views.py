@@ -474,6 +474,7 @@ def lista_ricoveri(request):
     # 7. Preparazione del contesto per il template
     context = {
         'form': RicoveroForm(),
+        'form_nuovo_paziente': NuovoPazienteForm(),
         'page_obj': page_obj,
         'ricoveri_items': ricoveri_con_dati,
         'ospedali': models.Ospedale.objects.all(),
@@ -716,3 +717,39 @@ def cerca_patologie(request):
     results = [{'id': p.cod, 'text': p.nome} for p in patologie]
     
     return JsonResponse({'results': results})
+
+def genera_nuovo_cssn_estero():
+    with transaction.atomic():
+        ultimo_estero = models.Cittadino.objects.select_for_update().filter(CSSN__startswith='EST').order_by('-CSSN').first()
+        if not ultimo_estero:
+            return "EST0000000000001"
+        
+        try:
+            numero = int(ultimo_estero.CSSN[3:]) + 1
+            return f"EST{numero:013d}"
+        except (ValueError, TypeError):
+            return "EST0000000000001"
+
+@require_POST
+def aggiungi_nuovo_paziente(request):
+    form = NuovoPazienteForm(request.POST)
+    if form.is_valid():
+        nuovo_paziente = form.save(commit=False)
+        
+        # Se la provenienza è estera, genera un nuovo CSSN
+        if form.cleaned_data['provenienza'] == 'Estero':
+            nuovo_paziente.CSSN = genera_nuovo_cssn_estero()
+
+        nuovo_paziente.deceduto = 0 # Imposta di default
+        nuovo_paziente.save()
+        
+        # Restituisci i dati del nuovo paziente per l'aggiornamento del form ricovero
+        return JsonResponse({
+            "success": True,
+            "paziente": {
+                "cssn": nuovo_paziente.CSSN,
+                "nome_completo": f"{nuovo_paziente.nome} {nuovo_paziente.cognome}"
+            }
+        })
+    else:
+        return JsonResponse({"success": False, "errors": form.errors})

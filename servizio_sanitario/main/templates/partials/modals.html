@@ -1,3 +1,4 @@
+<!-- Modale principale per aggiungere un ricovero -->
 <div class="modal fade" id="modaleAggiungi" tabindex="-1" aria-labelledby="modaleAggiungiLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content rounded-4 shadow-lg border-0">
@@ -21,6 +22,68 @@
     </div>
 </div>
 
+<!-- MODALE DEDICATO PER AGGIUNGERE UN NUOVO PAZIENTE -->
+<div class="modal fade" id="modaleNuovoPaziente" tabindex="-1" aria-labelledby="modaleNuovoPazienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow-lg border-0">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title fw-bold fs-5" id="modaleNuovoPazienteLabel"><i class="bi bi-person-plus-fill me-2"></i>Aggiungi Nuovo Paziente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
+            <div class="modal-body p-4 p-md-5">
+                <form id="formNuovoPaziente" action="{% url 'aggiungi_nuovo_paziente' %}" method="post" novalidate>
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Provenienza:</label>
+                        <div>
+                            {% for radio in form_nuovo_paziente.provenienza %}
+                            <div class="form-check form-check-inline">
+                                {{ radio.tag }}
+                                <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6" id="container_cssn_nuovo">
+                            <label for="{{ form_nuovo_paziente.CSSN.id_for_label }}" class="form-label fw-semibold">Codice Fiscale:</label>
+                            {{ form_nuovo_paziente.CSSN }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_nuovo_paziente.nome.id_for_label }}" class="form-label fw-semibold">Nome:</label>
+                            {{ form_nuovo_paziente.nome }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_nuovo_paziente.cognome.id_for_label }}" class="form-label fw-semibold">Cognome:</label>
+                            {{ form_nuovo_paziente.cognome }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_nuovo_paziente.data_nascita.id_for_label }}" class="form-label fw-semibold">Data di Nascita:</label>
+                            {{ form_nuovo_paziente.data_nascita }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_nuovo_paziente.città.id_for_label }}" class="form-label fw-semibold">Luogo di Nascita:</label>
+                            {{ form_nuovo_paziente.città }}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form_nuovo_paziente.via.id_for_label }}" class="form-label fw-semibold">Indirizzo:</label>
+                            {{ form_nuovo_paziente.via }}
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-3">* Campi obbligatori</p>
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                        <button type="submit" class="btn btn-success">Salva Paziente</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Altri Modali -->
 <div class="modal fade" id="dettagliModal" tabindex="-1" aria-labelledby="dettagliModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -218,8 +281,12 @@
                             <div class="invalid-feedback d-block mt-1" id="modificaCostoError"></div>
                         </div>
                         <div class="col-md-6">
-                            <label for="id_patologie" class="form-label fw-semibold">Patologie:</label>
-                            {{ form.patologie }}
+                            <label for="id_patologie_modifica" class="form-label fw-semibold">Patologie:</label>
+                            <select id="id_patologie_modifica" name="patologie" class="form-select" multiple="multiple" style="width: 100%;">
+                                {% for p in patologie %}
+                                    <option value="{{ p.cod }}">{{ p.nome }}</option>
+                                {% endfor %}
+                            </select>
                             <div class="invalid-feedback d-block mt-1" id="modificaPatologieError"></div>
                         </div>
                     </div>
@@ -389,13 +456,13 @@
     </div>
 </div>
 
-<script>
-    // partials/modals.html -> NUOVO SCRIPT COMPLETO
 
-document.addEventListener("DOMContentLoaded", function () {
-    // Definizione di tutti i modali (invariato)
+<script>
+$(document).ready(function() {
+    // Definizione di tutti i modali
     const modals = {
         aggiungi: new bootstrap.Modal(document.getElementById('modaleAggiungi')),
+        nuovoPaziente: new bootstrap.Modal(document.getElementById('modaleNuovoPaziente')),
         dettagli: new bootstrap.Modal(document.getElementById('dettagliModal')),
         trasferisci: new bootstrap.Modal(document.getElementById('trasferisciModal')),
         elimina: new bootstrap.Modal(document.getElementById('eliminaRicoveroModal')),
@@ -408,137 +475,105 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let activeRow;
 
-    // Inizializzazione Tooltip (invariato)
+    // Inizializzazione Tooltip
     const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
-    
-    // --- INIZIO MODIFICA: PRE-INIZIALIZZAZIONE DEI CAMPI DEL MODALE DI AGGIUNTA ---
-    const addModal = $('#modaleAggiungi');
-    if (addModal.length) {
-        // Inizializza i Select2 per il modale di aggiunta subito, al caricamento della pagina
-        $('#id_cittadino', addModal).select2({ theme: "bootstrap-5", dropdownParent: addModal, placeholder: "Seleziona un paziente", allowClear: true, width: '100%' });
-        $('#id_codOspedale', addModal).select2({ theme: "bootstrap-5", dropdownParent: addModal, placeholder: "Seleziona un ospedale", allowClear: true, width: '100%' });
-        
-        // Inizializza il Select2 per le patologie con AJAX
-        $('#id_patologie', addModal).select2({
-            theme: "bootstrap-5",
-            dropdownParent: addModal,
-            placeholder: "Cerca e seleziona una o più patologie",
-            allowClear: true,
-            multiple: true,
-            closeOnSelect: false,
-            width: '100%',
-            ajax: {
-                url: "{% url 'cerca_patologie' %}",
-                dataType: 'json',
-                delay: 250,
-                data: function (params) { return { q: params.term }; },
-                processResults: function (data) { return { results: data.results }; },
-                cache: true
-            }
-        });
-    }
-    // --- FINE MODIFICA ---
 
-    // L'evento 'show.bs.modal' ora si occupa solo di resettare i valori del form
+    // Gestione eventi per il modale di aggiunta ricovero
     $('#modaleAggiungi').on('show.bs.modal', function () {
-        // 1. Resetta i valori del form
         const form = $('#formAggiungiRicovero');
         if (form.length > 0) form[0].reset();
-        $('#id_cittadino, #id_patologie, #id_codOspedale').val(null).trigger('change');
-
-        // 2. Imposta la data di default
+        $('#id_cittadino, #id_patologie, #id_codOspedale', this).val(null).trigger('change');
         const dataIngressoInput = document.getElementById('id_data_ingresso');
         if (!dataIngressoInput.value) { dataIngressoInput.valueAsDate = new Date(); }
         dataIngressoInput.max = new Date().toISOString().split("T")[0];
-
-        // 3. Rendi i select invisibili per evitare il "flash"
-        $('#id_cittadino, #id_codOspedale, #id_patologie').addClass('select2-pre-init');
     });
 
-    // Evento che si attiva DOPO che il modale è diventato visibile
-    $('#modaleAggiungi').on('shown.bs.modal', function () {
+    $('#modaleAggiungi').on('shown.bs.modal', function() {
         const modal = $(this);
-
-        // 1. Inizializza i componenti Select2 (ora che il modale è visibile)
-        $('#id_cittadino').select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un paziente", allowClear: true, width: '100%' });
-        $('#id_codOspedale').select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un ospedale", allowClear: true, width: '100%' });
-        $('#id_patologie').select2({
-            theme: "bootstrap-5", dropdownParent: modal, placeholder: "Cerca e seleziona patologie", allowClear: true,
-            multiple: true, closeOnSelect: false, width: '100%',
-            ajax: {
-                url: "{% url 'cerca_patologie' %}", dataType: 'json', delay: 250,
-                data: function (params) { return { q: params.term }; },
-                processResults: function (data) { return { results: data.results }; },
-                cache: true
-            }
-        });
-
-        // 2. Ora che sono stati trasformati, rendili di nuovo visibili
-        $('#id_cittadino, #id_codOspedale, #id_patologie').removeClass('select2-pre-init');
-    });
-
-
-    // Inizializzazione Select2 per il modale di trasferimento (invariato)
-    $('#trasferisciModal').on('shown.bs.modal', function () {
-        $('#selectOspedaleTrasferimento').select2({
+        $('#id_cittadino', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un paziente", allowClear: true, width: '100%' });
+        $('#id_codOspedale', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un ospedale", allowClear: true, width: '100%' });
+        $('#id_patologie', modal).select2({
             theme: "bootstrap-5",
-            dropdownParent: $(this),
-            placeholder: "Cerca e seleziona un ospedale"
+            dropdownParent: modal,
+            placeholder: "Seleziona una o più patologie",
+            allowClear: true,
+            multiple: true,
+            closeOnSelect: false,
+            width: '100%'
         });
     });
 
-    // Gestione del submit per il form di aggiunta (invariato)
+    // Gestione invio form aggiunta ricovero
     $("#formAggiungiRicovero").on("submit", function (e) {
         e.preventDefault();
-        // ... (resto del codice di submit invariato)
         const form = this;
-        const dataIngressoInput = document.getElementById('id_data_ingresso');
-        const dataSelezionata = new Date(dataIngressoInput.value);
-        const oggi = new Date();
-        oggi.setHours(0, 0, 0, 0);
-
-        function procediConInvio() {
-            $.ajax({
-                type: "POST", url: $(form).attr("action"), data: $(form).serialize(),
-                success: function (data) {
-                    if (data.success) {
-                        modals.aggiungi.hide();
-                        Swal.fire({ icon: 'success', title: 'Ricovero aggiunto!', timer: 2000, showConfirmButton: false }).then(() => window.location.reload());
-                    } else {
-                        Swal.fire({ icon: 'error', title: 'Errore', html: Object.values(data.errors || {'_':['Errore sconosciuto']}).flat().join('<br>') });
-                    }
-                },
-                error: function (xhr) {
-                    const response = xhr.responseJSON;
-                    const errorMsg = response && response.errors && response.errors.data_ingresso ? response.errors.data_ingresso.join('<br>') : 'Controlla i dati inseriti.';
-                    Swal.fire({ icon: 'error', title: 'Errore di Validazione', html: errorMsg });
+        $.ajax({
+            type: "POST", url: $(form).attr("action"), data: $(form).serialize(),
+            success: function(data){
+                if (data.success) {
+                    modals.aggiungi.hide();
+                    Swal.fire({icon:'success', title: 'Ricovero aggiunto!', timer: 2000, showConfirmButton: false})
+                    .then(() => window.location.reload());
+                } else {
+                    Swal.fire({icon:'error', title: 'Errore', html: Object.values(data.errors || {}).flat().join('<br>')});
                 }
-            });
-        }
+            },
+            error: function() {
+                Swal.fire('Errore', 'Si è verificato un problema durante la richiesta.', 'error');
+            }
+        });
+    });
 
-        if (dataSelezionata < oggi) {
-            Swal.fire({
-                title: 'Data nel Passato',
-                text: "Stai inserendo un ricovero con una data di ingresso passata. Sei sicuro?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Sì, conferma!',
-                cancelButtonText: 'Annulla'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    procediConInvio();
-                }
-            });
+    // --- LOGICA PER IL FORM PAZIENTE SEPARATO ---
+    
+    // Gestisce la visibilità del campo CSSN in base alla provenienza
+    $('input[name="provenienza"]').on('change', function() {
+        if (this.value === 'Estero') {
+            $('#container_cssn_nuovo').slideUp();
         } else {
-            procediConInvio();
+            $('#container_cssn_nuovo').slideDown();
         }
     });
 
-    // Gestione del click sulle righe e logica dei pulsanti (invariato)
+    // Gestisce l'invio del form del nuovo paziente
+    $('#formNuovoPaziente').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        $.ajax({
+            type: 'POST',
+            url: form.attr('action'),
+            data: form.serialize(),
+            success: function(response) {
+                if (response.success) {
+                    const paziente = response.paziente;
+                    const nuovaOpzione = new Option(`${paziente.cssn} - ${paziente.nome_completo}`, paziente.cssn, true, true);
+                    $('#id_cittadino').append(nuovaOpzione).trigger('change');
+                    
+                    modals.nuovoPaziente.hide();
+
+                    let successMessage = `Nuovo paziente <strong>${paziente.nome_completo}</strong> aggiunto e selezionato.`;
+                    if (paziente.cssn.startsWith('EST')) {
+                        successMessage += `<br><br>Codice Estero generato: <strong>${paziente.cssn}</strong>`;
+                    }
+                    Swal.fire({ icon: 'success', title: 'Successo!', html: successMessage });
+                } else {
+                    const errori = Object.values(response.errors).map(e => e.join('<br>')).join('<br>');
+                    Swal.fire('Errore di Validazione', errori, 'error');
+                }
+            },
+            error: function() {
+                Swal.fire('Errore', 'Impossibile comunicare con il server.', 'error');
+            }
+        });
+    });
+
+    // --- LOGICA PER GLI ALTRI MODALI (Dettagli, Modifica, etc.) ---
+
     $(document).on('click', '.clickable-row', function() {
-        // ... (resto del codice per la gestione dei modali dettagli, modifica, etc., rimane invariato)
         activeRow = $(this);
+        const dettagli = activeRow.data('dettagli-json');
+
         if (activeRow.data('paziente-deceduto') === 1) {
             $('#riepilogoDecessoNomePaziente').text(activeRow.data('paziente-nome'));
             $('#riepilogoDecessoDataOra').text(activeRow.data('decesso-data').replace('T', ' ') || 'Non specificata');
@@ -546,60 +581,54 @@ document.addEventListener("DOMContentLoaded", function () {
             modals.riepilogoDecesso.show();
             return;
         }
-        const dettagli = activeRow.data('dettagli-json');
+        
         $('#dettagliContenuto').empty().append(Object.keys(dettagli).map(key => `<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${dettagli[key]}</span></div>`));
+        
         const patologie = activeRow.data('patologie-json');
         const patologieContainer = $('#dettagliPatologie').empty();
-        if (patologie.length > 0) {
-            patologie.forEach(p => patologieContainer.append(`<span class="badge badge-bordeaux rounded-pill me-1 mb-1">${p.nome}</span>`));
+        if (patologie && patologie.length > 0) {
+            patologie.forEach(p => patologieContainer.append(`<span class="badge bg-bordeaux rounded-pill me-1 mb-1">${p.nome}</span>`));
         } else {
             patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
         }
+        
         const statoRicovero = activeRow.data('stato');
-        const btnModifica = $('#btnModifica');
-        const btnTrasferisci = $('#btnTrasferisci');
-        const btnElimina = $('#btnElimina');
-        const btnDeceduto = $('#btnDeceduto');
-        const dettagliMsg = $('#dettagliMsg');
-        const setButtonState = (button, enabled) => {
-            button.toggleClass('disabled', !enabled).css('pointer-events', enabled ? 'auto' : 'none');
-        };
-        dettagliMsg.hide();
+        const setButtonState = (button, enabled) => button.toggleClass('disabled', !enabled).css('pointer-events', enabled ? 'auto' : 'none');
+        
+        $('#dettagliMsg').hide();
         switch (statoRicovero) {
-            case 0:
-                setButtonState(btnModifica, true);
-                setButtonState(btnTrasferisci, true);
-                setButtonState(btnElimina, true);
-                setButtonState(btnDeceduto, true);
+            case 0: // Attivo
+                setButtonState($('#btnModifica'), true);
+                setButtonState($('#btnTrasferisci'), true);
+                setButtonState($('#btnElimina'), true);
+                setButtonState($('#btnDeceduto'), true);
                 break;
-            case 1:
-                setButtonState(btnModifica, false);
-                setButtonState(btnTrasferisci, false);
-                setButtonState(btnElimina, true);
-                setButtonState(btnDeceduto, false);
-                dettagliMsg.text("Azioni limitate: il ricovero è stato trasferito.").show();
+            case 1: // Trasferito
+                setButtonState($('#btnModifica'), false);
+                setButtonState($('#btnTrasferisci'), false);
+                setButtonState($('#btnElimina'), true);
+                setButtonState($('#btnDeceduto'), false);
+                $('#dettagliMsg').text("Azioni limitate: il ricovero è stato trasferito.").show();
                 break;
-            case 2:
-                setButtonState(btnModifica, true);
-                setButtonState(btnTrasferisci, false);
-                setButtonState(btnElimina, true);
-                setButtonState(btnDeceduto, false);
-                dettagliMsg.text("Azioni limitate: il paziente è stato dimesso.").show();
+            case 2: // Dimesso
+                setButtonState($('#btnModifica'), true);
+                setButtonState($('#btnTrasferisci'), false);
+                setButtonState($('#btnElimina'), true);
+                setButtonState($('#btnDeceduto'), false);
+                $('#dettagliMsg').text("Azioni limitate: il paziente è stato dimesso.").show();
                 break;
             default:
-                setButtonState(btnModifica, false);
-                setButtonState(btnTrasferisci, false);
-                setButtonState(btnElimina, true);
-                setButtonState(btnDeceduto, false);
-                dettagliMsg.text("Azioni non disponibili per questo ricovero.").show();
+                setButtonState($('#btnModifica'), false);
+                setButtonState($('#btnTrasferisci'), false);
+                setButtonState($('#btnElimina'), true);
+                setButtonState($('#btnDeceduto'), false);
+                $('#dettagliMsg').text("Azioni non disponibili per questo ricovero.").show();
                 break;
         }
         modals.dettagli.show();
     });
 
-    // Il resto del codice per la gestione dei form di modifica, elimina, decesso, etc.
-    // rimane esattamente lo stesso di prima.
-    // (Ometiamo per brevità, ma nel tuo file deve rimanere tutto il resto dello script)
+    // GESTIONE PULSANTI AZIONI
     $('#btnModifica').on('click', function(e) {
         e.preventDefault();
         if ($(this).hasClass('disabled')) return;
@@ -616,7 +645,7 @@ document.addEventListener("DOMContentLoaded", function () {
         
         const patologieCods = activeRow.data('patologie-json').map(p => p.cod).filter(Boolean);
         
-        $('#modificaRicoveroModal').find('select[name="patologie"]').select2({
+        $('#id_patologie_modifica').select2({
             theme: "bootstrap-5",
             dropdownParent: $('#modificaRicoveroModal'),
             placeholder: "Seleziona patologie",
@@ -635,25 +664,26 @@ document.addEventListener("DOMContentLoaded", function () {
         $('#modificaPazienteNome').text(activeRow.data('paziente-nome'));
         
         $('.invalid-feedback').text('');
+        modals.dettagli.hide();
         modals.modifica.show();
     });
 
-    $('#modificaDataIngresso[readonly]').on('click', function() {
-        if ($(this).is('[readonly]')) {
-            $('#id_password').val('');
-            $('#passwordError').text('');
-            $('#passwordAction').val('unlock_field');
-            $('#decessoPasswordModal').data('target-field', '#modificaDataIngresso');
-            modals.password.show();
-        }
-    });
-    
-    $('#unlockPazienteBtn').on('click', function() {
-        $('#id_password').val('');
-        $('#passwordError').text('');
-        $('#passwordAction').val('unlock_field');
-        $('#decessoPasswordModal').data('target-field', '#pazienteDisplayContainer');
-        modals.password.show();
+    $('#btnTrasferisci').on('click', function(e) {
+        e.preventDefault();
+        if ($(this).hasClass('disabled')) return;
+
+        $('#trasferisciRicoveroPk').val(activeRow.data('pk'));
+        $('#trasferisciNomePaziente').val(activeRow.data('paziente-nome'));
+        $('#trasferisciOspedaleAttuale').val(activeRow.data('ospedale-nome'));
+        
+        $('#selectOspedaleTrasferimento').val(null).trigger('change');
+        $('#selectOspedaleTrasferimento').select2({
+            theme: "bootstrap-5",
+            dropdownParent: $('#trasferisciModal'),
+            placeholder: "Seleziona un ospedale"
+        });
+        modals.dettagli.hide();
+        modals.trasferisci.show();
     });
 
     $('#btnElimina, #btnEliminaFromRiepilogo').on('click', function(e){
@@ -679,94 +709,30 @@ document.addEventListener("DOMContentLoaded", function () {
         modals.riepilogoDecesso.hide();
         modals.password.show();
     });
-    
-    $('#btnTrasferisci').on('click', function(e) {
-        e.preventDefault();
-        if ($(this).hasClass('disabled')) return;
 
-        $('#trasferisciRicoveroPk').val(activeRow.data('pk'));
-        $('#trasferisciNomePaziente').val(activeRow.data('paziente-nome'));
-        $('#trasferisciOspedaleAttuale').val(activeRow.data('ospedale-nome'));
-        
-        $('#selectOspedaleTrasferimento').val(null).trigger('change');
+    // LOGICA PER SBLOCCO CAMPI CON PASSWORD
+    $('#modificaDataIngresso[readonly], #unlockPazienteBtn').on('click', function() {
+        const isDate = $(this).is('#modificaDataIngresso');
+        if (isDate && !$(this).is('[readonly]')) return;
 
-        modals.dettagli.hide();
-        modals.trasferisci.show();
+        $('#id_password').val('');
+        $('#passwordError').text('');
+        $('#passwordAction').val('unlock_field');
+        $('#decessoPasswordModal').data('target-field', isDate ? '#modificaDataIngresso' : '#pazienteDisplayContainer');
+        modals.password.show();
     });
     
-    function ajaxVerifyPassword() {
-        const password = $('#id_password').val();
-        const action = $('#passwordAction').val();
-
-        $('#passwordError').text('');
-
-        $.ajax({
-            type: "POST", url: "/verifica_password/",
-            data: { csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val(), password: password },
-            success: function(data) {
-                if (data.success) {
-                    modals.password.hide();
-                    $('#id_password').val('');
-                    
-                    if (action === 'unlock_field') {
-                        const targetSelector = $('#decessoPasswordModal').data('target-field');
-                        
-                        if (targetSelector === '#modificaDataIngresso') {
-                            $(targetSelector).prop('readonly', false).focus().css('box-shadow', '0 0 0 .25rem rgba(13, 110, 253, .25)');
-                            setTimeout(() => $(targetSelector).css('box-shadow', ''), 2000);
-                        } else if (targetSelector === '#pazienteDisplayContainer') {
-                            const selectPazienteContainer = $('#pazienteSelectContainer');
-                            const selectPaziente = selectPazienteContainer.find('select[name="CSSN"]');
-                            const currentPazienteCSSN = activeRow.data('dettagli-json')['CSSN'];
-                            
-                            $('#pazienteDisplayContainer, #unlockPazienteBtn').hide();
-                            selectPazienteContainer.show();
-                            
-                            selectPaziente.select2({
-                                theme: "bootstrap-5",
-                                dropdownParent: $('#modificaRicoveroModal')
-                            }).val(currentPazienteCSSN).trigger('change');
-                        }
-                    } else if (action === 'dichiara') {
-                        $('#dichiaraDecessoNomePaziente').text(activeRow.data('paziente-nome'));
-                        $('#dichiaraDecessoRicoveroPk').val(activeRow.data('pk'));
-                        
-                        const now = new Date();
-                        const year = now.getFullYear();
-                        const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                        const day = now.getDate().toString().padStart(2, '0');
-                        const hours = now.getHours().toString().padStart(2, '0');
-                        const minutes = now.getMinutes().toString().padStart(2, '0');
-                        const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}`;
-                        $('#id_data_ora_decesso_dichiara').val(localDateTimeString);
-
-                        $('#id_causa_decesso_dichiara').val('');
-                        modals.dichiaraDecesso.show();
-                    } else if (action === 'modificaCausa') {
-                        $('#modificaCausaRicoveroPk').val(activeRow.data('pk'));
-                        $('#id_data_ora_decesso_modifica').val(activeRow.data('decesso-data'));
-                        $('#id_causa_decesso_modifica').val(activeRow.data('decesso-causa'));
-                        modals.modificaCausa.show();
-                    }
-                } else {
-                    $('#passwordError').text((data.errors && data.errors[0]) || 'Password non corretta.').show();
-                }
-            },
-            error: () => $('#passwordError').text('Problema di comunicazione.').show()
-        });
-    }
-
-    $('form:not(#formAggiungiRicovero, #filtriRicoveriForm)').on('submit', function(e) {
+    // GESTIONE INVIO FORM GENERICO
+    $('form:not(#formAggiungiRicovero, #filtriRicoveriForm, #formNuovoPaziente)').on('submit', function(e) {
         e.preventDefault();
         const form = $(this);
         const formId = form.attr('id');
+        let url, pk, modalToHide, successTitle;
 
         if (formId === 'formVerificaPassword') {
             ajaxVerifyPassword();
             return;
         }
-
-        let url, pk, modalToHide, successTitle;
 
         switch(formId) {
             case 'formTrasferisci':
@@ -809,7 +775,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     modalToHide.hide();
                     Swal.fire({ icon: 'success', title: successTitle, timer: 2000, showConfirmButton: false }).then(() => window.location.reload());
                 } else {
-                    Swal.fire({ icon: 'error', title: 'Errore di validazione', html: Object.values(data.errors || {'_':['Operazione fallita.']}).flat().join('<br>') });
+                    Swal.fire({ icon: 'error', title: 'Errore di validazione', html: Object.values(data.errors || {}).flat().join('<br>') });
                 }
             },
             error: (xhr) => {
@@ -822,5 +788,57 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    function ajaxVerifyPassword() {
+        const password = $('#id_password').val();
+        const action = $('#passwordAction').val();
+        $('#passwordError').text('');
+
+        $.ajax({
+            type: "POST", url: "/verifica_password/",
+            data: { csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val(), password: password },
+            success: function(data) {
+                if (data.success) {
+                    modals.password.hide();
+                    $('#id_password').val('');
+                    
+                    if (action === 'unlock_field') {
+                        const targetSelector = $('#decessoPasswordModal').data('target-field');
+                        if (targetSelector === '#modificaDataIngresso') {
+                            $(targetSelector).prop('readonly', false).focus().css('box-shadow', '0 0 0 .25rem rgba(13, 110, 253, .25)');
+                            setTimeout(() => $(targetSelector).css('box-shadow', ''), 2000);
+                        } else if (targetSelector === '#pazienteDisplayContainer') {
+                            const selectPazienteContainer = $('#pazienteSelectContainer');
+                            const selectPaziente = selectPazienteContainer.find('select[name="CSSN"]');
+                            const currentPazienteCSSN = activeRow.data('dettagli-json')['CSSN'];
+                            
+                            $('#pazienteDisplayContainer, #unlockPazienteBtn').hide();
+                            selectPazienteContainer.show();
+                            
+                            selectPaziente.select2({
+                                theme: "bootstrap-5",
+                                dropdownParent: $('#modificaRicoveroModal')
+                            }).val(currentPazienteCSSN).trigger('change');
+                        }
+                    } else if (action === 'dichiara') {
+                        $('#dichiaraDecessoNomePaziente').text(activeRow.data('paziente-nome'));
+                        $('#dichiaraDecessoRicoveroPk').val(activeRow.data('pk'));
+                        const now = new Date();
+                        const localDateTimeString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}T${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                        $('#id_data_ora_decesso_dichiara').val(localDateTimeString);
+                        $('#id_causa_decesso_dichiara').val('');
+                        modals.dichiaraDecesso.show();
+                    } else if (action === 'modificaCausa') {
+                        $('#modificaCausaRicoveroPk').val(activeRow.data('pk'));
+                        $('#id_data_ora_decesso_modifica').val(activeRow.data('decesso-data'));
+                        $('#id_causa_decesso_modifica').val(activeRow.data('decesso-causa'));
+                        modals.modificaCausa.show();
+                    }
+                } else {
+                    $('#passwordError').text((data.errors && data.errors[0]) || 'Password non corretta.').show();
+                }
+            },
+            error: () => $('#passwordError').text('Problema di comunicazione.').show()
+        });
+    }
 });
 </script>

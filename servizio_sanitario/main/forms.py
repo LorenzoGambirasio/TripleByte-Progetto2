@@ -1,8 +1,10 @@
+import re
 from django import forms
 from . import models
 from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from django.utils import timezone
+
 
 
 class RicoveroForm(forms.ModelForm):
@@ -176,3 +178,45 @@ class PasswordForm(forms.Form):
             'required': 'Inserisci la password.'
         }
     )
+
+class NuovoPazienteForm(forms.ModelForm):
+    provenienza = forms.ChoiceField(
+        choices=[('Italia', 'Italia'), ('Estero', 'Estero')],
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='Italia',
+        label="Provenienza"
+    )
+
+    class Meta:
+        model = models.Cittadino
+        fields = ['CSSN', 'nome', 'cognome', 'data_nascita', 'città', 'via']
+        widgets = {
+            'data_nascita': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control'}),
+            'cognome': forms.TextInput(attrs={'class': 'form-control'}),
+            'città': forms.TextInput(attrs={'class': 'form-control'}),
+            'via': forms.TextInput(attrs={'class': 'form-control'}),
+            'CSSN': forms.TextInput(attrs={'class': 'form-control', 'style': 'text-transform:uppercase'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['CSSN'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        provenienza = self.data.get('provenienza')
+        cssn = cleaned_data.get('CSSN', '').upper()
+
+        if provenienza == 'Italia':
+            if not cssn:
+                self.add_error('CSSN', "Il Codice Fiscale è obbligatorio per i pazienti italiani.")
+            elif not re.match(r'^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$', cssn):
+                self.add_error('CSSN', "Formato Codice Fiscale non valido.")
+            # --- NUOVO CONTROLLO DI UNICITA' ---
+            elif models.Cittadino.objects.filter(CSSN=cssn).exists():
+                self.add_error('CSSN', "Questo Codice Fiscale è già registrato nel sistema.")
+            # --- FINE NUOVO CONTROLLO ---
+        
+        cleaned_data['CSSN'] = cssn
+        return cleaned_data
