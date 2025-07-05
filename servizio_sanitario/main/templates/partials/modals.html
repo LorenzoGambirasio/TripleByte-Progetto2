@@ -25,12 +25,15 @@
 </div>
 
 <!-- MODALE DEDICATO PER AGGIUNGERE UN NUOVO PAZIENTE -->
-<div class="modal fade" id="modaleNuovoPaziente" tabindex="-1" aria-labelledby="modaleNuovoPazienteLabel" aria-hidden="true">
+<div class="modal fade" id="modaleNuovoPaziente" tabindex="-1" aria-labelledby="modaleNuovoPazienteLabel"
+    aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4 shadow-lg border-0">
             <div class="modal-header bg-success text-white py-3">
-                <h5 class="modal-title fw-bold fs-5" id="modaleNuovoPazienteLabel"><i class="bi bi-person-plus-fill me-2"></i>Aggiungi Nuovo Paziente</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+                <h5 class="modal-title fw-bold fs-5" id="modaleNuovoPazienteLabel"><i
+                        class="bi bi-person-plus-fill me-2"></i>Aggiungi Nuovo Paziente</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Chiudi"></button>
             </div>
             <div class="modal-body p-4 p-md-5">
                 <form id="formNuovoPaziente" action="{% url 'aggiungi_nuovo_paziente' %}" method="post" novalidate>
@@ -41,37 +44,52 @@
                             {% for radio in form_nuovo_paziente.provenienza %}
                             <div class="form-check form-check-inline">
                                 {{ radio.tag }}
-                                <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                                <label class="form-check-label" for="{{ radio.id_for_label }}">{{
+                                    radio.choice_label}}</label>
                             </div>
                             {% endfor %}
                         </div>
                     </div>
-                    
+
                     <div class="row g-3">
                         <div class="col-md-6" id="container_cssn_nuovo">
-                            <label for="{{ form_nuovo_paziente.CSSN.id_for_label }}" class="form-label fw-semibold">Codice Fiscale:</label>
+                            <label for="{{ form_nuovo_paziente.CSSN.id_for_label }}"
+                                class="form-label fw-semibold">Codice Fiscale:</label>
                             {{ form_nuovo_paziente.CSSN }}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form_nuovo_paziente.nome.id_for_label }}" class="form-label fw-semibold">Nome:</label>
+                            <label for="{{ form_nuovo_paziente.nome.id_for_label }}"
+                                class="form-label fw-semibold">Nome:</label>
                             {{ form_nuovo_paziente.nome }}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form_nuovo_paziente.cognome.id_for_label }}" class="form-label fw-semibold">Cognome:</label>
+                            <label for="{{ form_nuovo_paziente.cognome.id_for_label }}"
+                                class="form-label fw-semibold">Cognome:</label>
                             {{ form_nuovo_paziente.cognome }}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ form_nuovo_paziente.data_nascita.id_for_label }}" class="form-label fw-semibold">Data di Nascita:</label>
+                            <label for="{{ form_nuovo_paziente.data_nascita.id_for_label }}"
+                                class="form-label fw-semibold">Data di Nascita:</label>
                             {{ form_nuovo_paziente.data_nascita }}
                         </div>
-                        <div class="col-md-6">
-                            <label for="{{ form_nuovo_paziente.città.id_for_label }}" class="form-label fw-semibold">Luogo di Nascita:</label>
+                        <div class="col-md-6 position-relative">
+                            <label for="{{ form_nuovo_paziente.città.id_for_label }}"
+                                class="form-label fw-semibold">Luogo di Nascita:</label>
                             {{ form_nuovo_paziente.città }}
+                            <ul id="suggerimenti_citta" class="list-group position-absolute w-100"
+                                style="z-index: 9999;"></ul>
                         </div>
-                        <div class="col-md-6">
-                            <label for="{{ form_nuovo_paziente.via.id_for_label }}" class="form-label fw-semibold">Indirizzo:</label>
+
+
+                        <div class="col-md-6 position-relative">
+                            <label for="{{ form_nuovo_paziente.via.id_for_label }}"
+                                class="form-label fw-semibold">Indirizzo:</label>
                             {{ form_nuovo_paziente.via }}
+                            <ul id="suggerimenti_indirizzo" class="list-group position-absolute w-100"
+                                style="z-index: 9999;"></ul>
                         </div>
+
+
                     </div>
                     <p class="text-muted small mt-3">* Campi obbligatori</p>
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -187,7 +205,8 @@
             <div class="modal-body px-4 py-4">
                 <p class="fs-5 text-center mb-4 text-dark">Sei sicuro di voler eliminare
                     <strong>definitivamente</strong> il ricovero del paziente <strong id="eliminaNomePaziente"></strong>
-                    presso l'ospedale <strong id="eliminaOspedaleNome"></strong>? L'azione non può essere annullata.</p>
+                    presso l'ospedale <strong id="eliminaOspedaleNome"></strong>? L'azione non può essere annullata.
+                </p>
                 <form id="formEliminaRicovero" method="POST" novalidate>
                     {% csrf_token %}
                     <input type="hidden" id="eliminaRicoveroPk" name="ricovero_pk">
@@ -284,9 +303,10 @@
                         </div>
                         <div class="col-md-6">
                             <label for="id_patologie_modifica" class="form-label fw-semibold">Patologie:</label>
-                            <select id="id_patologie_modifica" name="patologie" class="form-select" multiple="multiple" style="width: 100%;">
+                            <select id="id_patologie_modifica" name="patologie" class="form-select" multiple="multiple"
+                                style="width: 100%;">
                                 {% for p in patologie %}
-                                    <option value="{{ p.cod }}">{{ p.nome }}</option>
+                                <option value="{{ p.cod }}">{{ p.nome }}</option>
                                 {% endfor %}
                             </select>
                             <div class="invalid-feedback d-block mt-1" id="modificaPatologieError"></div>
@@ -460,4 +480,3 @@
 
 
 <script src="{% static 'js/modals.js' %}"></script>
-

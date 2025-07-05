@@ -99,16 +99,6 @@ class RicoveroForm(forms.ModelForm):
             raise ValidationError("La data di ingresso non può essere nel futuro.", code='future_date')
         return data_inserita
 
-
-class NuovoPazienteForm(forms.ModelForm):
-    class Meta:
-        model = models.Cittadino
-        fields = ['CSSN', 'nome', 'cognome', 'data_nascita', 'città', 'via']
-        widgets = {
-            'data_nascita': forms.DateInput(attrs={'type': 'date'})
-        }
-
-
 class TrasferimentoForm(forms.ModelForm):
     class Meta:
         model = models.Ricovero
@@ -194,8 +184,8 @@ class NuovoPazienteForm(forms.ModelForm):
             'data_nascita': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'nome': forms.TextInput(attrs={'class': 'form-control'}),
             'cognome': forms.TextInput(attrs={'class': 'form-control'}),
-            'città': forms.TextInput(attrs={'class': 'form-control'}),
-            'via': forms.TextInput(attrs={'class': 'form-control'}),
+            'città': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_citta'}),
+            'via': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_indirizzo'}),
             'CSSN': forms.TextInput(attrs={'class': 'form-control', 'style': 'text-transform:uppercase'}),
         }
 
@@ -213,10 +203,8 @@ class NuovoPazienteForm(forms.ModelForm):
                 self.add_error('CSSN', "Il Codice Fiscale è obbligatorio per i pazienti italiani.")
             elif not re.match(r'^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$', cssn):
                 self.add_error('CSSN', "Formato Codice Fiscale non valido.")
-            # --- NUOVO CONTROLLO DI UNICITA' ---
             elif models.Cittadino.objects.filter(CSSN=cssn).exists():
                 self.add_error('CSSN', "Questo Codice Fiscale è già registrato nel sistema.")
-            # --- FINE NUOVO CONTROLLO ---
         
         cleaned_data['CSSN'] = cssn
         return cleaned_data

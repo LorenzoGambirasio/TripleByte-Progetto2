@@ -1,4 +1,4 @@
-$(document).ready(function() {
+$(document).ready(function () {
     // Definizione di tutti i modali
     const modals = {
         aggiungi: new bootstrap.Modal(document.getElementById('modaleAggiungi')),
@@ -29,7 +29,7 @@ $(document).ready(function() {
         dataIngressoInput.max = new Date().toISOString().split("T")[0];
     });
 
-    $('#modaleAggiungi').on('shown.bs.modal', function() {
+    $('#modaleAggiungi').on('shown.bs.modal', function () {
         const modal = $(this);
         $('#id_cittadino', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un paziente", allowClear: true, width: '100%' });
         $('#id_codOspedale', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un ospedale", allowClear: true, width: '100%' });
@@ -50,25 +50,25 @@ $(document).ready(function() {
         const form = this;
         $.ajax({
             type: "POST", url: $(form).attr("action"), data: $(form).serialize(),
-            success: function(data){
+            success: function (data) {
                 if (data.success) {
                     modals.aggiungi.hide();
-                    Swal.fire({icon:'success', title: 'Ricovero aggiunto!', timer: 2000, showConfirmButton: false})
-                    .then(() => window.location.reload());
+                    Swal.fire({ icon: 'success', title: 'Ricovero aggiunto!', timer: 2000, showConfirmButton: false })
+                        .then(() => window.location.reload());
                 } else {
-                    Swal.fire({icon:'error', title: 'Errore', html: Object.values(data.errors || {}).flat().join('<br>')});
+                    Swal.fire({ icon: 'error', title: 'Errore', html: Object.values(data.errors || {}).flat().join('<br>') });
                 }
             },
-            error: function() {
+            error: function () {
                 Swal.fire('Errore', 'Si è verificato un problema durante la richiesta.', 'error');
             }
         });
     });
 
     // --- LOGICA PER IL FORM PAZIENTE SEPARATO ---
-    
+
     // Gestisce la visibilità del campo CSSN in base alla provenienza
-    $('input[name="provenienza"]').on('change', function() {
+    $('input[name="provenienza"]').on('change', function () {
         if (this.value === 'Estero') {
             $('#container_cssn_nuovo').slideUp();
         } else {
@@ -77,19 +77,19 @@ $(document).ready(function() {
     });
 
     // Gestisce l'invio del form del nuovo paziente
-    $('#formNuovoPaziente').on('submit', function(e) {
+    $('#formNuovoPaziente').on('submit', function (e) {
         e.preventDefault();
         const form = $(this);
         $.ajax({
             type: 'POST',
             url: form.attr('action'),
             data: form.serialize(),
-            success: function(response) {
+            success: function (response) {
                 if (response.success) {
                     const paziente = response.paziente;
                     const nuovaOpzione = new Option(`${paziente.cssn} - ${paziente.nome_completo}`, paziente.cssn, true, true);
                     $('#id_cittadino').append(nuovaOpzione).trigger('change');
-                    
+
                     modals.nuovoPaziente.hide();
 
                     let successMessage = `Nuovo paziente <strong>${paziente.nome_completo}</strong> aggiunto e selezionato.`;
@@ -102,7 +102,7 @@ $(document).ready(function() {
                     Swal.fire('Errore di Validazione', errori, 'error');
                 }
             },
-            error: function() {
+            error: function () {
                 Swal.fire('Errore', 'Impossibile comunicare con il server.', 'error');
             }
         });
@@ -110,7 +110,7 @@ $(document).ready(function() {
 
     // --- LOGICA PER GLI ALTRI MODALI (Dettagli, Modifica, etc.) ---
 
-    $(document).on('click', '.clickable-row', function() {
+    $(document).on('click', '.clickable-row', function () {
         activeRow = $(this);
         const dettagli = activeRow.data('dettagli-json');
 
@@ -121,9 +121,9 @@ $(document).ready(function() {
             modals.riepilogoDecesso.show();
             return;
         }
-        
+
         $('#dettagliContenuto').empty().append(Object.keys(dettagli).map(key => `<div class="mb-2"><strong class="text-secondary">${key}:</strong> <span class="fw-bold">${dettagli[key]}</span></div>`));
-        
+
         const patologie = activeRow.data('patologie-json');
         const patologieContainer = $('#dettagliPatologie').empty();
         if (patologie && patologie.length > 0) {
@@ -131,10 +131,10 @@ $(document).ready(function() {
         } else {
             patologieContainer.append('<span class="text-muted small">Nessuna patologia associata.</span>');
         }
-        
+
         const statoRicovero = activeRow.data('stato');
         const setButtonState = (button, enabled) => button.toggleClass('disabled', !enabled).css('pointer-events', enabled ? 'auto' : 'none');
-        
+
         $('#dettagliMsg').hide();
         switch (statoRicovero) {
             case 0: // Attivo
@@ -169,22 +169,22 @@ $(document).ready(function() {
     });
 
     // GESTIONE PULSANTI AZIONI
-    $('#btnModifica').on('click', function(e) {
+    $('#btnModifica').on('click', function (e) {
         e.preventDefault();
         if ($(this).hasClass('disabled')) return;
-        
+
         const dettagli = activeRow.data('dettagli-json');
         const dataIngressoParts = dettagli['Data Ingresso'].split('/');
-        
+
         $('#modificaRicoveroPk').val(activeRow.data('pk'));
         $('#modificaOspedaleNome').val(activeRow.data('ospedale-nome'));
         $('#modificaDataIngresso').val(`${dataIngressoParts[2]}-${dataIngressoParts[1]}-${dataIngressoParts[0]}`);
         $('#modificaDurata').val(parseInt(dettagli['Durata (gg)']));
         $('#modificaMotivo').val(activeRow.data('motivo'));
         $('#modificaCosto').val(parseFloat(dettagli['Costo'].replace('€ ', '').replace(',', '.')));
-        
+
         const patologieCods = activeRow.data('patologie-json').map(p => p.cod).filter(Boolean);
-        
+
         $('#id_patologie_modifica').select2({
             theme: "bootstrap-5",
             dropdownParent: $('#modificaRicoveroModal'),
@@ -193,7 +193,7 @@ $(document).ready(function() {
             multiple: true,
             closeOnSelect: false
         }).val(patologieCods).trigger('change');
-        
+
         $('#modificaDataIngresso').prop('readonly', true).css('box-shadow', '');
         $('#pazienteDisplayContainer, #unlockPazienteBtn').show();
         const $pazienteSelectContainer = $('#pazienteSelectContainer');
@@ -202,20 +202,20 @@ $(document).ready(function() {
             $pazienteSelectContainer.find('select[name="CSSN"]').select2('destroy');
         }
         $('#modificaPazienteNome').text(activeRow.data('paziente-nome'));
-        
+
         $('.invalid-feedback').text('');
         modals.dettagli.hide();
         modals.modifica.show();
     });
 
-    $('#btnTrasferisci').on('click', function(e) {
+    $('#btnTrasferisci').on('click', function (e) {
         e.preventDefault();
         if ($(this).hasClass('disabled')) return;
 
         $('#trasferisciRicoveroPk').val(activeRow.data('pk'));
         $('#trasferisciNomePaziente').val(activeRow.data('paziente-nome'));
         $('#trasferisciOspedaleAttuale').val(activeRow.data('ospedale-nome'));
-        
+
         $('#selectOspedaleTrasferimento').val(null).trigger('change');
         $('#selectOspedaleTrasferimento').select2({
             theme: "bootstrap-5",
@@ -226,20 +226,20 @@ $(document).ready(function() {
         modals.trasferisci.show();
     });
 
-    $('#btnElimina, #btnEliminaFromRiepilogo').on('click', function(e){
+    $('#btnElimina, #btnEliminaFromRiepilogo').on('click', function (e) {
         e.preventDefault();
         if ($(this).hasClass('disabled')) return;
-        
+
         $('#eliminaRicoveroPk').val(activeRow.data('pk'));
         $('#eliminaNomePaziente').text(activeRow.data('paziente-nome'));
         $('#eliminaOspedaleNome').text(activeRow.data('ospedale-nome'));
-        
+
         modals.dettagli.hide();
         modals.riepilogoDecesso.hide();
         modals.elimina.show();
     });
 
-    $('#btnDeceduto, #btnModificaCausaDecesso').on('click', function(e) {
+    $('#btnDeceduto, #btnModificaCausaDecesso').on('click', function (e) {
         e.preventDefault();
         $('#id_password').val('');
         $('#passwordError').text('');
@@ -251,7 +251,7 @@ $(document).ready(function() {
     });
 
     // LOGICA PER SBLOCCO CAMPI CON PASSWORD
-    $('#modificaDataIngresso[readonly], #unlockPazienteBtn').on('click', function() {
+    $('#modificaDataIngresso[readonly], #unlockPazienteBtn').on('click', function () {
         const isDate = $(this).is('#modificaDataIngresso');
         if (isDate && !$(this).is('[readonly]')) return;
 
@@ -261,9 +261,9 @@ $(document).ready(function() {
         $('#decessoPasswordModal').data('target-field', isDate ? '#modificaDataIngresso' : '#pazienteDisplayContainer');
         modals.password.show();
     });
-    
+
     // GESTIONE INVIO FORM GENERICO
-    $('form:not(#formAggiungiRicovero, #filtriRicoveriForm, #formNuovoPaziente)').on('submit', function(e) {
+    $('form:not(#formAggiungiRicovero, #filtriRicoveriForm, #formNuovoPaziente)').on('submit', function (e) {
         e.preventDefault();
         const form = $(this);
         const formId = form.attr('id');
@@ -274,7 +274,7 @@ $(document).ready(function() {
             return;
         }
 
-        switch(formId) {
+        switch (formId) {
             case 'formTrasferisci':
                 pk = $('#trasferisciRicoveroPk').val();
                 url = `/trasferisci_ricovero/${pk}/`;
@@ -310,7 +310,7 @@ $(document).ready(function() {
 
         $.ajax({
             type: "POST", url: url, data: form.serialize(),
-            success: function(data) {
+            success: function (data) {
                 if (data.success) {
                     modalToHide.hide();
                     Swal.fire({ icon: 'success', title: successTitle, timer: 2000, showConfirmButton: false }).then(() => window.location.reload());
@@ -336,11 +336,11 @@ $(document).ready(function() {
         $.ajax({
             type: "POST", url: "/verifica_password/",
             data: { csrfmiddlewaretoken: $('[name="csrfmiddlewaretoken"]').val(), password: password },
-            success: function(data) {
+            success: function (data) {
                 if (data.success) {
                     modals.password.hide();
                     $('#id_password').val('');
-                    
+
                     if (action === 'unlock_field') {
                         const targetSelector = $('#decessoPasswordModal').data('target-field');
                         if (targetSelector === '#modificaDataIngresso') {
@@ -350,10 +350,10 @@ $(document).ready(function() {
                             const selectPazienteContainer = $('#pazienteSelectContainer');
                             const selectPaziente = selectPazienteContainer.find('select[name="CSSN"]');
                             const currentPazienteCSSN = activeRow.data('dettagli-json')['CSSN'];
-                            
+
                             $('#pazienteDisplayContainer, #unlockPazienteBtn').hide();
                             selectPazienteContainer.show();
-                            
+
                             selectPaziente.select2({
                                 theme: "bootstrap-5",
                                 dropdownParent: $('#modificaRicoveroModal')
@@ -380,4 +380,69 @@ $(document).ready(function() {
             error: () => $('#passwordError').text('Problema di comunicazione.').show()
         });
     }
+});
+
+function initAutocompleteManuale() {
+  const inputIndirizzo = document.getElementById('id_indirizzo');
+  const suggerimentiIndirizzo = document.getElementById('suggerimenti_indirizzo');
+
+  const inputCitta = document.getElementById('id_citta');
+  const suggerimentiCitta = document.getElementById('suggerimenti_citta');
+
+  if (inputIndirizzo) {
+    inputIndirizzo.addEventListener('input', function () {
+      cercaSuggerimenti(this.value, 'address', suggerimentiIndirizzo, inputIndirizzo);
+    });
+  }
+
+  if (inputCitta) {
+    inputCitta.addEventListener('input', function () {
+      cercaSuggerimenti(this.value, '(cities)', suggerimentiCitta, inputCitta);
+    });
+  }
+
+  // ✅ Chiudi i suggerimenti se clicchi fuori
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#id_indirizzo') && !e.target.closest('#suggerimenti_indirizzo')) {
+      suggerimentiIndirizzo.innerHTML = '';
+    }
+    if (!e.target.closest('#id_citta') && !e.target.closest('#suggerimenti_citta')) {
+      suggerimentiCitta.innerHTML = '';
+    }
+  });
+}
+
+function cercaSuggerimenti(query, tipo, contenitore, input) {
+  if (query.length < 3) {
+    contenitore.innerHTML = '';
+    return;
+  }
+
+  const service = new google.maps.places.AutocompleteService();
+  service.getPlacePredictions({
+    input: query,
+    types: [tipo],
+    componentRestrictions: { country: 'it' }
+  }, function (predictions, status) {
+    contenitore.innerHTML = '';
+
+    if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
+      return;
+    }
+
+    predictions.slice(0, 5).forEach(p => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item list-group-item-action';
+      li.textContent = p.description;
+      li.addEventListener('click', function () {
+        input.value = p.description;
+        contenitore.innerHTML = '';
+      });
+      contenitore.appendChild(li);
+    });
+  });
+}
+
+$('#modaleNuovoPaziente').on('shown.bs.modal', function () {
+  initAutocompleteManuale();
 });
