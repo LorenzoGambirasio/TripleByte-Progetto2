@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Elenco Ospedali{% endblock %}
 
 {% block content %}
@@ -64,15 +65,6 @@
     {% include 'partials/paginazione.html' with etichetta="ospedali" %}
   </div>
 </div>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll('.clickable-row').forEach(row => {
-      row.addEventListener('click', function (event) {
-        if (!event.target.closest('a') && !event.target.closest('button')) {
-          window.location.href = row.dataset.href;
-        }
-      });
-    });
-  });
-</script>
+<script src="{% static 'js/ospedali.js' %}"></script>
+
 {% endblock %}
