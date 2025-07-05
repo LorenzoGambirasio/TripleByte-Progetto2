@@ -1,12 +1,12 @@
 <!-- Sezione per selezionare un paziente esistente o aprirne uno nuovo -->
-<div class="d-flex align-items-end mb-3"> <!-- Modificato: align-items-end per allineare in basso -->
+<div class="d-flex align-items-end mb-3">
   <div class="flex-grow-1">
       <label for="id_cittadino" class="form-label fw-semibold">Paziente Esistente:</label>
       <!-- Questo è il menu a tendina per i pazienti esistenti -->
       {{ form.CSSN }}
   </div>
-  <!-- Modificato: rimosso mt-3 e aggiunto mb-1 per un piccolo margine dal basso -->
-  <button type="button" class="btn btn-outline-success ms-3 mb-1 px-2 py-2 lh-1" data-bs-toggle="modal" data-bs-target="#modaleNuovoPaziente">
+  <!-- Modificato: cambiata la classe del colore in btn-outline-dark -->
+  <button type="button" class="btn btn-outline-dark ms-3 mb-1 px-2 py-2 lh-1" data-bs-toggle="modal" data-bs-target="#modaleNuovoPaziente">
       <i class="bi bi-plus-lg"></i> Nuovo
   </button>
 </div>
