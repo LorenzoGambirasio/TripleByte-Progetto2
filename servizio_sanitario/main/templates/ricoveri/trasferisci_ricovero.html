@@ -1,29 +1,8 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block title %}Trasferimento Paziente{% endblock %}
 
 {% block content %}
-
-<style>
-    body {
-        background-color: #f8f9fa;
-    }
-    .card {
-        border: none;
-        border-radius: 0.75rem;
-    }
-    .card-header {
-        border-radius: 0.75rem 0.75rem 0 0;
-    }
-    .form-label {
-        font-weight: 500;
-        color: #495057;
-    }
-    .input-group-text {
-        background-color: #e9ecef;
-        border: 1px solid #ced4da;
-    }
-</style>
 
 <div class="container py-5">
     <div class="row justify-content-center">
@@ -90,16 +69,7 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Inizializzazione di Select2 per il menu a tendina degli ospedali
-        $('#id_codOspedale').select2({
-            placeholder: "Seleziona un ospedale di destinazione",
-            allowClear: true,
-            width: "100%",
-            theme: "bootstrap-5"
-        });
-    });
-</script>
+<script src="{% static 'js/trasferisci_ricovero.js' %}"></script>
+
 
 {% endblock %}
