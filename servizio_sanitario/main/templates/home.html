@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Dashboard – Servizio Sanitario{% endblock %}
 
@@ -11,7 +12,7 @@
       <canvas id="topPatologieChart"></canvas>
     </div>
     <p class="small text-muted text-center mt-2 mb-0">
-        Le 3 patologie più comuni tra i ricoveri attualmente attivi.
+      Le 3 patologie più comuni tra i ricoveri attualmente attivi.
     </p>
   </div>
 </div>
@@ -22,7 +23,8 @@
 <!-- Riquadro di benvenuto -->
 <div class="bg-white p-4 rounded shadow mb-4">
   <h4 class="text-danger fw-bold">Benvenuto nel sistema di monitoraggio dei ricoveri ospedalieri</h4>
-  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera trasparente, efficiente e sicura.</p>
+  <p class="text-muted">Consulta e gestisci i dati relativi a cittadini, ospedali, ricoveri e patologie in maniera
+    trasparente, efficiente e sicura.</p>
   <ul class="mb-0 mt-3">
     <li><strong>Cittadini</strong>: identificati tramite codice SSN.</li>
     <li><strong>Ospedali</strong>: con indirizzo e direttore sanitario.</li>
@@ -74,7 +76,8 @@
   <div class="col-lg-6 d-flex flex-column">
     <div class="bg-white p-4 rounded shadow flex-fill">
       <h6 class="text-muted border-bottom pb-2">📈 Ospedali con più ricoveri (ultimo mese)</h6>
-      <p class="small text-muted mb-3">Classifica dei 5 ospedali con il maggior numero di ricoveri totali nell'ultimo mese.</p>
+      <p class="small text-muted mb-3">Classifica dei 5 ospedali con il maggior numero di ricoveri totali nell'ultimo
+        mese.</p>
       <div style="height: 350px;">
         <canvas id="ospedaliTopChart"></canvas>
       </div>
@@ -83,63 +86,21 @@
 </div>
 
 <!-- Script per i grafici -->
-<script>
-  const statistiche = JSON.parse('{{ statistiche_json|safe }}');
-  const topOspedali = JSON.parse('{{ top_ospedali_json|safe }}');
-  const topPatologie = JSON.parse('{{ top_patologie_json|safe }}');
 
-  // Grafico Ricoveri
-  new Chart(document.getElementById('ricoveriStatoChart'),{type: 'doughnut',data: {labels: statistiche.labels,datasets: [{label: 'Stato Ricoveri',data: statistiche.data,backgroundColor: ['#198754', '#ffc107', '#dc3545', '#212529'],borderColor: '#fff',borderWidth: 2}]},options: {responsive: true,maintainAspectRatio: false,plugins: {legend: {position: 'bottom',labels: { padding: 20 }}} }});
-  
-  // Grafico Ospedali
-  new Chart(document.getElementById('ospedaliTopChart'),{type: 'bar',data: {labels: topOspedali.labels,datasets: [{ label: 'Attivi', data: topOspedali.attivi, backgroundColor: '#198754' },{ label: 'Dimessi', data: topOspedali.dimessi, backgroundColor: '#dc3545' },{ label: 'Trasferiti', data: topOspedali.trasferiti, backgroundColor: '#ffc107' },{ label: 'Deceduti', data: topOspedali.deceduti, backgroundColor: '#212529' },]},options: {indexAxis: 'y',responsive: true,maintainAspectRatio: false,scales: {x: { stacked: true, beginAtZero: true },y: { stacked: true }},plugins: {legend: { display: true, position: 'top' }}}});
-
-  // NUOVO GRAFICO: Patologie più frequenti
-  if (topPatologie.labels.length > 0) {
-    new Chart(document.getElementById('topPatologieChart'), {
-        type: 'bar',
-        data: {
-            labels: topPatologie.labels,
-            datasets: [{
-                label: 'Numero di Ricoveri',
-                data: topPatologie.data,
-                backgroundColor: 'rgba(128, 0, 32, 0.7)',
-                borderColor: 'rgba(128, 0, 32, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { precision: 0 }
-                },
-                y: {
-                    ticks: {
-                        callback: function(value) {
-                            const label = this.getLabelForValue(value);
-                            return label.length > 20 ? label.substring(0, 20) + '...' : label;
-                        }
-                    }
-                }
-            }
-        }
-    });
-  } else {
-    // Se non ci sono dati, mostra un messaggio di fallback
-    const canvas = document.getElementById('topPatologieChart');
-    const ctx = canvas.getContext('2d');
-    ctx.font = '14px sans-serif';
-    ctx.fillStyle = '#6c757d';
-    ctx.textAlign = 'center';
-    ctx.fillText('Nessun dato disponibile', canvas.width / 2, canvas.height / 2);
-  }
+<script id="statistiche-data" type="application/json">
+  {{ statistiche_json|safe }}
 </script>
+
+<script id="top-ospedali-data" type="application/json">
+  {{ top_ospedali_json|safe }}
+</script>
+
+<script id="top-patologie-data" type="application/json">
+  {{ top_patologie_json|safe }}
+</script>
+
+
+<script src="{% static 'js/home.js' %}"></script>
+
 
 {% endblock %}
