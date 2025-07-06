@@ -15,10 +15,10 @@ echo "DB_PASSWORD=tua_db_password" >> .env
 echo "DB_HOST=localhost" >> .env
 echo "DB_PORT=5432" >> .env
 
-echo ">>> IMPORTANTE: Verrà richiesta la password per l'utente PostgreSQL."
+echo ">>> IMPORTANTE: Verrà ora richiesta la password per l'utente PostgreSQL."
 echo ">>> Importazione del database..."
 
-psql -U tuo_db_user -d tuo_db_name -f ../backup_db/db_servizio_sanitario.sql
+psql -U tuo_db_user -d tuo_db_name -f db_dump.sql
 
 echo ">>> Avvio del server di sviluppo su http://127.0.0.1:8000/"
 echo ">>> Per fermare il server, premere CTRL+C."
