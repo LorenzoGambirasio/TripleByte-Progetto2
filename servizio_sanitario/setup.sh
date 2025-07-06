@@ -1,49 +1,27 @@
 #!/bin/bash
+echo ">>> Creazione dell'ambiente virtuale 'venv'..."
+python3 -m venv venv
 
-echo ""
-echo "🚑 === TripleByte Progetto2 - INSTALLER ==="
-echo ""
+echo ">>> Attivazione dell'ambiente virtuale..."
+source venv/bin/activate
 
-# ✅ Controllo file .env
-if [ ! -f ".env" ]; then
-  echo "⚠️  ERRORE: File .env mancante!"
-  echo "👉 Copia .env.example e rinominalo in .env, poi riprova."
-  exit 1
-fi
-
-# ✅ Carico variabili da .env
-export $(grep -v '^#' .env | xargs)
-
-# ✅ Parametri
-echo "📌 Database: $DB_NAME"
-echo "📌 Utente:   $DB_USER"
-echo ""
-
-# ✅ Verifica se DB esiste
-DB_EXISTS=$(psql -U "$DB_USER" -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 && echo "yes" || echo "no")
-
-if [ "$DB_EXISTS" = "no" ]; then
-  echo "🔨 Creo database '$DB_NAME'..."
-  createdb -U "$DB_USER" "$DB_NAME"
-else
-  echo "✅ Database già esistente: '$DB_NAME'"
-fi
-
-echo ""
-echo "📂 Importo schema + dati reali..."
-psql -U "$DB_USER" -d "$DB_NAME" -f db_dump.sql
-
-echo ""
-echo "📦 Installo dipendenze Python..."
+echo ">>> Installazione delle dipendenze..."
 pip install -r requirements.txt
 
-echo ""
-echo "🩺 Verifico configurazione Django..."
-python manage.py check
+echo ">>> Creazione del file .env per il database..."
+echo "DB_NAME=tuo_db_name" > .env
+echo "DB_USER=tuo_db_user" >> .env
+echo "DB_PASSWORD=tua_db_password" >> .env
+echo "DB_HOST=localhost" >> .env
+echo "DB_PORT=5432" >> .env
 
-echo ""
-echo "🚀 Avvio server Django su http://127.0.0.1:8000 ..."
-python manage.py runserver 0.0.0.0:8000
+echo ">>> IMPORTANTE: Verrà richiesta la password per l'utente PostgreSQL."
+echo ">>> Importazione del database..."
 
-echo ""
-echo "✅ INSTALLAZIONE COMPLETATA! Buon lavoro!"
+psql -U tuo_db_user -d tuo_db_name -f ../backup_db/db_servizio_sanitario.sql
+
+echo ">>> Avvio del server di sviluppo su http://127.0.0.1:8000/"
+echo ">>> Per fermare il server, premere CTRL+C."
+python manage.py runserver
+
+deactivate
