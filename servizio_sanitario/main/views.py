@@ -7,15 +7,10 @@ from django.http import JsonResponse
 from datetime import timedelta
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
-from django.db.models import Count, Max, Q, Sum, Subquery, OuterRef, Exists # Aggiungi Sum
-from django.db.models.functions import Coalesce # Aggiungi Coalesce
-from django.db.models import Value, DecimalField # Aggiungi Value e DecimalField
+from django.db.models import Count, Max, Q, Sum, Subquery, OuterRef, Exists
+from django.db.models.functions import Coalesce
+from django.db.models import Value, DecimalField
 import json
-
-
-
-
-
 
 ADMIN_PASSWORD = 'admin'
 
@@ -24,7 +19,6 @@ def dashboard(request):
     una_settimana_fa = oggi - timedelta(days=7)
     un_mese_fa = oggi - timedelta(days=30)
 
-    # Dati per il grafico a torta "Ricoveri ultima settimana"
     statistiche = {
         'labels': ['Attivi', 'Trasferiti', 'Dimessi', 'Deceduti'],
         'data': [
@@ -35,7 +29,6 @@ def dashboard(request):
         ]
     }
 
-    # Dati per il grafico a barre "Ospedali con più ricoveri"
     top_ospedali_stats = (
         models.Ricovero.objects.filter(data_ingresso__gte=un_mese_fa)
         .values('codOspedale__nome')
@@ -57,10 +50,9 @@ def dashboard(request):
         'deceduti': [s['deceduti'] for s in top_ospedali_stats],
     }
 
-    # NUOVO: Dati per il grafico delle patologie più frequenti nella sidebar
     top_patologie_attive = (
         models.PatologiaRicovero.objects
-        .filter(codRicovero__stato=0)  # Considera solo i ricoveri attivi
+        .filter(codRicovero__stato=0)
         .values('codPatologia__nome')
         .annotate(conteggio=Count('codPatologia'))
         .order_by('-conteggio')[:3]
@@ -71,7 +63,6 @@ def dashboard(request):
         'data': [p['conteggio'] for p in top_patologie_attive],
     }
 
-    # Contesto completo per il template
     context = {
         'statistiche_json': json.dumps(statistiche),
         'top_ospedali_json': json.dumps(top_ospedali),
@@ -82,14 +73,12 @@ def dashboard(request):
 
 
 def lista_cittadini(request):
-    # Annotiamo il queryset con il conteggio dei ricoveri e se il cittadino è attualmente ricoverato
     ricovero_attivo_subquery = models.Ricovero.objects.filter(CSSN=OuterRef('CSSN'), stato=0)
     cittadini_base = models.Cittadino.objects.annotate(
         numero_ricoveri_cittadino=Count('ricovero'),
         is_ricoverato=Exists(ricovero_attivo_subquery)
     )
 
-    # Lettura di tutti i parametri del filtro
     nome_filtro = request.GET.get('nome', '').strip()
     cognome_filtro = request.GET.get('cognome', '').strip()
     luogo_nascita_filtro = request.GET.get('luogo', '').strip()
@@ -99,7 +88,6 @@ def lista_cittadini(request):
     ricoveri_min_filtro = request.GET.get('ricoveri_min', '').strip()
     ricoveri_max_filtro = request.GET.get('ricoveri_max', '').strip()
 
-    # Applicazione dei filtri testuali
     if nome_filtro:
         cittadini_base = cittadini_base.filter(nome__icontains=nome_filtro)
     if cognome_filtro:
@@ -111,13 +99,11 @@ def lista_cittadini(request):
     if cssn_filtro:
         cittadini_base = cittadini_base.filter(CSSN__icontains=cssn_filtro)
 
-    # Applicazione dei filtri numerici per i ricoveri
     if ricoveri_min_filtro.isdigit():
         cittadini_base = cittadini_base.filter(numero_ricoveri_cittadino__gte=int(ricoveri_min_filtro))
     if ricoveri_max_filtro.isdigit():
         cittadini_base = cittadini_base.filter(numero_ricoveri_cittadino__lte=int(ricoveri_max_filtro))
 
-    # Applicazione del filtro per lo stato (ora gestito a livello di database)
     if stato_filtro == 'Deceduto':
         cittadini_base = cittadini_base.filter(deceduto=1)
     elif stato_filtro == 'Ricoverato':
@@ -125,7 +111,6 @@ def lista_cittadini(request):
     elif stato_filtro == 'Domicilio':
         cittadini_base = cittadini_base.filter(deceduto=0, is_ricoverato=False)
 
-    # Statistiche
     statistiche_cittadini = {
         'totali': models.Cittadino.objects.count(),
         'domicilio': models.Cittadino.objects.annotate(is_ricoverato=Exists(ricovero_attivo_subquery)).filter(deceduto=0, is_ricoverato=False).count(),
@@ -133,7 +118,6 @@ def lista_cittadini(request):
         'deceduti': models.Cittadino.objects.filter(deceduto=1).count(),
     }
 
-    # Ordinamento
     current_sort = request.GET.get('sort', 'cognome')
     current_order = request.GET.get('order', 'asc')
     sort_key = {
@@ -154,14 +138,12 @@ def lista_cittadini(request):
     if current_sort == 'nome_cognome':
         cittadini_ordinati = cittadini_ordinati.order_by(f'{"-" if current_order == "desc" else ""}cognome', f'{"-" if current_order == "desc" else ""}nome')
 
-    # Paginazione
     per_page = request.GET.get('per_page', 20)
     try: per_page = int(per_page)
     except ValueError: per_page = 20
     paginator = Paginator(cittadini_ordinati, per_page)
     page_obj = paginator.get_page(request.GET.get("page"))
 
-    # Preparazione del contesto per il template
     context = {
         'page_obj': page_obj,
         'colonne_larghezze': {
@@ -183,13 +165,10 @@ def lista_cittadini(request):
 
 
 def lista_ospedali(request):
-    # --- INIZIO MODIFICA: AGGIUNTA ANNOTAZIONE INCASSO ---
     ospedali_base = models.Ospedale.objects.select_related('CSSN_direttore').annotate(
         numero_ricoveri_ospedale=Count('ricovero'),
-        # Calcola la somma dei costi, se non ci sono ricoveri, imposta l'incasso a 0.
         incasso_totale=Coalesce(Sum('ricovero__costo'), Value(0, output_field=DecimalField()))
     ).all()
-    # --- FINE MODIFICA ---
 
     nome_filtro = request.GET.get('nome', '').strip()
     citta_filtro = request.GET.get('città', '').strip()
@@ -211,7 +190,6 @@ def lista_ospedali(request):
         'totale_ricoveri_globale': models.Ricovero.objects.count(),
     }
 
-    # --- INIZIO MODIFICA: AGGIUNTA NUOVA COLONNA E LARGHEZZE ---
     colonne_larghezze = {
         'nome': '20%', 'città': '18%', 'indirizzo': '20%', 
         'direttore': '18%', 'ricoveri': '10%', 'incasso': '14%',
@@ -219,20 +197,17 @@ def lista_ospedali(request):
     columns = [
         ('nome', 'Nome Ospedale'), ('città', 'Città'), ('indirizzo', 'Indirizzo'),
         ('direttore', 'Direttore Sanitario'), ('ricoveri', 'Ricoveri'),
-        ('incasso', 'Incasso Totale (€)'), # Nuova colonna
+        ('incasso', 'Incasso Totale (€)'),
     ]
-    # --- FINE MODIFICA ---
 
     current_sort = request.GET.get('sort', 'nome')
     current_order = request.GET.get('order', 'asc')
 
-    # --- INIZIO MODIFICA: AGGIUNTA ORDINAMENTO PER INCASSO ---
     sort_mapping = {
         'nome': 'nome', 'città': 'città', 'indirizzo': 'indirizzo',
         'direttore': 'CSSN_direttore__cognome', 'ricoveri': 'numero_ricoveri_ospedale',
-        'incasso': 'incasso_totale', # Nuovo ordinamento
+        'incasso': 'incasso_totale',
     }
-    # --- FINE MODIFICA ---
 
     sort_field = sort_mapping.get(current_sort, 'nome')
     if current_order == 'desc':
@@ -257,12 +232,10 @@ def lista_ospedali(request):
     return render(request, 'ospedali.html', context)
 
 def lista_patologie(request):
-    # Annotate le patologie con il conteggio dei ricoveri
     patologie_base = models.Patologia.objects.annotate(
         numero_ricoveri_patologia=Count('ricoveri')
     ).all()
 
-    # --- INIZIO LOGICA FILTRI AGGIORNATA ---
     nome_filtro = request.GET.get('nome', '').strip()
     tipologia_filtro = request.GET.get('tipologia', '').strip()
     criticita_min_filtro = request.GET.get('criticita_min', '').strip()
@@ -271,13 +244,11 @@ def lista_patologie(request):
     if nome_filtro:
         patologie_base = patologie_base.filter(nome__icontains=nome_filtro)
     
-    # Applica i filtri di criticità come intervallo
     if criticita_min_filtro.isdigit():
         patologie_base = patologie_base.filter(criticita__gte=int(criticita_min_filtro))
     if criticita_max_filtro.isdigit():
         patologie_base = patologie_base.filter(criticita__lte=int(criticita_max_filtro))
 
-    # Applica i filtri di tipologia
     if tipologia_filtro:
         if tipologia_filtro == "Cronica":
             patologie_base = patologie_base.filter(patologiacronica__isnull=False).distinct()
@@ -287,9 +258,7 @@ def lista_patologie(request):
             patologie_base = patologie_base.exclude(patologiacronica__isnull=False).exclude(patologiamortale__isnull=False).distinct()
         elif tipologia_filtro == "Cronica e Mortale":
             patologie_base = patologie_base.filter(patologiacronica__isnull=False, patologiamortale__isnull=False).distinct()
-    # --- FINE LOGICA FILTRI AGGIORNATA ---
 
-    # Pre-processa le patologie per aggiungere il campo 'tipologia' e 'numero_ricoveri'
     patologie_processate = []
     for p in patologie_base:
         tipi = []
@@ -309,14 +278,12 @@ def lista_patologie(request):
             'numero_ricoveri': p.numero_ricoveri_patologia,
         })
 
-    # Calcolo delle statistiche per i riquadri
     statistiche_patologie = {
         'totali': models.Patologia.objects.count(),
         'croniche': models.PatologiaCronica.objects.count(),
         'mortali': models.PatologiaMortale.objects.count(),
     }
 
-    # LOGICA DI ORDINAMENTO (ordina la lista in memoria)
     current_sort = request.GET.get('sort', 'nome')
     current_order = request.GET.get('order', 'asc')
 
@@ -329,7 +296,6 @@ def lista_patologie(request):
 
     patologie_processate.sort(key=lambda x: x[sort_key], reverse=(current_order == 'desc'))
 
-    # Gestione righe per pagina
     per_page = request.GET.get('per_page', 20)
     try:
         per_page = int(per_page)
@@ -361,7 +327,6 @@ def genera_nuovo_codice_ricovero():
 
 
 def lista_ricoveri(request):
-    # Logica per l'aggiunta di un nuovo ricovero via AJAX
     if request.method == 'POST':
         form = RicoveroForm(request.POST)
         if form.is_valid():
@@ -382,13 +347,9 @@ def lista_ricoveri(request):
 
             return JsonResponse({"success": True})
         else:
-            # Struttura errori migliorata
             errors = {field: [e for e in errs] for field, errs in form.errors.items()}
             return JsonResponse({"success": False, "errors": errors}, status=400)
 
-    # --- Inizio Logica GET per visualizzare la lista ---
-    
-    # 1. Calcolo statistiche iniziali
     ricoveri_base = models.Ricovero.objects.all()
     statistiche = {
         'totali': ricoveri_base.count(),
@@ -400,7 +361,6 @@ def lista_ricoveri(request):
     
     ricoveri_filtrati = ricoveri_base.select_related('CSSN', 'codOspedale').prefetch_related('patologie')
 
-    # 2. Annotazione per calcolare il totale dei ricoveri per ogni paziente
     conteggio_ricoveri_subquery = models.Ricovero.objects.filter(
         CSSN_id=OuterRef('CSSN_id')
     ).values('CSSN_id').annotate(c=Count('pk')).values('c')
@@ -409,7 +369,6 @@ def lista_ricoveri(request):
         totale_ricoveri_paziente=Subquery(conteggio_ricoveri_subquery)
     )
 
-    # 3. Lettura dei parametri dei filtri dalla richiesta GET
     cssn_from_url = request.GET.get('cssn', '').strip()
     ospedale_from_url = request.GET.get('ospedale_cod', '').strip()
     cssn_from_form = request.GET.get('cssn_form', '').strip()
@@ -421,10 +380,8 @@ def lista_ricoveri(request):
     data_a_from_form = request.GET.get('data_a', '').strip()
     motivo_from_form = request.GET.get('motivo', '').strip()
     
-    # Logica corretta per leggere valori multipli dal filtro delle patologie
     final_nome_patologia_filters = request.GET.getlist('nome_patologia')
 
-    # Unione dei filtri (da URL e da form)
     final_cssn_filter = cssn_from_url if cssn_from_url else cssn_from_form
     final_nome_filter = nome_from_form
     final_cognome_filter = cognome_from_form
@@ -434,7 +391,6 @@ def lista_ricoveri(request):
     final_data_a_filter = data_a_from_form
     final_motivo_filter = motivo_from_form
     
-    # 4. Applicazione dei filtri al queryset
     if final_cssn_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__CSSN__icontains=final_cssn_filter)
     if final_nome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__nome__icontains=final_nome_filter)
     if final_cognome_filter: ricoveri_filtrati = ricoveri_filtrati.filter(CSSN__cognome__icontains=final_cognome_filter)
@@ -446,7 +402,6 @@ def lista_ricoveri(request):
     if final_nome_patologia_filters:
         ricoveri_filtrati = ricoveri_filtrati.filter(patologie__nome__in=final_nome_patologia_filters).distinct()
     
-    # 5. Ordinamento
     current_sort = request.GET.get('sort', 'codRicovero')
     current_order = request.GET.get('order', 'desc')
     sort_mapping = {
@@ -460,7 +415,6 @@ def lista_ricoveri(request):
     else:
         ricoveri_ordinati = ricoveri_filtrati.order_by(sort_field)
     
-    # 6. Paginazione
     per_page = request.GET.get('per_page', 15)
     try:
         per_page = int(per_page)
@@ -474,7 +428,6 @@ def lista_ricoveri(request):
         max_criticita = ricovero.patologie.aggregate(max_c=Max('criticita'))['max_c'] or 0
         ricoveri_con_dati.append({'ricovero': ricovero, 'max_criticita': max_criticita})
     
-    # 7. Preparazione del contesto per il template
     context = {
         'form': RicoveroForm(),
         'form_nuovo_paziente': NuovoPazienteForm(),
@@ -526,8 +479,6 @@ def trasferisci_ricovero(request, pk):
             
             return JsonResponse({'success': True})
         else:
-            # --- QUESTA È LA CORREZIONE ---
-            # Ora invia lo stato 400 e il dizionario degli errori corretto.
             return JsonResponse({"success": False, "errors": form.errors}, status=400)
             
     return JsonResponse({'error': 'Metodo non valido'}, status=405)
@@ -538,15 +489,11 @@ def modifica_ricovero(request, pk):
     
     data = request.POST.copy()
     
-    # Assicurati che i valori non modificabili vengano passati al form
-    # altrimenti il ModelForm penserà che manchino e genererà errori di validazione.
     if 'CSSN' not in data:
         data['CSSN'] = ricovero.CSSN.CSSN
     if 'codOspedale' not in data:
         data['codOspedale'] = ricovero.codOspedale.codice
     
-    # Manteniamo questa riga per la validazione iniziale del form.
-    # Il valore effettivo dello stato verrà ricalcolato dopo la validazione.
     data['stato'] = ricovero.stato 
 
     form = RicoveroForm(data, instance=ricovero)
@@ -554,43 +501,32 @@ def modifica_ricovero(request, pk):
     if form.is_valid():
         ricovero_salvato = form.save(commit=False)
         
-        # --- LOGICA PER AGGIORNARE LO STATO IN BASE ALLA DURATA ---
-        # Applica questa logica solo se lo stato attuale è Attivo (0) o Dimesso (2)
         if ricovero_salvato.stato in [0, 2]:
             today = timezone.now().date()
             
-            # Calcola la data di fine prevista del ricovero con la nuova durata
-            # Assicurati che ricovero_salvato.durata non sia None o 0 per evitare errori
             if ricovero_salvato.durata is not None and ricovero_salvato.durata > 0:
                 data_fine_prevista = ricovero_salvato.data_ingresso + timedelta(days=ricovero_salvato.durata)
             else:
-                # Se la durata non è valida, consideriamo il ricovero ancora attivo per default
-                # o puoi decidere una logica diversa (es. errore, o stato indefinito)
-                data_fine_prevista = today + timedelta(days=1) # Forza a essere nel futuro se durata non valida
+                data_fine_prevista = today + timedelta(days=1)
             
             if data_fine_prevista <= today:
-                ricovero_salvato.stato = 2  # Dimesso
+                ricovero_salvato.stato = 2
             else:
-                ricovero_salvato.stato = 0  # Attivo
-        # --- FINE NUOVA LOGICA ---
+                ricovero_salvato.stato = 0
 
         ricovero_salvato.save()
         
-        # GESTIONE MANUALE DELLE PATOLOGIE (TABELLA THROUGH) PER LA MODIFICA
-        patologie_selezionate_cods = form.cleaned_data.get('patologie') # Sono gli oggetti Patologia
+        patologie_selezionate_cods = form.cleaned_data.get('patologie')
         
-        # Elimina tutte le relazioni esistenti per questo ricovero
         models.PatologiaRicovero.objects.filter(codRicovero=ricovero_salvato).delete()
         
-        # Poi, crea nuove istanze di PatologiaRicovero per ogni patologia selezionata
         if patologie_selezionate_cods:
             for patologia_obj in patologie_selezionate_cods:
                 models.PatologiaRicovero.objects.create(
                     codRicovero=ricovero_salvato,
-                    codOspedale=ricovero_salvato.codOspedale, # Usa l'Ospedale del ricovero
-                    codPatologia=patologia_obj # L'oggetto Patologia
+                    codOspedale=ricovero_salvato.codOspedale,
+                    codPatologia=patologia_obj
                 )
-        # FINE GESTIONE MANUALE DELLE PATOLOGIE
 
         return JsonResponse({"success": True})
     else:
@@ -604,17 +540,13 @@ def modifica_ricovero(request, pk):
 def elimina_ricovero(request, pk):
     ricovero = get_object_or_404(models.Ricovero, pk=pk)
     try:
-        # Quando elimini un ricovero, devi eliminare prima le relazioni nella tabella "through"
-        # dato che gestisci PatologiaRicovero manualmente.
         models.PatologiaRicovero.objects.filter(codRicovero=ricovero).delete()
         ricovero.delete()
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"success": False, "errors": [str(e)]}, status=400)
 
-# FUNZIONI PER IL DECESSO (DA IMPLEMENTARE CORRETTAMENTE)
-
-@require_http_methods(["POST"]) # Questa vista accetta POST per la verifica password
+@require_http_methods(["POST"])
 def verifica_password(request):
     form = PasswordForm(request.POST)
     if form.is_valid():
@@ -638,7 +570,6 @@ def dichiara_decesso(request, pk):
     if cittadino.deceduto == 1:
         return JsonResponse({"success": False, "errors": ["Questo paziente è già stato dichiarato deceduto."]}, status=400)
 
-    # Modifica: Passa l'istanza del ricovero al form
     form = DecessoForm(request.POST, instance=cittadino, ricovero=ricovero)
     
     if form.is_valid():
@@ -652,19 +583,17 @@ def dichiara_decesso(request, pk):
 
 @require_http_methods(["POST"])
 @transaction.atomic
-def modifica_causa_decesso(request, pk): # pk qui è il codRicovero, ma ci serve il CSSN del paziente
+def modifica_causa_decesso(request, pk):
     ricovero = get_object_or_404(models.Ricovero, codRicovero=pk)
     cittadino = ricovero.CSSN
 
-    # Assicurati che il paziente sia effettivamente deceduto per poter modificare la causa
     if cittadino.deceduto != 1:
         return JsonResponse({"success": False, "errors": ["Il paziente non è dichiarato deceduto."]}, status=400)
 
-    form = DecessoForm(request.POST, instance=cittadino) # Il form agisce sull'istanza del Cittadino
+    form = DecessoForm(request.POST, instance=cittadino)
     
     if form.is_valid():
-        # Salva solo la causa del decesso e la data/ora se sono state modificate
-        form.save() # Questo salverà i campi dataoradecesso e causadecesso sul cittadino
+        form.save()
         return JsonResponse({"success": True})
     else:
         errors = {field: form.errors[field] for field in form.errors if field != '__all__'}
@@ -723,14 +652,12 @@ def aggiungi_nuovo_paziente(request):
     if form.is_valid():
         nuovo_paziente = form.save(commit=False)
         
-        # Se la provenienza è estera, genera un nuovo CSSN
         if form.cleaned_data['provenienza'] == 'Estero':
             nuovo_paziente.CSSN = genera_nuovo_cssn_estero()
 
-        nuovo_paziente.deceduto = 0 # Imposta di default
+        nuovo_paziente.deceduto = 0
         nuovo_paziente.save()
         
-        # Restituisci i dati del nuovo paziente per l'aggiornamento del form ricovero
         return JsonResponse({
             "success": True,
             "paziente": {
@@ -739,6 +666,4 @@ def aggiungi_nuovo_paziente(request):
             }
         })
     else:
-        # --- QUESTA È LA CORREZIONE ---
-        # Aggiungo status=400 per inviare il segnale di errore corretto al JavaScript
         return JsonResponse({"success": False, "errors": form.errors}, status=400)

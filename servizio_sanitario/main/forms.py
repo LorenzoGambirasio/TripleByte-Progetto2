@@ -18,11 +18,10 @@ class RicoveroForm(forms.ModelForm):
         }
     )
 
-    # --- CAMPO OSPEDALE MODIFICATO ---
     codOspedale = forms.ModelChoiceField(
         queryset=models.Ospedale.objects.all().order_by('nome'),
         label="Ospedale",
-        empty_label=None,  # Rimuove l'opzione vuota "-------"
+        empty_label=None, 
         widget=forms.Select(attrs={'class': 'form-select'}),
         error_messages={
             'required': 'È obbligatorio selezionare un ospedale.',
@@ -120,11 +119,10 @@ class RicoveroForm(forms.ModelForm):
         return data_inserita
 
 class TrasferimentoForm(forms.ModelForm):
-    # --- CAMPO OSPEDALE MODIFICATO ---
     codOspedale = forms.ModelChoiceField(
         queryset=models.Ospedale.objects.all().order_by('nome'),
         label="Nuovo Ospedale di Destinazione",
-        empty_label=None,  # Rimuove l'opzione vuota "-------"
+        empty_label=None, 
         widget=forms.Select(attrs={'class': 'form-select'}),
         error_messages={
             'required': 'È obbligatorio selezionare un ospedale di destinazione.'
@@ -170,7 +168,6 @@ class DecessoForm(forms.ModelForm):
         fields = ['dataoradecesso', 'causadecesso']
 
     def __init__(self, *args, **kwargs):
-        # Accetta il ricovero passato dalla vista
         self.ricovero = kwargs.pop('ricovero', None)
         super().__init__(*args, **kwargs)
 
@@ -182,7 +179,6 @@ class DecessoForm(forms.ModelForm):
         if data_ora_input > now_aware:
             raise ValidationError("La data e ora del decesso non può essere nel futuro.")
         
-        # NUOVO: Controllo sulla data del ricovero
         if self.ricovero and data_ora_input.date() < self.ricovero.data_ingresso:
             raise ValidationError(f"La data del decesso non può essere precedente alla data del ricovero ({self.ricovero.data_ingresso.strftime('%d/%m/%Y')}).")
             

@@ -77,7 +77,7 @@
               {{ cittadino.via }}
             </td>
             
-            <!-- INIZIO MODIFICA: Logica per mostrare lo stato -->
+            
             <td style="width: {{ colonne_larghezze|get_item:'stato' }}">
                 {% if cittadino.deceduto == 1 %}
                     <span class="text-danger">Deceduto</span>
@@ -87,11 +87,8 @@
                     <span class="text-muted">Domicilio</span>
                 {% endif %}
             </td>
-            <!-- FINE MODIFICA -->
-
-            <!-- INIZIO MODIFICA: Nome del campo corretto -->
+            
             <td class="text-end" style="width: {{ colonne_larghezze|get_item:'ricoveri' }};">{{ cittadino.numero_ricoveri_cittadino }}</td>
-            <!-- FINE MODIFICA -->
 
           </tr>
           {% empty %}

@@ -2,7 +2,6 @@
   <h5 class="text-center border-bottom pb-2 mb-3">Filtri</h5>
 
   <form method="get" id="filtriCittadiniForm">
-    <!-- Campi esistenti (nome, cognome, etc.) -->
     <div class="mb-3">
       <label for="nome-cittadino" class="form-label">Nome:</label>
       <div class="input-group">
@@ -60,7 +59,6 @@
       </div>
     </div>
 
-    <!-- NUOVO BLOCCO PER IL FILTRO SUI RICOVERI -->
     <div class="mb-4">
         <label class="form-label">Numero Ricoveri:</label>
         <div class="input-group">
@@ -69,7 +67,6 @@
             <input type="number" class="form-control" name="ricoveri_max" placeholder="A" value="{{ request.GET.ricoveri_max }}" min="0" step="1">
         </div>
     </div>
-    <!-- FINE NUOVO BLOCCO -->
 
     <div class="d-grid gap-2">
       <button type="submit" class="btn btn-primary custom-apply-filters-btn">Applica Filtri</button>

@@ -2,13 +2,11 @@ const statistiche = JSON.parse(document.getElementById('statistiche-data').textC
 const topOspedali = JSON.parse(document.getElementById('top-ospedali-data').textContent);
 const topPatologie = JSON.parse(document.getElementById('top-patologie-data').textContent);
 
-// Grafico Ricoveri
+
 new Chart(document.getElementById('ricoveriStatoChart'), { type: 'doughnut', data: { labels: statistiche.labels, datasets: [{ label: 'Stato Ricoveri', data: statistiche.data, backgroundColor: ['#198754', '#ffc107', '#dc3545', '#212529'], borderColor: '#fff', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { padding: 20 } } } } });
 
-// Grafico Ospedali
 new Chart(document.getElementById('ospedaliTopChart'), { type: 'bar', data: { labels: topOspedali.labels, datasets: [{ label: 'Attivi', data: topOspedali.attivi, backgroundColor: '#198754' }, { label: 'Dimessi', data: topOspedali.dimessi, backgroundColor: '#dc3545' }, { label: 'Trasferiti', data: topOspedali.trasferiti, backgroundColor: '#ffc107' }, { label: 'Deceduti', data: topOspedali.deceduti, backgroundColor: '#212529' },] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, beginAtZero: true }, y: { stacked: true } }, plugins: { legend: { display: true, position: 'top' } } } });
 
-// NUOVO GRAFICO: Patologie più frequenti
 if (topPatologie.labels.length > 0) {
     new Chart(document.getElementById('topPatologieChart'), {
         type: 'bar',
@@ -46,7 +44,6 @@ if (topPatologie.labels.length > 0) {
         }
     });
 } else {
-    // Se non ci sono dati, mostra un messaggio di fallback
     const canvas = document.getElementById('topPatologieChart');
     const ctx = canvas.getContext('2d');
     ctx.font = '14px sans-serif';

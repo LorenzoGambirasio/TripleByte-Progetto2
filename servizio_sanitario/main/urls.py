@@ -11,7 +11,6 @@ urlpatterns = [
     path('elimina_ricovero/<str:pk>/', views.elimina_ricovero, name='elimina_ricovero'), 
     path('trasferisci_ricovero/<str:pk>/', views.trasferisci_ricovero, name='trasferisci_ricovero'),
     
-    # NUOVI URL PER IL DECESSO
     path('dichiara_decesso/<str:pk>/', views.dichiara_decesso, name='dichiara_decesso'),
     path('verifica_password/', views.verifica_password, name='verifica_password'),
     path('modifica_causa_decesso/<str:pk>/', views.modifica_causa_decesso, name='modifica_causa_decesso'),

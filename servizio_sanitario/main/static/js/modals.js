@@ -1,11 +1,6 @@
-// Variabili per memorizzare l'ultimo valore valido selezionato dall'API.
 let ultimoLuogoNascitaSelezionato = null;
 let ultimoIndirizzoSelezionato = null;
 
-/**
- * Pulisce i messaggi di errore precedenti da un form.
- * @param {jQuery} formElement - L'elemento del form (oggetto jQuery).
- */
 function pulisciErroriForm(formElement) {
     if (formElement && formElement.length) {
         formElement.find('.is-invalid').removeClass('is-invalid');
@@ -14,14 +9,8 @@ function pulisciErroriForm(formElement) {
     }
 }
 
-/**
- * Mostra gli errori di validazione direttamente nel form.
- * @param {jQuery} formElement - L'elemento del form (oggetto jQuery).
- * @param {Object} errors - L'oggetto degli errori, dove la chiave è il nome del campo.
- */
 function gestisciErroriForm(formElement, errors) {
     pulisciErroriForm(formElement);
-
     if (errors['__all__']) {
         Swal.fire({
             icon: 'error',
@@ -29,7 +18,6 @@ function gestisciErroriForm(formElement, errors) {
             html: errors['__all__'].join('<br>')
         });
     }
-
     for (const fieldName in errors) {
         if (fieldName === '__all__') continue;
         const errorMessages = errors[fieldName];
@@ -48,16 +36,10 @@ function gestisciErroriForm(formElement, errors) {
     }
 }
 
-/**
- * Funzione generica per gestire la risposta AJAX in caso di errore.
- * @param {jQuery} form - Il form che ha generato l'errore.
- * @param {Object} xhr - L'oggetto XMLHttpRequest di jQuery.
- */
 function handleAjaxError(form, xhr) {
     if (xhr.status === 400 && xhr.responseJSON && xhr.responseJSON.errors) {
         const errors = xhr.responseJSON.errors;
         gestisciErroriForm(form, errors);
-
         if (!errors['__all__'] && Object.keys(errors).length > 0) {
             Swal.fire({
                 icon: 'warning',
@@ -71,7 +53,6 @@ function handleAjaxError(form, xhr) {
         Swal.fire('Errore di Rete', 'Impossibile comunicare con il server. Controlla la tua connessione.', 'error');
     }
 }
-
 
 $(document).ready(function () {
     const modals = {
@@ -96,7 +77,6 @@ $(document).ready(function () {
         pulisciErroriForm($(this).find('form'));
     });
 
-    // --- GESTORE SUBMIT PER IL FORM NUOVO PAZIENTE ---
     $('#formNuovoPaziente').on('submit', function(e) {
         e.preventDefault();
         const form = $(this);
@@ -130,7 +110,6 @@ $(document).ready(function () {
         });
     });
     
-    // --- GESTORE SUBMIT PER TUTTI GLI ALTRI FORM ---
     function handleGenericFormSubmit(e) {
         e.preventDefault();
         const form = $(this);
@@ -160,11 +139,9 @@ $(document).ready(function () {
                             modals.password.hide();
                             const action = $('#passwordAction').val();
                             if (action === 'dichiara') {
-                                // --- QUESTA È LA MODIFICA CHIAVE ---
                                 const dettagliRicovero = activeRow.data('dettagli-json');
                                 const dataIngresso = dettagliRicovero['Data Ingresso'];
                                 
-                                // Popola l'avviso nel modale
                                 $('#infoDataRicovero').html(
                                     `<i class="bi bi-info-circle-fill me-1"></i> Data ricovero: <strong>${dataIngresso}</strong>. La data del decesso non può essere precedente.`
                                 );
@@ -172,7 +149,6 @@ $(document).ready(function () {
                                 $('#dichiaraDecessoNomePaziente').text(activeRow.data('paziente-nome'));
                                 $('#dichiaraDecessoRicoveroPk').val(activeRow.data('pk'));
                                 
-                                // Imposta la data e l'ora correnti
                                 const now = new Date();
                                 const year = now.getFullYear();
                                 const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -247,8 +223,6 @@ $(document).ready(function () {
 
     const formIDs = '#formAggiungiRicovero, #formTrasferisci, #formEliminaRicovero, #formModificaRicovero, #formDichiaraDecesso, #formModificaCausaDecesso, #formVerificaPassword';
     $(document).on('submit', formIDs, handleGenericFormSubmit);
-    
-    // --- LOGICA DI APERTURA E POPOLAMENTO MODALI ---
     
     $('#modaleAggiungi').on('shown.bs.modal', function () {
         const modal = $(this);
@@ -352,8 +326,6 @@ $(document).ready(function () {
     });
 });
 
-
-// --- FUNZIONI DI AUTOCOMPLETAMENTO ---
 function initAutocompleteManuale() {
     const inputIndirizzo = document.getElementById('id_indirizzo');
     const suggerimentiIndirizzo = document.getElementById('suggerimenti_indirizzo');

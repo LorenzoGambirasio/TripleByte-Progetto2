@@ -105,7 +105,6 @@ class PatologiaMortale(models.Model):
 
 
 class PatologiaRicovero(models.Model):
-    # Ripristino una chiave primaria fittizia per accontentare Django, ma il salvataggio sarà manuale
     codRicovero = models.ForeignKey(Ricovero, on_delete=models.CASCADE, db_column='codricovero', primary_key=True)
     codOspedale = models.ForeignKey(Ospedale, on_delete=models.CASCADE, db_column='codospedale')
     codPatologia = models.ForeignKey(Patologia, on_delete=models.CASCADE, db_column='codpatologia_id')
