@@ -1,3 +1,7 @@
+// NUOVO: flag per la validazione dell'autocompletamento
+let indirizzoSelezionato = false;
+let cittaSelezionata = false;
+
 $(document).ready(function () {
     // Definizione di tutti i modali
     const modals = {
@@ -79,6 +83,33 @@ $(document).ready(function () {
     // Gestisce l'invio del form del nuovo paziente
     $('#formNuovoPaziente').on('submit', function (e) {
         e.preventDefault();
+        
+        // --- NUOVA LOGICA DI VALIDAZIONE AUTOCOMPLETAMENTO ---
+        const indirizzoInput = document.getElementById('id_indirizzo');
+        const cittaInput = document.getElementById('id_citta');
+        let formValido = true;
+        let messaggioErrore = '';
+
+        if (cittaInput.value.trim() !== '' && !cittaSelezionata) {
+            messaggioErrore += 'Per "Luogo di Nascita" è obbligatorio selezionare una voce dall\'elenco dei suggerimenti.<br>';
+            formValido = false;
+        }
+
+        if (indirizzoInput.value.trim() !== '' && !indirizzoSelezionato) {
+            messaggioErrore += 'Per "Indirizzo" è obbligatorio selezionare una voce dall\'elenco dei suggerimenti.';
+            formValido = false;
+        }
+
+        if (!formValido) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Selezione Obbligatoria',
+                html: messaggioErrore,
+            });
+            return; // Interrompe l'invio del form
+        }
+        // --- FINE NUOVA LOGICA ---
+
         const form = $(this);
         $.ajax({
             type: 'POST',
@@ -109,7 +140,7 @@ $(document).ready(function () {
     });
 
     // --- LOGICA PER GLI ALTRI MODALI (Dettagli, Modifica, etc.) ---
-
+    // ... (il resto del file rimane invariato)
     $(document).on('click', '.clickable-row', function () {
         activeRow = $(this);
         const dettagli = activeRow.data('dettagli-json');
@@ -391,17 +422,19 @@ function initAutocompleteManuale() {
 
   if (inputIndirizzo) {
     inputIndirizzo.addEventListener('input', function () {
+      indirizzoSelezionato = false; // NUOVO: Resetta il flag quando l'utente scrive
       cercaSuggerimenti(this.value, 'address', suggerimentiIndirizzo, inputIndirizzo);
     });
   }
 
   if (inputCitta) {
     inputCitta.addEventListener('input', function () {
+      cittaSelezionata = false; // NUOVO: Resetta il flag quando l'utente scrive
       cercaSuggerimenti(this.value, '(cities)', suggerimentiCitta, inputCitta);
     });
   }
 
-  // ✅ Chiudi i suggerimenti se clicchi fuori
+  // Chiudi i suggerimenti se clicchi fuori
   document.addEventListener('click', function (e) {
     if (!e.target.closest('#id_indirizzo') && !e.target.closest('#suggerimenti_indirizzo')) {
       suggerimentiIndirizzo.innerHTML = '';
@@ -437,6 +470,12 @@ function cercaSuggerimenti(query, tipo, contenitore, input) {
       li.addEventListener('click', function () {
         input.value = p.description;
         contenitore.innerHTML = '';
+        // NUOVO: Imposta il flag corretto a true dopo la selezione
+        if (input.id === 'id_indirizzo') {
+            indirizzoSelezionato = true;
+        } else if (input.id === 'id_citta') {
+            cittaSelezionata = true;
+        }
       });
       contenitore.appendChild(li);
     });
@@ -444,5 +483,8 @@ function cercaSuggerimenti(query, tipo, contenitore, input) {
 }
 
 $('#modaleNuovoPaziente').on('shown.bs.modal', function () {
+  // NUOVO: Resetta i flag ogni volta che il modale viene mostrato
+  indirizzoSelezionato = false;
+  cittaSelezionata = false;
   initAutocompleteManuale();
 });
