@@ -38,47 +38,33 @@ table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  /* Mantiene le larghezze definite o calcolate */
   font-size: 0.95rem;
 }
 
 th,
 td {
   padding: 0.75rem;
-  /* Riduci leggermente il padding per dare più spazio al contenuto */
   border: 1px solid #ddd;
   text-align: left;
   vertical-align: top;
-  /* Allinea il testo in alto in caso di wrap */
   word-wrap: break-word;
-  /* Forza il testo a andare a capo all'interno della cella */
   overflow: hidden;
-  /* Nasconde il contenuto che eccede la larghezza */
   text-overflow: ellipsis;
-  /* Aggiunge "..." se il testo viene tagliato (non sempre visibile con word-wrap) */
 }
 
-/* Regola specifica per la colonna "Nome e Cognome" */
 td.nome-cognome {
   white-space: normal;
-  /* Permette al testo di andare a capo */
 }
 
-/* Regola specifica per la colonna "Indirizzo" */
 td.indirizzo-col {
   white-space: normal;
-  /* Permette al testo di andare a capo */
 }
 
-/* Regola per evitare sovrapposizioni nelle intestazioni */
 th a {
   white-space: normal;
-  /* Permette al testo delle intestazioni di andare a capo */
   display: block;
-  /* Assicura che l'ancora occupi lo spazio per il word-wrap */
 }
 
-/* Regole per il bottone Applica Filtri */
 .custom-apply-filters-btn {
   background-color: #800020 !important;
   border-color: #800020 !important;
@@ -95,7 +81,6 @@ th a {
   border-color: #4C0014 !important;
 }
 
-/* Stili per i riquadri delle statistiche */
 .stat-card {
   background: #fff;
   border-radius: 8px;
@@ -123,9 +108,7 @@ th a {
   text-transform: uppercase;
 }
 
-/* Stili per le icone di stato */
 td.stato-col {
-  /* Questa classe va applicata alla <td> nella tabella ricoveri */
   text-align: center;
 }
 
@@ -134,82 +117,59 @@ td.stato-col {
   align-items: center;
   justify-content: center;
   width: 32px;
-  /* Leggermente più grande */
   height: 32px;
-  /* Leggermente più grande */
   border-radius: 50%;
   font-size: 1.3rem;
-  /* Icona più grande */
   line-height: 1;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  /* Ombra più evidente */
   padding: 0;
   border: none !important;
-  /* Rimuovi il bordo per un look più solido */
 }
 
-/* Colori di sfondo più solidi e visibili */
 .status-icon-badge.text-success-emphasis {
   background-color: var(--bs-success) !important;
-  /* Verde Bootstrap */
   color: #fff !important;
-  /* Testo bianco */
 }
 
 .status-icon-badge.text-warning-emphasis {
   background-color: var(--bs-warning) !important;
-  /* Giallo Bootstrap */
   color: #212529 !important;
-  /* Testo scuro per contrasto */
 }
 
 .status-icon-badge.text-danger-emphasis {
   background-color: var(--bs-danger) !important;
-  /* Rosso Bootstrap */
   color: #fff !important;
 }
 
 .status-icon-badge.text-dark-emphasis {
   background-color: var(--bs-dark) !important;
-  /* Nero Bootstrap */
   color: #fff !important;
 }
 
-
-/* Stili per il menu laterale */
 .list-group-item.list-group-item-action {
   color: #495057;
-  /* Testo grigio scuro di default */
   font-weight: 500;
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .list-group-item.list-group-item-action:hover {
   background-color: #f0f0f0;
-  /* Leggero grigio all'hover */
   color: #343a40;
-  /* Testo leggermente più scuro all'hover */
   transform: translateY(-1px);
 }
 
-/* STATO ATTIVO: BORDEAUX */
 .list-group-item.list-group-item-action.active {
   background-color: #800020 !important;
-  /* Bordeaux pieno */
   color: #fff !important;
-  /* Testo bianco */
   border-color: #800020 !important;
-  /* Bordo bordeaux */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1) !important;
   transform: translateY(-1px) !important;
 }
 
-/* Icone nel menu laterale */
 .list-group-item .bi {
   font-size: 1.2rem;
   vertical-align: middle;
 }
-
 
 .btn-icon-nav {
   border: none;
@@ -232,19 +192,13 @@ td.stato-col {
   transform: scale(1.1);
 }
 
-/* Titoli delle tabelle bordeaux */
 h4.text-danger.fw-bold {
-  /* Sovrascrive text-danger per i titoli delle tabelle */
   color: #800020 !important;
-  /* Bordeaux */
 }
 
-/* Titoli dei modali che erano text-danger */
 .modal-title.text-danger {
   color: #800020 !important;
-  /* Bordeaux */
 }
-
 
 table td,
 table th {
@@ -270,7 +224,6 @@ td.stato span {
 .bs-tooltip-top .tooltip-arrow::before {
   border-top-color: #343a40;
 }
-
 
 .btn-outline-primary.active,
 .btn-outline-primary:hover,
@@ -311,92 +264,60 @@ td.stato span {
   visibility: hidden;
 }
 
-/* Migliorie per la paginazione */
 .pagination {
   border-radius: .75rem;
-  /* Bordi più arrotondati */
   overflow: visible;
-  /* IMPT: Permette all'elemento sollevato di non essere tagliato */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  /* Ombra più pronunciata e moderna */
   background-color: #fff;
-  /* Sfondo bianco per il blocco paginazione */
   padding: 5px;
-  /* Aggiungi un po' di padding per evitare il taglio del sollevamento */
 }
 
 .pagination .page-item .page-link {
   border: none;
-  /* Rimuovi i bordi tra i link per un look più pulito */
   color: #800020;
-  /* Bordò */
   background: white;
   transition: all 0.3s ease;
-  /* Transizione più morbida */
   min-width: 48px;
-  /* Larghezza minima per i bottoni, rendendoli più grandi */
   height: 48px;
-  /* Altezza per rendere i bottoni quadrati/circolari */
   display: flex;
-  /* Flexbox per centrare il contenuto */
   align-items: center;
-  /* Centra verticalmente */
   justify-content: center;
-  /* Centra orizzontalmente */
   font-size: 1.1rem;
-  /* Testo più grande */
   font-weight: 500;
   margin: 0 2px;
-  /* Un piccolo margine per separare i bottoni */
   border-radius: .5rem;
-  /* Bordi arrotondati per i singoli bottoni */
 }
 
 .pagination .page-item:first-child .page-link,
 .pagination .page-item:last-child .page-link {
   border-radius: .5rem;
-  /* Applica lo stesso raggio a tutti per coerenza */
 }
-
 
 .pagination .page-item.active .page-link {
   background: #800020 !important;
-  /* Bordò pieno */
   color: #fff !important;
-  /* Testo bianco */
   border-color: #800020 !important;
-  /* Bordo colorato per la pagina attiva */
   box-shadow: 0 0 0 0.25rem rgba(128, 0, 32, 0.4);
-  /* Ombra per la pagina attiva */
   transform: translateY(-2px);
-  /* Effetto leggero di sollevamento */
 }
 
 .pagination .page-item.disabled .page-link {
   color: #bbb;
-  /* Grigio più chiaro per disabilitato */
   background: #f8f8f8;
-  /* Sfondo leggermente più chiaro */
   cursor: not-allowed;
   box-shadow: none;
 }
 
 .pagination .page-item .page-link:hover {
   background: #f5e6ea;
-  /* Bordò chiaro all'hover */
   color: #4b0014;
-  /* Bordò più scuro per il testo */
   border-color: #4b0014;
-  /* Bordo più scuro all'hover */
   transform: translateY(-1px);
-  /* Leggero effetto hover */
 }
 
 .pagination .page-link i {
   font-size: 1.2rem;
-  /* Icone leggermente più grandi */
   color: inherit;
-  /* Eredita il colore dal link (quindi sarà bianco per active, bordò per gli altri) */
 }
 
 .pagination .page-item.active .page-link i {
@@ -407,7 +328,6 @@ td.stato span {
   color: #bbb;
 }
 
-/* Stile per il selettore righe per pagina */
 .form-select.w-auto {
   min-width: 90px;
   height: 38px;
@@ -417,207 +337,130 @@ td.stato span {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-/* Stili per SweetAlert2 - Pulsante OK bordeaux */
 body .swal2-container .swal2-confirm {
   background-color: #800020 !important;
-  /* Colore bordeaux */
   border-color: #800020 !important;
-  /* Bordo bordeaux */
   color: #FFFFFF !important;
-  /* Testo bianco */
 }
 
 body .swal2-container .swal2-confirm:hover {
   background-color: #66001A !important;
-  /* Colore più scuro all'hover */
   border-color: #66001A !important;
 }
 
 body .swal2-container .swal2-confirm:focus {
   box-shadow: 0 0 0 0.25rem rgba(128, 0, 32, 0.5) !important;
-  /* Ombra di focus bordeaux */
 }
 
-/* Stile per il pulsante di pulizia dei filtri (la "x") */
 .clear-filter-btn {
   width: 38px;
-  /* Larghezza fissa per renderlo un piccolo quadrato */
   display: flex;
   align-items: center;
   justify-content: center;
   color: #6c757d;
-  /* Colore grigio per l'icona */
   border-left: none;
-  /* Rimuove il bordo a sinistra */
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
 
 .clear-filter-btn:hover {
   color: #dc3545;
-  /* Colore rosso all'hover */
   background-color: #f8d7da;
-  /* Sfondo rosso chiaro all'hover */
   border-color: #dc3545;
 }
 
-/* NUOVI STILI PER SELECT2 (Applicati a tutte le istanze) */
-
-/* Contenitore principale di Select2 */
 .select2-container--bootstrap-5 .select2-selection {
   min-height: calc(2.25rem + 2px);
-  /* Altezza simile a form-control default (Bootstrap 5) */
   border: 1px solid #ced4da;
-  /* Bordo Bootstrap standard */
   border-radius: .25rem;
-  /* Bordi più arrotondati come form-control */
   box-shadow: none;
-  /* Rimuovi ombre di default */
   transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
 
-/* Quando il Select2 è in focus - BORDO BORDEAUX */
 .select2-container--bootstrap-5.select2-container--focus .select2-selection,
 .select2-container--bootstrap-5 .select2-selection:focus {
   border-color: #800020 !important;
-  /* Colore focus bordeaux */
   box-shadow: 0 0 0 .25rem rgba(128, 0, 32, .25) !important;
-  /* Ombra focus bordeaux */
 }
 
-/* Selezione multipla - Tag/elementi selezionati */
 .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
   background-color: #f0f0f0;
-  /* Sfondo più chiaro per i tag */
   border: 1px solid #dee2e6;
-  /* Bordo sottile */
   color: #343a40;
-  /* Testo più scuro */
   border-radius: .15rem;
-  /* Meno arrotondati */
   padding: .2rem .5rem;
-  /* Padding più compatto */
   font-size: .85rem;
   margin-top: .2rem;
-  /* Margine leggermente ridotto */
   margin-right: .2rem;
 }
 
-/* Pulsante di rimozione dei tag (la "x" su ogni tag) */
 .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
   margin-right: .2rem;
   color: #dc3545;
-  /* Rosso vivo per la "x" */
   font-weight: normal;
-  /* Non grassetto */
   margin-left: .25rem;
-  /* Più spazio a sinistra */
 }
 
-/* Placeholder per selezioni multiple */
 .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__placeholder {
   color: #6c757d;
-  /* Grigio del placeholder */
   font-style: italic;
-  /* Corsivo */
 }
 
-/* Risultati nel dropdown (lista scorrevole) */
 .select2-container--bootstrap-5 .select2-results__option {
   padding: .5rem 1rem;
-  /* Padding maggiore per le opzioni */
   font-size: .95rem;
-  /* Testo leggermente più grande */
 }
 
-/* REGOLA PER OPZIONE EVIDENZIATA (HIGHLIGHTED) - BORDEAUX PIENO */
-/* Questa regola mira all'opzione quando è evidenziata (hover o navigazione con tastiera). */
-/* La specificità è massima per sovrascrivere qualsiasi stile di default o di tema. */
-/* Ho aggiunto il selettore radice ':root' per massimizzare la specificità (come ultima risorsa) */
 :root .select2-container--bootstrap-5 .select2-results__option--highlighted {
   background-color: #800020 !important;
-  /* BORDEAUX PIENO all'hover */
   color: #fff !important;
-  /* Testo BIANCO all'hover */
 }
 
-/* REGOLA PER OPZIONE SELEZIONATA nella lista (non in hover) - BORDEAUX TENUE */
-/* Questa regola si applica quando l'opzione è selezionata ma non evidenziata dall'hover. */
 :root .select2-container--bootstrap-5 .select2-results__option[aria-selected="true"] {
   background-color: rgba(128, 0, 32, 0.15) !important;
-  /* Bordeaux tenue */
   color: #4b0014 !important;
-  /* Testo bordeaux scuro */
   font-weight: 600 !important;
 }
 
-
-/* Search input all'interno del dropdown (visibile e funzionale) */
-/* Rimuovi tutte le regole di hidden che interferiscono */
-/* Lascio che Select2 e Bootstrap gestiscano la sua visibilità di default. */
 .select2-container--bootstrap-5 .select2-search--dropdown {
-  /* Lasciamo che Select2 gestisca il suo display/visibility di default. */
-  /* Assicurati che non ci siano regole aggressive qui. */
-  /* Aggiungi padding/margin se necessario per la spaziatura */
   padding: 0.5rem 1rem;
-  /* Standardizza il padding del container di ricerca */
   display: block;
-  /* Forziamo display block se è nascosto */
 }
 
-/* Per l'input di ricerca effettivo (.select2-search__field) */
 .select2-container--bootstrap-5 .select2-search--dropdown .select2-search__field {
   width: 100% !important;
-  /* Assicurati che prenda tutta la larghezza disponibile */
   height: calc(1.5em + .75rem + 2px) !important;
-  /* Altezza standard input */
   padding: .375rem .75rem !important;
   border: 1px solid #dee2e6 !important;
   border-radius: .25rem !important;
   box-shadow: none !important;
   background-color: #fff !important;
   color: #212529 !important;
-  /* Colore testo normale */
   cursor: text !important;
   outline: none !important;
 }
 
-
-/* --- SOLUZIONE PER UNIFORMARE LA LARGHEZZA DEI SELECT2 NEI FILTRI --- */
-
-/* Applica la larghezza 100% a tutti i Select2 all'interno di un input-group */
 .input-group .select2-container--bootstrap-5 {
   width: 100% !important;
-  /* Forza Select2 a occupare tutta la larghezza dell'input-group */
   flex: 1 1 auto;
-  /* Permette al Select2 di espandarsi all'interno del flexbox input-group */
 }
 
-/* Assicurati che l'input nascosto di Select2 non causi problemi */
 .select2-container--bootstrap-5 .select2-selection__rendered {
   display: flex !important;
   align-items: center;
 }
 
-/* Regola per l'input finto del Select2 singolo */
 .select2-container--bootstrap-5 .select2-selection--single {
   height: calc(2.25rem + 2px);
-  /* Altezza uguale a form-control standard */
   line-height: calc(2.25rem + 2px - .75rem);
-  /* Allinea il testo verticalmente */
   border: 1px solid #dee2e6;
-  /* Bordo standard */
   border-radius: .25rem;
-  /* Bordi arrotondati */
   padding: .375rem 1rem;
-  /* Padding interno */
   box-shadow: none;
-  /* Rimuovi ombre di default */
 }
 
 .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
   line-height: calc(2.25rem + 2px - .75rem);
-  /* Assicurati che il testo sia centrato */
 }
 
 .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
@@ -626,70 +469,50 @@ body .swal2-container .swal2-confirm:focus {
   right: .5rem;
 }
 
-/* --- BORDO BORDEAUX PER INPUT STANDARD IN FOCUS --- */
 .form-control:focus {
   border-color: #800020 !important;
-  /* Colore bordeaux */
   box-shadow: 0 0 0 .25rem rgba(128, 0, 32, .25) !important;
-  /* Ombra di focus bordeaux */
 }
 
-/* Per i campi input all'interno di un input-group */
 .input-group .form-control:focus {
   border-color: #800020 !important;
   box-shadow: 0 0 0 .25rem rgba(128, 0, 32, .25) !important;
 }
 
-/* --- STILI AGGIUNTIVI PER MIGLIORARE L'ASPETTO DELLE TABELLE --- */
 table.table-bordered {
   border-color: #e9ecef;
-  /* Bordo più chiaro per le tabelle */
 }
 
 table.table-striped>tbody>tr:nth-of-type(odd)>* {
   background-color: rgba(0, 0, 0, 0.02);
-  /* Strisce leggerissime */
 }
 
 table.table-hover tbody tr:hover {
   background-color: rgba(0, 0, 0, 0.04);
-  /* Hover leggermente più scuro */
 }
 
-/* Assicurati che le icone di ordinamento siano allineate con il testo */
 th a i.bi {
   vertical-align: text-top;
   margin-left: 5px;
 }
 
-/* Nascondi le freccine (spinner) dagli input di tipo number */
-/* Per Chrome, Safari, Edge, Opera */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-/* Per Firefox */
 input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Fix per lo sbordamento di Select2 all'interno dei modali */
-/* Forzare overflow-y per la lista dei risultati e la sua posizione */
-/* Ho aumentato la max-height per Select2 per dare più spazio ai risultati */
 .select2-container--open .select2-dropdown {
   max-height: 300px;
-  /* Altezza massima per il dropdown (aumentata) */
   overflow-y: auto;
-  /* Aggiunge scroll se le opzioni superano l'altezza massima */
   position: absolute !important;
-  /* Forzare posizionamento assoluto per corretto clipping */
   box-sizing: border-box;
-  /* Assicurati che padding e border siano inclusi nella dimensione */
 }
 
-/* Un piccolo margine dal fondo per evitare che sia troppo attaccato ai bottoni del modale */
 .select2-container--open {
   margin-bottom: 20px;
 }
@@ -702,15 +525,12 @@ canvas {
 
 .badge-bordeaux {
   background-color: #800020;
-  /* Colore bordeaux del tema */
   color: #fff;
-  /* Testo bianco */
   padding: 0.5em 0.8em;
   font-size: 0.85rem;
   font-weight: 500;
 }
 
-/* Stili per il pulsante e header bordeaux */
 .btn-bordeaux {
   background-color: #800020;
   border-color: #800020;
@@ -727,7 +547,6 @@ canvas {
   background-color: #800020 !important;
 }
 
-/* Rende il select invisibile prima che Select2 lo processi */
 .select2-pre-init {
   opacity: 0;
 }
@@ -755,12 +574,11 @@ body {
   border: 1px solid #ced4da;
 }
 
-
 #suggerimenti_indirizzo,
 #suggerimenti_citta {
   top: 100%;
   left: 0;
   max-height: 200px;
   overflow-y: auto;
-  border-radius: 0 0 .375rem .375rem; /* match input rounded corners */
+  border-radius: 0 0 .375rem .375rem;
 }

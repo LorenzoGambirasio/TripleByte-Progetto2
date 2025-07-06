@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
-from main.models import Ricovero  # Usa il tuo modello
+from main.models import Ricovero  
 
 class Command(BaseCommand):
     help = 'Aggiorna lo stato dei ricoveri attivi'
@@ -14,7 +14,7 @@ class Command(BaseCommand):
         for ricovero in ricoveri:
             data_fine = ricovero.data_ingresso + timedelta(days=ricovero.durata)
             if data_fine < oggi:
-                ricovero.stato = 2  # dimesso
+                ricovero.stato = 2  
                 ricovero.save()
                 aggiornati += 1
 
