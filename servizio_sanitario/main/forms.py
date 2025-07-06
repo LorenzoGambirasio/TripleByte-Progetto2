@@ -5,16 +5,29 @@ from django.core.exceptions import ValidationError
 from datetime import date, timedelta
 from django.utils import timezone
 
-
-
 class RicoveroForm(forms.ModelForm):
     CSSN = forms.ModelChoiceField(
         queryset=models.Cittadino.objects.filter(deceduto=0).order_by('cognome', 'nome'),
         label="Paziente",
-        # CORREZIONE: Impostiamo l'etichetta vuota a None per rimuovere i trattini
         empty_label=None,
         widget=forms.Select(attrs={'class': 'form-select'}),
-        to_field_name="CSSN"
+        to_field_name="CSSN",
+        error_messages={
+            'required': 'È obbligatorio selezionare un paziente.',
+            'invalid_choice': 'Il paziente selezionato non è valido.',
+        }
+    )
+
+    # --- CAMPO OSPEDALE MODIFICATO ---
+    codOspedale = forms.ModelChoiceField(
+        queryset=models.Ospedale.objects.all().order_by('nome'),
+        label="Ospedale",
+        empty_label=None,  # Rimuove l'opzione vuota "-------"
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        error_messages={
+            'required': 'È obbligatorio selezionare un ospedale.',
+            'invalid_choice': 'L\'ospedale selezionato non è valido.',
+        }
     )
 
     patologie = forms.ModelMultipleChoiceField(
@@ -30,36 +43,47 @@ class RicoveroForm(forms.ModelForm):
     durata = forms.IntegerField(
         min_value=1,
         max_value=60,
-        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'es. 7'
+        }),
         error_messages={
-            'required': 'Inserisci la durata del ricovero.',
-            'min_value': 'La durata deve essere almeno 1 giorno.',
-            'max_value': 'La durata massima è di 60 giorni.'
+            'required': 'La durata del ricovero è obbligatoria.',
+            'min_value': 'La durata deve essere di almeno 1 giorno.',
+            'max_value': 'La durata massima non può superare i 60 giorni.',
+            'invalid': 'Inserisci un numero valido per la durata.'
         }
     )
 
     data_ingresso = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         error_messages={
-            'required': 'Inserisci la data di ingresso.',
-            'invalid': 'Formato data non valido.'
+            'required': 'La data di ingresso è obbligatoria.',
+            'invalid': 'Inserisci un formato di data valido (GG/MM/AAAA).'
         }
     )
 
     costo = forms.DecimalField(
         max_digits=7,
         decimal_places=2,
-        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'es. 1500.00'
+        }),
         error_messages={
-            'required': 'Inserisci il costo del ricovero.',
-            'invalid': 'Il costo deve essere un numero in euro.'
+            'required': 'Il costo del ricovero è obbligatorio.',
+            'invalid': 'Inserisci un valore numerico valido per il costo.',
+            'max_digits': 'Il costo è troppo elevato (massimo 7 cifre).',
         }
     )
 
     motivo = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-control'}),
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'es. Controllo post-operatorio'
+        }),
         error_messages={
-            'required': 'Inserisci il motivo del ricovero.'
+            'required': 'Il motivo del ricovero è obbligatorio.'
         }
     )
 
@@ -67,7 +91,6 @@ class RicoveroForm(forms.ModelForm):
         model = models.Ricovero
         fields = ['CSSN', 'codOspedale', 'data_ingresso', 'durata', 'stato', 'motivo', 'costo']
         widgets = {
-            'codOspedale': forms.Select(attrs={'class': 'form-select'}),
             'stato': forms.HiddenInput(),
         }
 
@@ -75,10 +98,7 @@ class RicoveroForm(forms.ModelForm):
         self.is_edit_mode = kwargs.pop('is_edit_mode', False)
         super().__init__(*args, **kwargs)
 
-        # 1. Trova i CSSN di tutti i pazienti che hanno già un ricovero attivo (stato=0)
         pazienti_ricoverati_ids = models.Ricovero.objects.filter(stato=0).values_list('CSSN_id', flat=True)
-
-        # 2. Filtra i cittadini: escludi i deceduti E quelli con un ricovero attivo
         self.fields['CSSN'].queryset = models.Cittadino.objects.filter(
             deceduto=0
         ).exclude(
@@ -100,12 +120,20 @@ class RicoveroForm(forms.ModelForm):
         return data_inserita
 
 class TrasferimentoForm(forms.ModelForm):
+    # --- CAMPO OSPEDALE MODIFICATO ---
+    codOspedale = forms.ModelChoiceField(
+        queryset=models.Ospedale.objects.all().order_by('nome'),
+        label="Nuovo Ospedale di Destinazione",
+        empty_label=None,  # Rimuove l'opzione vuota "-------"
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        error_messages={
+            'required': 'È obbligatorio selezionare un ospedale di destinazione.'
+        }
+    )
+
     class Meta:
         model = models.Ricovero
         fields = ['codOspedale']
-        labels = {
-            'codOspedale': 'Nuovo Ospedale di Destinazione'
-        }
 
     def clean(self):
         cleaned_data = super().clean()
@@ -116,20 +144,23 @@ class TrasferimentoForm(forms.ModelForm):
             )
         return cleaned_data
 
-
 class DecessoForm(forms.ModelForm):
     dataoradecesso = forms.DateTimeField(
         label="Data e Ora del Decesso",
         input_formats=['%Y-%m-%dT%H:%M'],
         widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'}),
         error_messages={
-            'required': 'Inserisci la data e ora del decesso.',
-            'invalid': 'Formato data e ora non valido. Assicurati che sia completo (AAAA-MM-GGTHH:MM).'
+            'required': 'La data e ora del decesso sono obbligatorie.',
+            'invalid': 'Formato data e ora non valido. Usa AAAA-MM-GGTHH:MM.'
         }
     )
     causadecesso = forms.CharField(
         label="Causa del Decesso",
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 3,
+            'placeholder': 'es. Arresto cardiaco'
+        }),
         required=False,
         max_length=500
     )
@@ -138,34 +169,34 @@ class DecessoForm(forms.ModelForm):
         model = models.Cittadino
         fields = ['dataoradecesso', 'causadecesso']
 
+    def __init__(self, *args, **kwargs):
+        # Accetta il ricovero passato dalla vista
+        self.ricovero = kwargs.pop('ricovero', None)
+        super().__init__(*args, **kwargs)
+
     def clean_dataoradecesso(self):
         data_ora_input = self.cleaned_data.get('dataoradecesso')
-        if not data_ora_input:
-            return data_ora_input
-        
-        if timezone.is_naive(data_ora_input):
-            try:
-                data_ora_aware = timezone.make_aware(data_ora_input, timezone.get_default_timezone())
-            except Exception as e:
-                raise ValidationError(f"Errore nella conversione del fuso orario: {e}")
-        else:
-            data_ora_aware = data_ora_input
+        if not data_ora_input: return data_ora_input
         
         now_aware = timezone.now()
-        now_plus_tolerance = now_aware + timedelta(seconds=2)
-        
-        if data_ora_aware > now_plus_tolerance:
+        if data_ora_input > now_aware:
             raise ValidationError("La data e ora del decesso non può essere nel futuro.")
         
-        return data_ora_aware
-
+        # NUOVO: Controllo sulla data del ricovero
+        if self.ricovero and data_ora_input.date() < self.ricovero.data_ingresso:
+            raise ValidationError(f"La data del decesso non può essere precedente alla data del ricovero ({self.ricovero.data_ingresso.strftime('%d/%m/%Y')}).")
+            
+        return data_ora_input
 
 class PasswordForm(forms.Form):
     password = forms.CharField(
         label="Password",
-        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        widget=forms.PasswordInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Inserisci la password di amministrazione'
+        }),
         error_messages={
-            'required': 'Inserisci la password.'
+            'required': 'Il campo password è obbligatorio.'
         }
     )
 
@@ -182,11 +213,25 @@ class NuovoPazienteForm(forms.ModelForm):
         fields = ['CSSN', 'nome', 'cognome', 'data_nascita', 'città', 'via']
         widgets = {
             'data_nascita': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-            'nome': forms.TextInput(attrs={'class': 'form-control'}),
-            'cognome': forms.TextInput(attrs={'class': 'form-control'}),
-            'città': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_citta'}),
-            'via': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_indirizzo'}),
-            'CSSN': forms.TextInput(attrs={'class': 'form-control', 'style': 'text-transform:uppercase'}),
+            'nome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'es. Mario'}),
+            'cognome': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'es. Rossi'}),
+            'città': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_citta', 'placeholder': 'es. Roma'}),
+            'via': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_indirizzo', 'placeholder': 'es. Via Garibaldi, 10'}),
+            'CSSN': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'style': 'text-transform:uppercase',
+                'placeholder': 'es. RSSMRA80A01H501Z'
+            }),
+        }
+        error_messages = {
+            'nome': {'required': 'Il nome è obbligatorio.'},
+            'cognome': {'required': 'Il cognome è obbligatorio.'},
+            'data_nascita': {
+                'required': 'La data di nascita è obbligatoria.',
+                'invalid': 'Inserisci una data di nascita valida.',
+            },
+            'città': {'required': 'Il luogo di nascita è obbligatorio.'},
+            'via': {'required': 'L\'indirizzo è obbligatorio.'},
         }
 
     def __init__(self, *args, **kwargs):
@@ -202,9 +247,9 @@ class NuovoPazienteForm(forms.ModelForm):
             if not cssn:
                 self.add_error('CSSN', "Il Codice Fiscale è obbligatorio per i pazienti italiani.")
             elif not re.match(r'^[A-Z]{6}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{2}[A-Z]{1}[0-9LMNPQRSTUV]{3}[A-Z]{1}$', cssn):
-                self.add_error('CSSN', "Formato Codice Fiscale non valido.")
+                self.add_error('CSSN', "Formato Codice Fiscale non valido. Il formato corretto è 16 caratteri alfanumerici (es. RSSMRA80A01H501Z).")
             elif models.Cittadino.objects.filter(CSSN=cssn).exists():
-                self.add_error('CSSN', "Questo Codice Fiscale è già registrato nel sistema.")
+                self.add_error('CSSN', "Un paziente con questo Codice Fiscale esiste già.")
         
         cleaned_data['CSSN'] = cssn
         return cleaned_data

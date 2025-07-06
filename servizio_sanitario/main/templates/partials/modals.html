@@ -1,6 +1,5 @@
 {% load static %}
 
-<!-- Modale principale per aggiungere un ricovero -->
 <div class="modal fade" id="modaleAggiungi" tabindex="-1" aria-labelledby="modaleAggiungiLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content rounded-4 shadow-lg border-0">
@@ -24,7 +23,6 @@
     </div>
 </div>
 
-<!-- MODALE DEDICATO PER AGGIUNGERE UN NUOVO PAZIENTE -->
 <div class="modal fade" id="modaleNuovoPaziente" tabindex="-1" aria-labelledby="modaleNuovoPazienteLabel"
     aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -40,41 +38,40 @@
                     {% csrf_token %}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Provenienza:</label>
-                            <div>
-                                {% for radio in form_nuovo_paziente.provenienza %}
-                                <div class="form-check form-check-inline">
-                                    {{ radio.tag }}
-                                    <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
-                                </div>
-                                {% endfor %}
+                        <div>
+                            {% for radio in form_nuovo_paziente.provenienza %}
+                            <div class="form-check form-check-inline">
+                                {{ radio.tag }}
+                                <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
                             </div>
+                            {% endfor %}
                         </div>
-                        
+                    </div>
 
                     <div class="row g-3">
                         <div class="col-md-6" id="container_cssn_nuovo">
                             <label for="{{ form_nuovo_paziente.CSSN.id_for_label }}"
-                                class="form-label fw-semibold">Codice Fiscale:</label>
+                                class="form-label fw-semibold">Codice Fiscale: <span class="text-danger">*</span></label>
                             {{ form_nuovo_paziente.CSSN }}
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form_nuovo_paziente.nome.id_for_label }}"
-                                class="form-label fw-semibold">Nome:</label>
+                                class="form-label fw-semibold">Nome: <span class="text-danger">*</span></label>
                             {{ form_nuovo_paziente.nome }}
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form_nuovo_paziente.cognome.id_for_label }}"
-                                class="form-label fw-semibold">Cognome:</label>
+                                class="form-label fw-semibold">Cognome: <span class="text-danger">*</span></label>
                             {{ form_nuovo_paziente.cognome }}
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form_nuovo_paziente.data_nascita.id_for_label }}"
-                                class="form-label fw-semibold">Data di Nascita:</label>
+                                class="form-label fw-semibold">Data di Nascita: <span class="text-danger">*</span></label>
                             {{ form_nuovo_paziente.data_nascita }}
                         </div>
                         <div class="col-md-6 position-relative">
                             <label for="{{ form_nuovo_paziente.città.id_for_label }}"
-                                class="form-label fw-semibold">Luogo di Nascita:</label>
+                                class="form-label fw-semibold">Luogo di Nascita: <span class="text-danger">*</span></label>
                             {{ form_nuovo_paziente.città }}
                             <ul id="suggerimenti_citta" class="list-group position-absolute w-100"
                                 style="z-index: 9999;"></ul>
@@ -83,15 +80,13 @@
 
                         <div class="col-md-6 position-relative">
                             <label for="{{ form_nuovo_paziente.via.id_for_label }}"
-                                class="form-label fw-semibold">Indirizzo:</label>
+                                class="form-label fw-semibold">Indirizzo: <span class="text-danger">*</span></label>
                             {{ form_nuovo_paziente.via }}
                             <ul id="suggerimenti_indirizzo" class="list-group position-absolute w-100"
                                 style="z-index: 9999;"></ul>
                         </div>
-
-
                     </div>
-                    <p class="text-muted small mt-3">* Campi obbligatori</p>
+                    <p class="text-muted small mt-3"><span class="text-danger">*</span> Campi obbligatori</p>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                         <button type="submit" class="btn btn-success">Salva Paziente</button>
@@ -103,7 +98,6 @@
 </div>
 
 
-<!-- Altri Modali -->
 <div class="modal fade" id="dettagliModal" tabindex="-1" aria-labelledby="dettagliModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -173,7 +167,7 @@
                     <hr class="my-3">
                     <div class="mb-4">
                         <label for="selectOspedaleTrasferimento" class="form-label fs-6 fw-bold text-dark">Nuovo
-                            Ospedale di Destinazione:</label>
+                            Ospedale di Destinazione: <span class="text-danger">*</span></label>
                         <select id="selectOspedaleTrasferimento" name="codOspedale" class="form-select" required
                             style="width: 100%;">
                             <option></option>
@@ -182,6 +176,7 @@
                             {% endfor %}
                         </select>
                     </div>
+                    <p class="text-muted small mt-4 mb-0"><span class="text-danger">*</span> Campi obbligatori</p>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
                         <button type="submit" class="btn btn-warning px-4 text-dark">Conferma Trasferimento</button>
@@ -264,42 +259,38 @@
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label for="modificaDataIngresso" class="form-label fw-semibold">Data Ingresso:</label>
+                            <label for="modificaDataIngresso" class="form-label fw-semibold">Data Ingresso: <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
                                 <input type="date" id="modificaDataIngresso" name="data_ingresso" class="form-control"
                                     required readonly>
                             </div>
-                            <div class="invalid-feedback d-block mt-1" id="modificaDataIngressoError"></div>
                         </div>
                         <div class="col-md-6">
-                            <label for="modificaDurata" class="form-label fw-semibold">Durata (gg):</label>
+                            <label for="modificaDurata" class="form-label fw-semibold">Durata (gg): <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-hourglass-split"></i></span>
                                 <input type="number" id="modificaDurata" name="durata" class="form-control" min="1"
                                     max="60" required>
                             </div>
-                            <div class="invalid-feedback d-block mt-1" id="modificaDurataError"></div>
                         </div>
                     </div>
 
                     <div class="mb-4">
-                        <label for="modificaMotivo" class="form-label fw-semibold">Motivo:</label>
+                        <label for="modificaMotivo" class="form-label fw-semibold">Motivo: <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-card-text"></i></span>
                             <input type="text" id="modificaMotivo" name="motivo" class="form-control" required>
                         </div>
-                        <div class="invalid-feedback d-block mt-1" id="modificaMotivoError"></div>
                     </div>
 
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
-                            <label for="modificaCosto" class="form-label fw-semibold">Costo (€):</label>
+                            <label for="modificaCosto" class="form-label fw-semibold">Costo (€): <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-currency-euro"></i></span>
                                 <input type="text" id="modificaCosto" name="costo" class="form-control" required>
                             </div>
-                            <div class="invalid-feedback d-block mt-1" id="modificaCostoError"></div>
                         </div>
                         <div class="col-md-6">
                             <label for="id_patologie_modifica" class="form-label fw-semibold">Patologie:</label>
@@ -309,9 +300,10 @@
                                 <option value="{{ p.cod }}">{{ p.nome }}</option>
                                 {% endfor %}
                             </select>
-                            <div class="invalid-feedback d-block mt-1" id="modificaPatologieError"></div>
                         </div>
                     </div>
+
+                    <p class="text-muted small mt-4 mb-0"><span class="text-danger">*</span> Campi obbligatori</p>
 
                     <hr class="my-4">
 
@@ -344,10 +336,10 @@
                     {% csrf_token %}
                     <input type="hidden" id="passwordAction" name="action">
                     <div class="mb-3">
-                        <label for="id_password" class="form-label fw-semibold">Password:</label>
+                        <label for="id_password" class="form-label fw-semibold">Password: <span class="text-danger">*</span></label>
                         <input type="password" id="id_password" name="password" class="form-control" required>
-                        <div class="invalid-feedback d-block mt-1" id="passwordError"></div>
                     </div>
+                    <p class="text-muted small mt-4 mb-0"><span class="text-danger">*</span> Campi obbligatori</p>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
                         <button type="submit" class="btn btn-dark px-4 d-flex align-items-center">
@@ -371,25 +363,27 @@
                     aria-label="Chiudi"></button>
             </div>
             <div class="modal-body px-4 py-4">
-                <p class="fs-5 text-center mb-4 text-dark">Confermi il decesso del paziente <strong
+                <p class="fs-5 text-center mb-3 text-dark">Confermi il decesso del paziente <strong
                         id="dichiaraDecessoNomePaziente"></strong>?</p>
+                
+                <div class="alert alert-info small py-2" id="infoDataRicovero"></div>
+
                 <form id="formDichiaraDecesso" method="POST" novalidate>
                     {% csrf_token %}
                     <input type="hidden" id="dichiaraDecessoRicoveroPk" name="ricovero_pk">
                     <div class="mb-3">
                         <label for="id_data_ora_decesso_dichiara" class="form-label fw-semibold">Data e Ora del
-                            Decesso:</label>
+                            Decesso: <span class="text-danger">*</span></label>
                         <input type="datetime-local" id="id_data_ora_decesso_dichiara" name="dataoradecesso"
                             class="form-control" required>
-                        <div class="invalid-feedback d-block mt-1" id="dichiaraDecessoDataoradecessoError"></div>
                     </div>
                     <div class="mb-4">
                         <label for="id_causa_decesso_dichiara" class="form-label fw-semibold">Causa del Decesso
                             (opzionale):</label>
                         <textarea id="id_causa_decesso_dichiara" name="causadecesso" class="form-control" rows="3"
                             maxlength="500"></textarea>
-                        <div class="invalid-feedback d-block mt-1" id="dichiaraDecessoCausadecessoError"></div>
                     </div>
+                    <p class="text-muted small mt-4 mb-0"><span class="text-danger">*</span> Campi obbligatori</p>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
                         <button type="submit" class="btn btn-dark px-4 d-flex align-items-center">
@@ -455,17 +449,16 @@
                     <input type="hidden" id="modificaCausaRicoveroPk" name="ricovero_pk">
                     <div class="mb-3">
                         <label for="id_data_ora_decesso_modifica" class="form-label fw-semibold">Data e Ora del
-                            Decesso:</label>
+                            Decesso: <span class="text-danger">*</span></label>
                         <input type="datetime-local" id="id_data_ora_decesso_modifica" name="dataoradecesso"
                             class="form-control" required readonly>
-                        <div class="invalid-feedback d-block mt-1" id="modificaCausaDataoradecessoError"></div>
                     </div>
                     <div class="mb-4">
                         <label for="id_causa_decesso_modifica" class="form-label fw-semibold">Causa del Decesso:</label>
                         <textarea id="id_causa_decesso_modifica" name="causadecesso" class="form-control" rows="3"
                             maxlength="500"></textarea>
-                        <div class="invalid-feedback d-block mt-1" id="modificaCausaCausadecessoError"></div>
                     </div>
+                     <p class="text-muted small mt-4 mb-0"><span class="text-danger">*</span> Campi obbligatori</p>
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Annulla</button>
                         <button type="submit" class="btn btn-primary px-4 d-flex align-items-center">

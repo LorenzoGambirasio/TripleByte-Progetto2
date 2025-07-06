@@ -262,18 +262,20 @@ def lista_patologie(request):
         numero_ricoveri_patologia=Count('ricoveri')
     ).all()
 
-    # LOGICA FILTRI
+    # --- INIZIO LOGICA FILTRI AGGIORNATA ---
     nome_filtro = request.GET.get('nome', '').strip()
-    criticita_filtro = request.GET.get('criticita', '').strip()
     tipologia_filtro = request.GET.get('tipologia', '').strip()
+    criticita_min_filtro = request.GET.get('criticita_min', '').strip()
+    criticita_max_filtro = request.GET.get('criticita_max', '').strip()
 
     if nome_filtro:
         patologie_base = patologie_base.filter(nome__icontains=nome_filtro)
-    if criticita_filtro:
-        try:
-            patologie_base = patologie_base.filter(criticita=int(criticita_filtro))
-        except ValueError:
-            pass
+    
+    # Applica i filtri di criticità come intervallo
+    if criticita_min_filtro.isdigit():
+        patologie_base = patologie_base.filter(criticita__gte=int(criticita_min_filtro))
+    if criticita_max_filtro.isdigit():
+        patologie_base = patologie_base.filter(criticita__lte=int(criticita_max_filtro))
 
     # Applica i filtri di tipologia
     if tipologia_filtro:
@@ -285,13 +287,14 @@ def lista_patologie(request):
             patologie_base = patologie_base.exclude(patologiacronica__isnull=False).exclude(patologiamortale__isnull=False).distinct()
         elif tipologia_filtro == "Cronica e Mortale":
             patologie_base = patologie_base.filter(patologiacronica__isnull=False, patologiamortale__isnull=False).distinct()
+    # --- FINE LOGICA FILTRI AGGIORNATA ---
 
     # Pre-processa le patologie per aggiungere il campo 'tipologia' e 'numero_ricoveri'
     patologie_processate = []
     for p in patologie_base:
         tipi = []
-        is_cronica = models.PatologiaCronica.objects.filter(cod=p.cod).exists()
-        is_mortale = models.PatologiaMortale.objects.filter(cod=p.cod).exists()
+        is_cronica = hasattr(p, 'patologiacronica')
+        is_mortale = hasattr(p, 'patologiamortale')
 
         if is_cronica: tipi.append("Cronica")
         if is_mortale: tipi.append("Mortale")
@@ -317,14 +320,14 @@ def lista_patologie(request):
     current_sort = request.GET.get('sort', 'nome')
     current_order = request.GET.get('order', 'asc')
 
-    if current_sort == 'nome':
-        patologie_processate.sort(key=lambda x: x['nome'], reverse=(current_order == 'desc'))
-    elif current_sort == 'criticita':
-        patologie_processate.sort(key=lambda x: x['criticita'], reverse=(current_order == 'desc'))
-    elif current_sort == 'tipologia':
-        patologie_processate.sort(key=lambda x: x['tipologia'], reverse=(current_order == 'desc'))
-    elif current_sort == 'numero_ricoveri':
-        patologie_processate.sort(key=lambda x: x['numero_ricoveri'], reverse=(current_order == 'desc'))
+    sort_key = {
+        'nome': 'nome',
+        'criticita': 'criticita',
+        'tipologia': 'tipologia',
+        'numero_ricoveri': 'numero_ricoveri'
+    }.get(current_sort, 'nome')
+
+    patologie_processate.sort(key=lambda x: x[sort_key], reverse=(current_order == 'desc'))
 
     # Gestione righe per pagina
     per_page = request.GET.get('per_page', 20)
@@ -339,7 +342,6 @@ def lista_patologie(request):
     context = {
         'page_obj': page_obj,
         'patologie': page_obj.object_list,
-        'range_criticita': range(1, 11),
         'current_sort': current_sort,
         'current_order': current_order,
         'etichetta': 'patologie',
@@ -380,8 +382,9 @@ def lista_ricoveri(request):
 
             return JsonResponse({"success": True})
         else:
-            errors = [error for field, field_errors in form.errors.items() for error in field_errors]
-            return JsonResponse({"success": False, "errors": errors})
+            # Struttura errori migliorata
+            errors = {field: [e for e in errs] for field, errs in form.errors.items()}
+            return JsonResponse({"success": False, "errors": errors}, status=400)
 
     # --- Inizio Logica GET per visualizzare la lista ---
     
@@ -500,28 +503,19 @@ def trasferisci_ricovero(request, pk):
     if request.method == 'POST':
         form = TrasferimentoForm(request.POST, instance=ricovero_originale)
         if form.is_valid():
-            nuovo_ospedale = form.cleaned_data['codOspedale']
-            
-            # --- INIZIO MODIFICA ---
-            # 1. Recupera le patologie PRIMA di qualsiasi altra operazione.
-            #    Le "congeliamo" in una lista per sicurezza.
             patologie_da_copiare = list(ricovero_originale.patologie.all())
-            # --- FINE MODIFICA ---
 
-            # 2. Ora clona il ricovero e salvalo come nuovo
             ricovero_nuovo = ricovero_originale
             ricovero_nuovo.pk = None
             ricovero_nuovo._state.adding = True
             ricovero_nuovo.codRicovero = genera_nuovo_codice_ricovero()
-            ricovero_nuovo.codOspedale = nuovo_ospedale
+            ricovero_nuovo.codOspedale = form.cleaned_data['codOspedale']
             ricovero_nuovo.data_ingresso = timezone.now().date()
             ricovero_nuovo.stato = 0
             ricovero_nuovo.save()
 
-            # 3. Aggiorna lo stato del ricovero originale a "Trasferito"
             models.Ricovero.objects.filter(codRicovero=pk).update(stato=1)
 
-            # 4. Associa le patologie (che avevamo salvato) al nuovo ricovero
             if patologie_da_copiare:
                 for patologia_obj in patologie_da_copiare:
                     models.PatologiaRicovero.objects.create(
@@ -532,8 +526,10 @@ def trasferisci_ricovero(request, pk):
             
             return JsonResponse({'success': True})
         else:
-            errors = [error for field in form.errors.values() for error in field]
-            return JsonResponse({"success": False, "errors": errors})
+            # --- QUESTA È LA CORREZIONE ---
+            # Ora invia lo stato 400 e il dizionario degli errori corretto.
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
+            
     return JsonResponse({'error': 'Metodo non valido'}, status=405)
 
 @require_http_methods(["POST"])
@@ -633,35 +629,26 @@ def verifica_password(request):
         return JsonResponse({"success": False, "errors": errors, "non_field_errors": list(non_field_errors)}, status=400)
 
 
-@require_http_methods(["POST"]) # Accetta solo POST dal modale
+@require_http_methods(["POST"])
 @transaction.atomic
-def dichiara_decesso(request, pk): # pk qui è il codRicovero che ha triggerato
+def dichiara_decesso(request, pk):
     ricovero = get_object_or_404(models.Ricovero, codRicovero=pk)
-    cittadino = ricovero.CSSN # Ottieni il cittadino associato al ricovero
+    cittadino = ricovero.CSSN
     
-    # Se il paziente è già deceduto, non permettere un nuovo decesso tramite questa funzione
     if cittadino.deceduto == 1:
         return JsonResponse({"success": False, "errors": ["Questo paziente è già stato dichiarato deceduto."]}, status=400)
 
-    form = DecessoForm(request.POST, instance=cittadino) # DecessoForm agisce sull'istanza del Cittadino
+    # Modifica: Passa l'istanza del ricovero al form
+    form = DecessoForm(request.POST, instance=cittadino, ricovero=ricovero)
     
     if form.is_valid():
-        cittadino_salvato = form.save(commit=False) # Salva i campi del form (dataoradecesso, causadecesso) nel cittadino
-        
-        # Aggiorna lo stato del cittadino a "Deceduto"
+        cittadino_salvato = form.save(commit=False)
         cittadino_salvato.deceduto = 1
-        cittadino_salvato.save() # Salva le modifiche al cittadino
-        
-        # Aggiorna TUTTI i ricoveri attivi, trasferiti o dimessi di questo cittadino a stato 3 (Deceduto)
-        # Questo garantisce che tutti i ricoveri del paziente mostrino lo stato corretto di decesso.
+        cittadino_salvato.save()
         models.Ricovero.objects.filter(CSSN=cittadino, stato__in=[0, 1, 2]).update(stato=3)
-
         return JsonResponse({"success": True})
     else:
-        # Restituisci gli errori di validazione del form
-        errors = {field: form.errors[field] for field in form.errors if field != '__all__'}
-        non_field_errors = form.non_field_errors()
-        return JsonResponse({"success": False, "errors": errors, "non_field_errors": list(non_field_errors)}, status=400)
+        return JsonResponse({"success": False, "errors": form.errors}, status=400)
 
 @require_http_methods(["POST"])
 @transaction.atomic
@@ -752,4 +739,6 @@ def aggiungi_nuovo_paziente(request):
             }
         })
     else:
-        return JsonResponse({"success": False, "errors": form.errors})
+        # --- QUESTA È LA CORREZIONE ---
+        # Aggiungo status=400 per inviare il segnale di errore corretto al JavaScript
+        return JsonResponse({"success": False, "errors": form.errors}, status=400)

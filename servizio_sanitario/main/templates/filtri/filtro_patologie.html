@@ -13,29 +13,23 @@
     </div>
     
     <div class="mb-3">
-      <label for="criticita-filtro" class="form-label">Livello di Criticità:</label>
-      <div class="input-group">
-        <select id="criticita-filtro" name="criticita" class="form-select select2-filter" data-placeholder="Tutti i livelli"> {# Aggiunto select2-filter e data-placeholder #}
-          <option value=""></option> {# Valore vuoto per il placeholder #}
-          {% for i in range_criticita %}
-            <option value="{{ i }}" {% if request.GET.criticita == i|stringformat:"s" %}selected{% endif %}>{{ i }}</option>
-          {% endfor %}
-        </select>
-        {# Il pulsante clear-filter-btn non è più necessario qui se Select2 ha il suo clear #}
-      </div>
+        <label class="form-label">Livello di Criticità:</label>
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-graph-up-arrow"></i></span>
+            <input type="number" class="form-control" name="criticita_min" placeholder="Da" value="{{ request.GET.criticita_min }}" min="1" max="10" step="1">
+            <input type="number" class="form-control" name="criticita_max" placeholder="A" value="{{ request.GET.criticita_max }}" min="1" max="10" step="1">
+        </div>
     </div>
-    
     <div class="mb-3">
       <label for="tipologia-filtro" class="form-label">Tipologia:</label>
       <div class="input-group">
-        <select id="tipologia-filtro" name="tipologia" class="form-select select2-filter" data-placeholder="Tutte"> {# Aggiunto select2-filter e data-placeholder #}
-          <option value=""></option> {# Valore vuoto per il placeholder #}
+        <select id="tipologia-filtro" name="tipologia" class="form-select select2-filter" data-placeholder="Tutte">
+          <option value=""></option>
           <option value="Nessuna" {% if request.GET.tipologia == "Nessuna" %}selected{% endif %}>Nessuna</option>
           <option value="Cronica" {% if request.GET.tipologia == 'Cronica' %}selected{% endif %}>Cronica</option>
           <option value="Mortale" {% if request.GET.tipologia == 'Mortale' %}selected{% endif %}>Mortale</option>
           <option value="Cronica e Mortale" {% if request.GET.tipologia == 'Cronica e Mortale' %}selected{% endif %}>Cronica e Mortale</option>
         </select>
-        {# Il pulsante clear-filter-btn non è più necessario qui se Select2 ha il suo clear #}
       </div>
     </div>
     
@@ -45,4 +39,3 @@
     </div>
   </form>
 </div>
-
