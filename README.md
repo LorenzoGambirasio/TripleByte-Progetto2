@@ -74,6 +74,7 @@ TripleByte-Progetto2/
 
 ### 1️⃣ Clona il repository
 
+
 ```bash
 git clone https://github.com/LorenzoGambirasio/TripleByte-Progetto2.git
 cd TripleByte-Progetto2/servizio_sanitario
@@ -83,9 +84,17 @@ cd TripleByte-Progetto2/servizio_sanitario
 
 Copia l’esempio:
 
+**Linux/macOS:**
 ```bash
 cp .env.example .env
 ```
+
+**Windows:**
+```bash
+copy .env.example .env
+```
+
+
 
 Apri `.env` con un editor e inserisci **i tuoi parametri personali** per la connessione al database:
 
