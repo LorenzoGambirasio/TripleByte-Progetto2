@@ -582,3 +582,32 @@ body {
   overflow-y: auto;
   border-radius: 0 0 .375rem .375rem;
 }
+
+
+
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+  background-color: #e9ecef !important;
+  color: #343a40 !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 50rem !important; 
+  padding: 5px 12px;
+  margin: 4px !important;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove {
+  color: #6c757d !important;
+  margin-left: 8px;
+  font-weight: bold;
+  opacity: 0.7;
+  transition: all 0.2s;
+}
+
+
+.select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice__remove:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
