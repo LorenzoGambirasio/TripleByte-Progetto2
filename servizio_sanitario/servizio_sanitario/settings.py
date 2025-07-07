@@ -73,6 +73,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'servizio_sanitario.wsgi.application'
 
 
+SILENCED_SYSTEM_CHECKS = ['fields.W342']
+
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
