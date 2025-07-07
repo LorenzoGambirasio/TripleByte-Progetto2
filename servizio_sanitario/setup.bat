@@ -1,6 +1,33 @@
 @echo off
+setlocal EnableDelayedExpansion
+
+echo ==========================================
+echo TripleByte Progetto2 - INSTALLER (Windows)
+echo ==========================================
 echo.
-echo === TripleByte Progetto2 - INSTALLER (Windows) ===
+
+REM Verifica requisiti di sistema
+echo Verifico requisiti di sistema...
+
+where python >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+  echo ERRORE: Python non trovato! Installa Python 3.x.
+  exit /b 1
+)
+
+where psql >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+  echo ERRORE: psql non trovato! Installa PostgreSQL.
+  exit /b 1
+)
+
+where createdb >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+  echo ERRORE: createdb non trovato! Installa PostgreSQL.
+  exit /b 1
+)
+
+echo Requisiti OK.
 echo.
 
 REM Controlla se .env esiste
@@ -24,14 +51,39 @@ IF ERRORLEVEL 1 (
   echo  DB già esistente.
 )
 
-echo  Importo schema + dati...
+
+echo.
+echo Controllo se le tabelle sono già popolate...
+
+FOR /F \"tokens=*\" %%A IN ('psql -U %DB_USER% -d %DB_NAME% -t -c \"SELECT COUNT(*) FROM cittadini;\"') DO set COUNT=%%A
+
+set COUNT=%COUNT: =%
+
+IF %COUNT% GTR 0 (
+  echo Dati già presenti, skip import schema.
+) ELSE (
+  echo Importo schema + dati reali...
+  psql -U %DB_USER% -d %DB_NAME% -f db_dump.sql
+)
+
+
+
+echo.
+echo Importo schema + dati reali...
 psql -U %DB_USER% -d %DB_NAME% -f db_dump.sql
 
-echo  Installo dipendenze Python...
+echo.
+echo Installo dipendenze Python...
 pip install -r requirements.txt
 
-echo  Verifico Django...
+echo.
+echo Verifico configurazione Django...
 python manage.py check
 
-echo  Avvio server...
+echo.
+echo Avvio server Django su http://127.0.0.1:8000 ...
 python manage.py runserver 0.0.0.0:8000
+
+echo.
+echo INSTALLAZIONE COMPLETATA!
+pause
