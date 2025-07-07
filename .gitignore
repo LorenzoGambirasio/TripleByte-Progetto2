@@ -4,12 +4,12 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Ambiente virtuale (non va mai committato)
+# Ambiente virtuale 
 .venv/
 venv/
 env/
 .env
 
-# File di sistema specifici (come quello che hai in elenco)
+# File di sistema specifici 
 .DS_Store
 
