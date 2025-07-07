@@ -76,7 +76,7 @@ TripleByte-Progetto2/
 
 ```bash
 git clone https://github.com/LorenzoGambirasio/TripleByte-Progetto2.git
-cd TripleByte-Progetto2
+cd TripleByte-Progetto2/servizio_sanitario
 ```
 
 ### 2️⃣ Crea e configura `.env`
