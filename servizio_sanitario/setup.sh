@@ -39,34 +39,26 @@ echo "📌 Database: $DB_NAME"
 echo "📌 Utente:   $DB_USER"
 echo ""
 
-# ✅ Verifica se DB esiste
-DB_EXISTS=$(psql -U "$DB_USER" -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1 && echo "yes" || echo "no")
+# Verifica se DB esiste
+DB_EXISTS=$(psql -U "$DB_USER" -tc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME';" | grep -q 1 && echo "yes" || echo "no")
 
 if [ "$DB_EXISTS" = "no" ]; then
-  echo "🔨 Creo database '$DB_NAME'..."
+  echo "Creo database..."
   createdb -U "$DB_USER" "$DB_NAME"
-else
-  echo "✅ Database già esistente: '$DB_NAME'"
-fi
-
-
-echo ""
-echo "🔍 Controllo se le tabelle sono già popolate..."
-
-# Verifica se la tabella 'cittadini' ha righe
-ROW_COUNT=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM cittadini;" | xargs)
-
-if [ "$ROW_COUNT" -gt 0 ]; then
-  echo "✅ Dati già presenti, skip import schema."
-else
-  echo "📂 Importo schema + dati reali..."
+  echo "Importo schema..."
   psql -U "$DB_USER" -d "$DB_NAME" -f db_dump.sql
+else
+  echo "DB già esistente."
+
+  # SOLO ORA controllo se le tabelle sono popolate
+  ROW_COUNT=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM cittadini;" | xargs)
+  if [ "$ROW_COUNT" -gt 0 ]; then
+    echo "Tabelle già popolate, skip import."
+  else
+    echo "Importo schema..."
+    psql -U "$DB_USER" -d "$DB_NAME" -f db_dump.sql
+  fi
 fi
-
-
-echo ""
-echo "📂 Importo schema + dati reali..."
-psql -U "$DB_USER" -d "$DB_NAME" -f db_dump.sql
 
 echo ""
 echo "📦 Installo dipendenze Python..."
