@@ -4,7 +4,7 @@ echo ""
 echo "🚑 === TripleByte Progetto2 - INSTALLER ==="
 echo ""
 
-# ✅ Verifica requisiti di sistema
+# Verifica requisiti di sistema
 echo "🔍 Verifico requisiti di sistema..."
 
 if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
@@ -25,14 +25,14 @@ fi
 echo "✅ Requisiti OK!"
 echo ""
 
-# ✅ Controllo file .env
+# Controllo file .env
 if [ ! -f ".env" ]; then
   echo "⚠️  ERRORE: File .env mancante!"
   echo "👉 Copia .env.example e rinominalo in .env, poi riprova."
   exit 1
 fi
 
-# ✅ Carico variabili da .env
+# Carico variabili da .env
 export $(grep -v '^#' .env | xargs)
 
 echo "📌 Database: $DB_NAME"
@@ -50,7 +50,7 @@ if [ "$DB_EXISTS" = "no" ]; then
 else
   echo "DB già esistente."
 
-  # SOLO ORA controllo se le tabelle sono popolate
+  # Controllo se le tabelle sono popolate
   ROW_COUNT=$(psql -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM cittadini;" | xargs)
   if [ "$ROW_COUNT" -gt 0 ]; then
     echo "Tabelle già popolate, skip import."
