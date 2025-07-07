@@ -25,17 +25,30 @@
 
 ---
 
-## 🧾 Contesto e Obiettivi
+## 🧾 Contesto e Obiettivi del Progetto
 
-Il sistema modella una **base di dati regionale** per:
+Questo progetto nasce nell'ambito della modellazione e implementazione di una **base di dati regionale** destinata alla **gestione informatizzata dei ricoveri ospedalieri**.
 
-* **Cittadini:** identificati tramite **CSSN**, con dati anagrafici completi.
-* **Ospedali:** identificati da codice univoco, con informazioni su nome, città, indirizzo e Direttore Sanitario.
-* **Ricoveri:** associati a ospedale e cittadino, con motivazione, durata, costo, patologie curate.
-* **Patologie:** con livello di criticità e sottoinsiemi *croniche* e *mortali*.
+La Regione ha già a disposizione informazioni anagrafiche sui cittadini, identificati tramite il **Codice del Servizio Sanitario Nazionale (CSSN)**. Ogni cittadino è caratterizzato da dati personali quali nome, cognome, data e luogo di nascita, e indirizzo di residenza.
+
+Anche gli **ospedali** sono registrati preventivamente: ciascuno identificato da un codice univoco, e descritto attraverso nome, città, indirizzo e **nome del Direttore Sanitario**. Una **persona può essere Direttore Sanitario di un solo ospedale**.
+
+I **ricoveri** rappresentano il fulcro del sistema. Ogni ricovero è associato a:
+- un ospedale,
+- un cittadino (paziente),
+- una data di inizio,
+- una durata,
+- un motivo,
+- un costo,
+- un codice univoco (relativamente all’ospedale).
+
+Durante un ricovero, un paziente può essere curato per **una o più patologie**, ciascuna nota alla Regione. Ogni **patologia** è identificata da un codice, ed è associata a un nome e a un livello di **criticità** (es. da 1 a 10).  
+Il sistema distingue due **sottoinsiemi** di patologie:
+- **Patologie croniche**
+- **Patologie mortali**  
+Questi sottoinsiemi **non sono disgiunti né esaustivi**: una patologia può appartenere ad entrambi o a nessuno dei due.
 
 ---
-
 ## ✨ Funzionalità Principali
 
 * 🌐 Interfaccia responsive e intuitiva
