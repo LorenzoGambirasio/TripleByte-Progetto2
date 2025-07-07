@@ -3,154 +3,155 @@
 
 {% block content %}
 <div class="row mb-4 g-3">
-  <div class="col-lg-3 col-md-6 mb-3">
+  <div class="col-lg-3 col-md-6">
     <a href="{% url 'lista_ricoveri' %}" class="text-decoration-none">
         <div class="stat-card" style="border-color: #0d6efd;"><div class="stat-value">{{ statistiche.totali }}</div><div class="stat-label">Ricoveri Totali</div></div>
     </a>
   </div>
-  <div class="col-lg-3 col-md-6 mb-3">
+  <div class="col-lg-3 col-md-6">
     <a href="{% url 'lista_ricoveri' %}?stato=0" class="text-decoration-none">
         <div class="stat-card" style="border-color: #198754;"><div class="stat-value">{{ statistiche.attivi }}</div><div class="stat-label">Attivi</div></div>
     </a>
   </div>
-  <div class="col-lg-3 col-md-6 mb-3">
+  <div class="col-lg-3 col-md-6">
     <a href="{% url 'lista_ricoveri' %}?stato=1" class="text-decoration-none">
         <div class="stat-card" style="border-color: #ffc107;"><div class="stat-value">{{ statistiche.trasferiti }}</div><div class="stat-label">Trasferiti</div></div>
     </a>
   </div>
-  <div class="col-lg-3 col-md-6 mb-3">
+  <div class="col-lg-3 col-md-6">
     <a href="{% url 'lista_ricoveri' %}?stato=2" class="text-decoration-none">
         <div class="stat-card" style="border-color: #dc3545;"><div class="stat-value">{{ statistiche.dimessi }}</div><div class="stat-label">Dimessi</div></div>
     </a>
   </div>
 </div>
 
+<section class="col-12 px-0 py-0">
+  <div class="bg-white p-4 rounded shadow">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="text-danger fw-bold m-0">Dettaglio Ricoveri</h4>
+      <a href="#" class="btn btn-bordeaux" data-bs-toggle="modal" data-bs-target="#modaleAggiungi"><i class="bi bi-plus-lg me-1"></i> Nuovo</a>
+    </div>
 
-<div class="bg-white p-4 rounded shadow">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h4 class="text-danger fw-bold m-0">Dettaglio Ricoveri</h4>
-    <a href="#" class="btn btn-bordeaux" data-bs-toggle="modal" data-bs-target="#modaleAggiungi"><i class="bi bi-plus-lg me-1"></i> Nuovo</a>
-  </div>
-
-  <p class="text-muted small fst-italic mb-3">
-      <i class="bi bi-info-circle me-1"></i>Per visualizzare i dettagli ed eseguire azioni, fare clic sulla riga del ricovero corrispondente.
-  </p>
-  <div class="table-responsive">
-    <table class="table table-hover table-striped">
-      <thead class="table-light">
-        <tr>
-          <th>
-            <a href="?sort=ospedale&order={% if current_sort == 'ospedale' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Ospedale
-              {% if current_sort == 'ospedale' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-          <th>
-            <a href="?sort=paziente&order={% if current_sort == 'paziente' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Paziente
-              {% if current_sort == 'paziente' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-          <th>
-            <a href="?sort=data_ingresso&order={% if current_sort == 'data_ingresso' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Data Inizio
-              {% if current_sort == 'data_ingresso' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-          <th>
-            <a href="?sort=durata&order={% if current_sort == 'durata' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Durata (gg) {% if current_sort == 'durata' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-          <th class="text-center">
-            <a href="?sort=stato&order={% if current_sort == 'stato' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Stato
-              {% if current_sort == 'stato' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-          <th>
-            <a href="?sort=costo&order={% if current_sort == 'costo' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Costo
-              {% if current_sort == 'costo' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-          <th class="text-center">
-            <a href="?sort=patologie&order={% if current_sort == 'patologie' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Patologie
-              {% if current_sort == 'patologie' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-          <th>
-            <a href="?sort=motivo&order={% if current_sort == 'motivo' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
-              Motivo
-              {% if current_sort == 'motivo' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
-            </a>
-          </th>
-           
-        </tr>
-        
-      </thead>
-      <tbody>
-        {% for item in ricoveri_items %}
-          {% with ricovero=item.ricovero max_criticita=item.max_criticita %}
-          <tr class="clickable-row" 
-                data-pk="{{ item.ricovero.codRicovero }}" 
-                data-paziente-nome="{{ item.ricovero.CSSN.nome }} {{ item.ricovero.CSSN.cognome }}" 
-                data-ospedale-nome="{{ item.ricovero.codOspedale.nome }}" 
-                data-stato="{{ item.ricovero.stato }}"
-                data-paziente-deceduto="{{ item.ricovero.CSSN.deceduto }}" 
-                data-patologie-json='[{% for p in item.ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
-                data-motivo="{{ item.ricovero.motivo|escapejs }}"
-                data-decesso-data="{{ item.ricovero.CSSN.dataoradecesso|date:"Y-m-d\TH:i"|default:"" }}"
-                data-decesso-causa="{{ item.ricovero.CSSN.causadecesso|escapejs|default:"" }}"
-                data-dettagli-json='{
-                    "Codice": "{{ item.ricovero.codRicovero }}",
-                    "Paziente": "{{ item.ricovero.CSSN.nome }} {{ item.ricovero.CSSN.cognome }}",
-                    "CSSN": "{{ item.ricovero.CSSN.CSSN }}",
-                    "Stato": "{{ item.ricovero.get_stato_display }}",
-                    "Data Ingresso": "{{ item.ricovero.data_ingresso|date:"d/m/Y" }}",
-                    "Durata (gg)": "{{ item.ricovero.durata }}",
-                    "Costo": "€ {{ item.ricovero.costo|floatformat:2 }}",
-                    "Ricoveri totali paziente": "{{ item.ricovero.totale_ricoveri_paziente }}"
-                }'
-            >
-            <td>{{ ricovero.codOspedale.nome }}</td>
-            <td>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</td>
-            <td class="text-end">{{ ricovero.data_ingresso|date:"d/m/Y" }}</td> <td class="text-end">{{ ricovero.durata }}</td> <td class="text-center stato-col"> {% if ricovero.stato == 0 %} 
-                <span class="badge border border-success-subtle rounded-pill status-icon-badge text-success-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Attivo"><i class="bi bi-check-circle"></i></span>
-              {% elif ricovero.stato == 1 %} 
-                <span class="badge border border-warning-subtle rounded-pill status-icon-badge text-warning-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Trasferito"><i class="bi bi-arrow-left-right"></i></span>
-              {% elif ricovero.stato == 2 %} 
-                <span class="badge border border-danger-subtle rounded-pill status-icon-badge text-danger-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Dimesso"><i class="bi bi-house"></i></span>
-              {% elif ricovero.stato == 3 %}
-                <span class="badge border border-dark-subtle rounded-pill status-icon-badge text-dark-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Deceduto"><i class="bi bi-x-circle"></i></span>
-              {% endif %}
-            </td>
-            <td class="text-end">€ {{ ricovero.costo|floatformat:2 }}</td> <td class="text-center" data-bs-toggle="tooltip" data-bs-html="true" title="{% for p in ricovero.patologie.all %}{{ p.nome }}<br>{% empty %}Nessuna{% endfor %}">
-              {% with patologie_count=ricovero.patologie.all.count %}
-                {% if patologie_count > 0 %}
-                  {% if max_criticita >= 8 %} <span class="pathology-icon text-danger"><i class="bi bi-shield-fill-exclamation"></i></span>
-                  {% elif max_criticita >= 5 %} <span class="pathology-icon text-warning"><i class="bi bi-shield-exclamation"></i></span>
-                  {% else %} <span class="pathology-icon text-success"><i class="bi bi-shield-check"></i></span>
-                  {% endif %}
-                  <span class="ms-1 fw-bold">{{ patologie_count }}</span>
-                {% else %}
-                  <span class="text-muted small">--</span>
-                {% endif %}
-              {% endwith %}
-            </td>
-            <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" data-bs-toggle="tooltip" title="{{ ricovero.motivo }}">{{ ricovero.motivo }}</td>
-            
+    <p class="text-muted small fst-italic mb-3">
+        <i class="bi bi-info-circle me-1"></i>Per visualizzare i dettagli ed eseguire azioni, fare clic sulla riga del ricovero corrispondente.
+    </p>
+    <div class="table-responsive">
+      <table class="table table-hover table-striped">
+        <thead class="table-light">
+          <tr>
+            <th>
+              <a href="?sort=ospedale&order={% if current_sort == 'ospedale' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Ospedale
+                {% if current_sort == 'ospedale' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="?sort=paziente&order={% if current_sort == 'paziente' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Paziente
+                {% if current_sort == 'paziente' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="?sort=data_ingresso&order={% if current_sort == 'data_ingresso' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Data Inizio
+                {% if current_sort == 'data_ingresso' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="?sort=durata&order={% if current_sort == 'durata' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Durata (gg) {% if current_sort == 'durata' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th class="text-center">
+              <a href="?sort=stato&order={% if current_sort == 'stato' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Stato
+                {% if current_sort == 'stato' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="?sort=costo&order={% if current_sort == 'costo' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Costo
+                {% if current_sort == 'costo' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th class="text-center">
+              <a href="?sort=patologie&order={% if current_sort == 'patologie' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Patologie
+                {% if current_sort == 'patologie' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+            <th>
+              <a href="?sort=motivo&order={% if current_sort == 'motivo' and current_order == 'asc' %}desc{% else %}asc{% endif %}{% for key,value in request.GET.items %}{% if key != 'page' and key != 'sort' and key != 'order' %}&{{key}}={{value}}{% endif %}{% endfor %}" class="text-decoration-none text-dark">
+                Motivo
+                {% if current_sort == 'motivo' %}<i class="bi bi-caret-{% if current_order == 'asc' %}up{% else %}down{% endif %}-fill"></i>{% endif %}
+              </a>
+            </th>
+             
           </tr>
-          {% endwith %}
-        {% empty %}
-          <tr><td colspan="8" class="text-center p-4">Nessun ricovero trovato.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% include 'partials/paginazione.html' %}
+          
+        </thead>
+        <tbody>
+          {% for item in ricoveri_items %}
+            {% with ricovero=item.ricovero max_criticita=item.max_criticita %}
+            <tr class="clickable-row" 
+                  data-pk="{{ item.ricovero.codRicovero }}" 
+                  data-paziente-nome="{{ item.ricovero.CSSN.nome }} {{ item.ricovero.CSSN.cognome }}" 
+                  data-ospedale-nome="{{ item.ricovero.codOspedale.nome }}" 
+                  data-stato="{{ item.ricovero.stato }}"
+                  data-paziente-deceduto="{{ item.ricovero.CSSN.deceduto }}" 
+                  data-patologie-json='[{% for p in item.ricovero.patologie.all %}{"cod": "{{ p.cod }}", "nome": "{{ p.nome|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'
+                  data-motivo="{{ item.ricovero.motivo|escapejs }}"
+                  data-decesso-data="{{ item.ricovero.CSSN.dataoradecesso|date:"Y-m-d\TH:i"|default:"" }}"
+                  data-decesso-causa="{{ item.ricovero.CSSN.causadecesso|escapejs|default:"" }}"
+                  data-dettagli-json='{
+                      "Codice": "{{ item.ricovero.codRicovero }}",
+                      "Paziente": "{{ item.ricovero.CSSN.nome }} {{ item.ricovero.CSSN.cognome }}",
+                      "CSSN": "{{ item.ricovero.CSSN.CSSN }}",
+                      "Stato": "{{ item.ricovero.get_stato_display }}",
+                      "Data Ingresso": "{{ item.ricovero.data_ingresso|date:"d/m/Y" }}",
+                      "Durata (gg)": "{{ item.ricovero.durata }}",
+                      "Costo": "€ {{ item.ricovero.costo|floatformat:2 }}",
+                      "Ricoveri totali paziente": "{{ item.ricovero.totale_ricoveri_paziente }}"
+                  }'
+              >
+              <td>{{ ricovero.codOspedale.nome }}</td>
+              <td>{{ ricovero.CSSN.cognome }} {{ ricovero.CSSN.nome }}</td>
+              <td class="text-end">{{ ricovero.data_ingresso|date:"d/m/Y" }}</td> <td class="text-end">{{ ricovero.durata }}</td> <td class="text-center stato-col"> {% if ricovero.stato == 0 %} 
+                  <span class="badge border border-success-subtle rounded-pill status-icon-badge text-success-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Attivo"><i class="bi bi-check-circle"></i></span>
+                {% elif ricovero.stato == 1 %} 
+                  <span class="badge border border-warning-subtle rounded-pill status-icon-badge text-warning-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Trasferito"><i class="bi bi-arrow-left-right"></i></span>
+                {% elif ricovero.stato == 2 %} 
+                  <span class="badge border border-danger-subtle rounded-pill status-icon-badge text-danger-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Dimesso"><i class="bi bi-house"></i></span>
+                {% elif ricovero.stato == 3 %}
+                  <span class="badge border border-dark-subtle rounded-pill status-icon-badge text-dark-emphasis" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Deceduto"><i class="bi bi-x-circle"></i></span>
+                {% endif %}
+              </td>
+              <td class="text-end">€ {{ ricovero.costo|floatformat:2 }}</td> <td class="text-center" data-bs-toggle="tooltip" data-bs-html="true" title="{% for p in ricovero.patologie.all %}{{ p.nome }}<br>{% empty %}Nessuna{% endfor %}">
+                {% with patologie_count=ricovero.patologie.all.count %}
+                  {% if patologie_count > 0 %}
+                    {% if max_criticita >= 8 %} <span class="pathology-icon text-danger"><i class="bi bi-shield-fill-exclamation"></i></span>
+                    {% elif max_criticita >= 5 %} <span class="pathology-icon text-warning"><i class="bi bi-shield-exclamation"></i></span>
+                    {% else %} <span class="pathology-icon text-success"><i class="bi bi-shield-check"></i></span>
+                    {% endif %}
+                    <span class="ms-1 fw-bold">{{ patologie_count }}</span>
+                  {% else %}
+                    <span class="text-muted small">--</span>
+                  {% endif %}
+                {% endwith %}
+              </td>
+              <td style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" data-bs-toggle="tooltip" title="{{ ricovero.motivo }}">{{ ricovero.motivo }}</td>
+              
+            </tr>
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="8" class="text-center p-4">Nessun ricovero trovato.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% include 'partials/paginazione.html' %}
+    </div>
   </div>
-</div>
+</section>
 
 {% include 'partials/modals.html' %} 
 
