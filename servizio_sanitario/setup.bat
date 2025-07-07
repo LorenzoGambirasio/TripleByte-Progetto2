@@ -51,23 +51,6 @@ IF ERRORLEVEL 1 (
   echo  DB già esistente.
 )
 
-
-echo.
-echo Controllo se le tabelle sono già popolate...
-
-FOR /F \"tokens=*\" %%A IN ('psql -U %DB_USER% -d %DB_NAME% -t -c \"SELECT COUNT(*) FROM cittadini;\"') DO set COUNT=%%A
-
-set COUNT=%COUNT: =%
-
-IF %COUNT% GTR 0 (
-  echo Dati già presenti, skip import schema.
-) ELSE (
-  echo Importo schema + dati reali...
-  psql -U %DB_USER% -d %DB_NAME% -f db_dump.sql
-)
-
-
-
 echo.
 echo Importo schema + dati reali...
 psql -U %DB_USER% -d %DB_NAME% -f db_dump.sql
