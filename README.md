@@ -1,183 +1,66 @@
-# TripleByte-Progetto2
+# TripleByte – Servizio Sanitario 📊🩺
 
-## Versione di sviluppo
-
-# 🩺 Servizio Sanitario – Progetto Django con PostgreSQL
-
-Sistema web per la gestione di cittadini, ospedali, patologie e ricoveri, realizzato con Django 5.2.1 e PostgreSQL.
+![Last Commit](https://img.shields.io/github/last-commit/LorenzoGambirasio/TripleByte-Progetto2?style=for-the-badge)
+![Languages Count](https://img.shields.io/github/languages/count/LorenzoGambirasio/TripleByte-Progetto2?style=for-the-badge)
 
 ---
 
-## ⚙️ Requisiti
+## 📌 Descrizione
 
-- Python 3.13+
-- PostgreSQL 12 o superiore
-- Ambiente virtuale (consigliato)
-- `pip` aggiornato
+**TripleByte – Servizio Sanitario** è un progetto universitario di *Programmazione Web* basato su **Django** con **PostgreSQL**, pensato per la gestione informatizzata dei ricoveri ospedalieri in ambito regionale.
 
 ---
 
-## 🚀 Installazione del progetto
+## 🛠️ Tecnologie Utilizzate
 
-### 1. Clona il repository
-
-```bash
-git clone https://github.com/LorenzoGambirasio/TripleByte-Progetto2.git
-cd servizio-sanitario
-```
-
-### 2. Crea e attiva un ambiente virtuale
-
-```bash
-python -m venv venv
-venv\Scripts\activate          # Su Windows
-# oppure
-source venv/bin/activate       # Su macOS/Linux
-```
-
-### 3. Installa le dipendenze
-
-```bash
-pip install -r requirements.txt
-```
+![Markdown](https://img.shields.io/badge/Markdown-000?logo=markdown&logoColor=white&style=for-the-badge)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black&style=for-the-badge)
+![HTML](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white&style=for-the-badge)
+![CSS](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white&style=for-the-badge)
+![AJAX](https://img.shields.io/badge/AJAX-000000?logo=javascript&logoColor=white&style=for-the-badge)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white&style=for-the-badge)
+![Django](https://img.shields.io/badge/Django-092E20?logo=django&logoColor=white&style=for-the-badge)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white&style=for-the-badge)
+![SQL](https://img.shields.io/badge/SQL-4479A1?logo=mysql&logoColor=white&style=for-the-badge)
 
 ---
 
-## 🛠️ Configura PostgreSQL
+## 🧾 Contesto e Obiettivi
 
-### 4. Crea un database PostgreSQL
+Il sistema modella una **base di dati regionale** per:
 
-Apri il terminale ed esegui:
-
-```bash
-createdb servizio_sanitario
-```
-
-oppure da `pgAdmin`, crea un nuovo database chiamato `servizio_sanitario`.
-
-### 5. Imposta le variabili d'ambiente
-
-Copia il file di esempio:
-
-```bash
-cp .env.example .env
-```
-
-Modifica `.env` con le **tue credenziali PostgreSQL**:
-
-```ini
-DB_NAME=servizio_sanitario
-DB_USER=postgres
-DB_PASSWORD=la_tua_password
-DB_HOST=localhost
-DB_PORT=5432
-```
+* **Cittadini:** identificati tramite **CSSN**, con dati anagrafici completi.
+* **Ospedali:** identificati da codice univoco, con informazioni su nome, città, indirizzo e Direttore Sanitario.
+* **Ricoveri:** associati a ospedale e cittadino, con motivazione, durata, costo, patologie curate.
+* **Patologie:** con livello di criticità e sottoinsiemi *croniche* e *mortali*.
 
 ---
 
-## 🧱 Migrazioni del database
+## ✨ Funzionalità Principali
 
-Se vuoi partire da zero (nuovo DB):
-
-```bash
-python manage.py migrate
-python manage.py createsuperuser
-```
+* 🌐 Interfaccia responsive e intuitiva
+* 📋 Gestione completa di ricoveri, cittadini, ospedali, patologie
+* 🗂️ Importazione schema con **chiavi composite** e dati reali già pronti
 
 ---
 
-## 🗃️ Ripristino da backup PostgreSQL (opzionale)
+## ⚙️ Requisiti di Sistema
 
-### Se ti è stato fornito un file `db_servizio.backup`:
-
-```bash
-pg_restore -U postgres -d servizio_sanitario db_servizio.backup
-```
-
-> 🔁 Sostituisci `postgres` con il tuo utente PostgreSQL se diverso
+✅ **Python 3.x** installato  
+✅ **PostgreSQL** installato e attivo (porta predefinita: `5432`)  
+✅ Utente PostgreSQL con permessi di creazione database (es. `postgres`)  
+✅ `psql` e `createdb` inclusi nel `PATH` di sistema
 
 ---
 
-## ▶️ Avvio del server di sviluppo
-
-```bash
-python manage.py runserver
-```
-
-Accedi su `http://127.0.0.1:8000/`
-
----
-
-## 📁 Struttura del progetto
-
-```
-servizio_sanitario/
-├── main/                ← app Django principale
-├── servizio_sanitario/  ← config Django (settings.py)
-├── templates/           ← file HTML
-├── static/              ← risorse statiche
-├── db_servizio.backup   ← (opzionale) dump PostgreSQL
-├── .env                 ← config locale NON DA COMMITTARE
-├── .env.example         ← file di esempio da condividere
-├── manage.py
-└── requirements.txt
-```
-
----
-
-## 🤝 Collaborazione
-
-1. Ognuno crea il proprio `.env` partendo da `.env.example`
-2. Tutti usano PostgreSQL con stesso schema
-3. Il backup `.backup` può essere condiviso per partire da dati comuni
-4. Non committare `.env` nel repo (è in `.gitignore`)
-
----
-
-## 🧪 Troubleshooting
-
-### 🔴 Errore di autenticazione
-```text
-FATALE: autenticazione con password fallita per l'utente "postgres"
-```
-➡️ Soluzione: controlla `DB_USER` e `DB_PASSWORD` nel tuo `.env`.
-
-### 🔴 `pg_restore` non trovato
-➡️ Aggiungi PostgreSQL alla variabile di sistema PATH, oppure esegui da:
-```bash
-"C:\Program Files\PostgreSQL\<versione>\bin\pg_restore.exe"
-```
-
----
-
-## Versione di test
-# 🚑 TripleByte Progetto2
-
-## 📋 Descrizione
-
-**TripleByte Progetto2** è un’applicazione web basata su **Django** con **PostgreSQL** come database.
-Contiene uno **schema strutturato** con **chiavi composite** e **dati reali** già precaricati.
-
----
-
-## ✅ Requisiti
-
-* ✅ **Python 3.x** installato
-* ✅ **PostgreSQL** installato e funzionante (porta predefinita: `5432`)
-* ✅ Utente PostgreSQL con permessi di creazione database (es. `postgres`)
-* ✅ `psql` e `createdb` devono essere nel `PATH` di sistema
-
----
-
-## 📦 Contenuto del pacchetto
-
-All’interno della cartella troverai:
+## 📦 Contenuto del Repository
 
 ```
 TripleByte-Progetto2/
 │
-├── setup.sh         # Script di installazione automatica
-├── .env.example     # Esempio di configurazione DB
+├── setup.sh         # Script per Linux/macOS
+├── setup.bat        # Script per Windows
+├── .env.example     # Configurazione di esempio
 ├── db_dump.sql      # Dump SQL: schema + dati reali
 ├── requirements.txt # Librerie Python necessarie
 ├── manage.py        # Progetto Django
@@ -187,64 +70,81 @@ TripleByte-Progetto2/
 
 ---
 
-## ⚙️ Configurazione ambiente
+## 🚀 Installazione e Avvio
 
-### 1️⃣ Crea `.env`
+### 1️⃣ Clona il repository
 
-Copia il file di esempio `.env.example` e rinominalo `.env`:
+```bash
+git clone https://github.com/LorenzoGambirasio/TripleByte-Progetto2.git
+cd TripleByte-Progetto2/servizio_sanitario
+```
+
+### 2️⃣ Crea e configura `.env`
+
+Copia l’esempio:
 
 ```bash
 cp .env.example .env
 ```
 
----
-
-### 2️⃣ Modifica `.env` se necessario
-
-Apri `.env` con un editor e imposta le variabili:
+Apri `.env` con un editor e inserisci **i tuoi parametri personali** per la connessione al database:
 
 ```
-DB_NAME=serviziosanitario
-DB_USER=postgres
-DB_PASSWORD=postgres
+DB_NAME=TUO_NOME_DATABASE (es. servizio_sanitario)
+DB_USER=TUO_USERNAME (es. postgres)
+DB_PASSWORD=LA_TUA_PASSWORD (es. admin)
 DB_HOST=localhost
 DB_PORT=5432
 ```
 
 ---
 
-## 🚀 Installazione e avvio
+### 3️⃣ Esegui l’installer
 
-### 3️⃣ Rendi eseguibile lo script
+**Linux/macOS:**
 
 ```bash
 chmod +x setup.sh
-```
-
----
-
-### 4️⃣ Avvia l’installer
-
-Esegui:
-
-```bash
 ./setup.sh
 ```
 
----
+**Windows:**
 
-## ⚙️ Cosa fa lo `setup.sh`
+Esegui `setup.bat` con doppio clic oppure da prompt:
 
-* Verifica se esiste il database `$DB_NAME` specificato.
-* Se non esiste, lo crea con `createdb`.
-* Importa **schema e dati reali** da `db_dump.sql` tramite `psql`.
-* Installa tutte le dipendenze Python (`requirements.txt`).
-* Esegue un check del progetto Django.
-* Avvia il server di sviluppo su [http://127.0.0.1:8000](http://127.0.0.1:8000).
+```bat
+setup.bat
+```
 
 ---
 
+## 🔍 Cosa fa lo `setup.sh`/`setup.bat`
+
+* Verifica l’esistenza del database
+* Se non esiste, lo crea (`createdb`)
+* Importa **schema e dati reali** (`psql`)
+* Installa le dipendenze Python (`requirements.txt`)
+* Esegue un check del progetto Django
+* Avvia il server su [http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+---
+
+## 👤 Autori
+
+**Lorenzo Umberto Gambirasio – \[1087441]**
+📧 [lorenzo.gambirasio@studenti.unibg.it](mailto:lorenzo.gambirasio@studenti.unibg.it)
+🌐 [GitHub – @LorenzoGambirasio](https://github.com/LorenzoGambirasio)
+
+**Alessandro Biscaro – \[1087892]**
+📧 [a.biscaro@studenti.unibg.it](mailto:a.biscaro@studenti.unibg.it)
+🌐 [GitHub – @AlessandroBiscaro](https://github.com/AlessandroBiscaro)
+
+**Marco Valceschini – \[1086356]**
+📧 [m.valceschini1@studenti.unibg.it](mailto:m.valceschini1@studenti.unibg.it)
+🌐 [GitHub – @MarcoValceschini](https://github.com/MarcoValceschini)
+
+---
 
 ## 📄 Licenza
 
-Distribuito per scopi educativi.
+Distribuito per **scopi educativi**.
