@@ -332,6 +332,17 @@ def lista_ricoveri(request):
         if form.is_valid():
             ricovero = form.save(commit=False)
             ricovero.codRicovero = genera_nuovo_codice_ricovero()
+            
+            data_ingresso = form.cleaned_data.get('data_ingresso')
+            durata = form.cleaned_data.get('durata')
+            
+            data_fine_prevista = data_ingresso + timedelta(days=durata)
+            
+            if data_fine_prevista <= timezone.now().date():
+                ricovero.stato = 2  
+            else:
+                ricovero.stato = 0
+
             ricovero.save()
             
             patologie_selezionate_cods = form.cleaned_data.get('patologie')
@@ -347,9 +358,9 @@ def lista_ricoveri(request):
 
             return JsonResponse({"success": True})
         else:
-            errors = {field: [e for e in errs] for field, errs in form.errors.items()}
-            return JsonResponse({"success": False, "errors": errors}, status=400)
+            return JsonResponse({"success": False, "errors": form.errors}, status=400)
 
+    
     ricoveri_base = models.Ricovero.objects.all()
     statistiche = {
         'totali': ricoveri_base.count(),

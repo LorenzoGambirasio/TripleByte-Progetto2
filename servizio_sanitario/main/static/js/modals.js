@@ -77,16 +77,26 @@ $(document).ready(function () {
         pulisciErroriForm($(this).find('form'));
     });
 
+    $('#modaleAggiungi').on('show.bs.modal', function () {
+        const form = $(this).find('form');
+        if (form.length > 0) {
+            form[0].reset();
+        }
+        $('#id_cittadino, #id_codOspedale, #id_patologie', this).val(null).trigger('change');
+        const dataIngressoInput = document.getElementById('id_data_ingresso');
+        if (dataIngressoInput) {
+            dataIngressoInput.valueAsDate = new Date();
+        }
+    });
+
     $('#formNuovoPaziente').on('submit', function(e) {
         e.preventDefault();
         const form = $(this);
-
         if ((document.getElementById('id_citta').value.trim() !== '' && document.getElementById('id_citta').value.trim() !== ultimoLuogoNascitaSelezionato) ||
             (document.getElementById('id_indirizzo').value.trim() !== '' && document.getElementById('id_indirizzo').value.trim() !== ultimoIndirizzoSelezionato)) {
             Swal.fire('Selezione Obbligatoria', 'Per "Luogo di Nascita" e "Indirizzo" è necessario selezionare una voce valida dall\'elenco.', 'error');
             return;
         }
-
         $.ajax({
             type: 'POST',
             url: form.attr('action'),
@@ -114,11 +124,9 @@ $(document).ready(function () {
         e.preventDefault();
         const form = $(this);
         const formId = form.attr('id');
-
         const procediConSalvataggio = () => {
             let url = form.attr('action');
             let successTitle = 'Operazione completata con successo!';
-
             switch(formId) {
                 case 'formAggiungiRicovero': successTitle = 'Ricovero aggiunto con successo!'; break;
                 case 'formTrasferisci': url = `/trasferisci_ricovero/${$('#trasferisciRicoveroPk').val()}/`; successTitle = 'Trasferimento completato!'; break;
@@ -128,7 +136,6 @@ $(document).ready(function () {
                 case 'formModificaCausaDecesso': url = `/modifica_causa_decesso/${$('#modificaCausaRicoveroPk').val()}/`; successTitle = 'Dati del decesso aggiornati!'; break;
                 case 'formVerificaPassword': url = '/verifica_password/'; break;
             }
-
             $.ajax({
                 type: 'POST',
                 url: url,
@@ -141,14 +148,11 @@ $(document).ready(function () {
                             if (action === 'dichiara') {
                                 const dettagliRicovero = activeRow.data('dettagli-json');
                                 const dataIngresso = dettagliRicovero['Data Ingresso'];
-                                
                                 $('#infoDataRicovero').html(
                                     `<i class="bi bi-info-circle-fill me-1"></i> Data ricovero: <strong>${dataIngresso}</strong>. La data del decesso non può essere precedente.`
                                 );
-                                
                                 $('#dichiaraDecessoNomePaziente').text(activeRow.data('paziente-nome'));
                                 $('#dichiaraDecessoRicoveroPk').val(activeRow.data('pk'));
-                                
                                 const now = new Date();
                                 const year = now.getFullYear();
                                 const month = (now.getMonth() + 1).toString().padStart(2, '0');
@@ -156,10 +160,8 @@ $(document).ready(function () {
                                 const hours = now.getHours().toString().padStart(2, '0');
                                 const minutes = now.getMinutes().toString().padStart(2, '0');
                                 const localDateTimeString = `${year}-${month}-${day}T${hours}:${minutes}`;
-                                
                                 $('#id_data_ora_decesso_dichiara').val(localDateTimeString);
                                 $('#id_causa_decesso_dichiara').val('');
-
                                 modals.dichiaraDecesso.show();
                             } else if (action === 'modificaCausa') {
                                 $('#modificaCausaRicoveroPk').val(activeRow.data('pk'));
@@ -190,14 +192,12 @@ $(document).ready(function () {
                 }
             });
         };
-
         if (formId === 'formAggiungiRicovero') {
             const dataIngressoInput = document.getElementById('id_data_ingresso');
             const selectedDate = new Date(dataIngressoInput.value);
             const today = new Date();
             selectedDate.setHours(0, 0, 0, 0);
             today.setHours(0, 0, 0, 0);
-
             if (selectedDate < today) {
                 Swal.fire({
                     title: 'Data nel passato',
@@ -226,9 +226,8 @@ $(document).ready(function () {
     
     $('#modaleAggiungi').on('shown.bs.modal', function () {
         const modal = $(this);
-        const dataIngressoInput = document.getElementById('id_data_ingresso');
-        if (dataIngressoInput) dataIngressoInput.valueAsDate = new Date();
-        $('#id_cittadino, #id_codOspedale', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, allowClear: true, width: '100%' });
+        $('#id_cittadino', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un paziente", allowClear: true, width: '100%' });
+        $('#id_codOspedale', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona un ospedale", allowClear: true, width: '100%' });
         $('#id_patologie', modal).select2({ theme: "bootstrap-5", dropdownParent: modal, placeholder: "Seleziona patologie", allowClear: true, multiple: true, closeOnSelect: false, width: '100%' });
     });
 
