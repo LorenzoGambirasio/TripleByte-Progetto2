@@ -1,29 +1,37 @@
 @echo off
-echo >>> Creazione dell'ambiente virtuale 'venv'...
-python -m venv venv
+echo.
+echo === TripleByte Progetto2 - INSTALLER (Windows) ===
+echo.
 
-echo >>> Attivazione dell'ambiente virtuale...
-call venv\Scripts\activate
+REM Controlla se .env esiste
+IF NOT EXIST ".env" (
+  echo  ERRORE: File .env mancante! Copia .env.example in .env
+  exit /b
+)
 
-echo >>> Installazione delle dipendenze...
+REM Leggi .env (approccio semplificato)
+FOR /F "tokens=1,2 delims==" %%A IN (.env) DO set %%A=%%B
+
+echo  DB: %DB_NAME%
+echo  User: %DB_USER%
+
+REM Crea DB se non esiste
+psql -U %DB_USER% -tc "SELECT 1 FROM pg_database WHERE datname = '%DB_NAME%'" | findstr /C:"1" >nul
+IF ERRORLEVEL 1 (
+  echo  Creo DB...
+  createdb -U %DB_USER% %DB_NAME%
+) ELSE (
+  echo  DB già esistente.
+)
+
+echo  Importo schema + dati...
+psql -U %DB_USER% -d %DB_NAME% -f db_dump.sql
+
+echo  Installo dipendenze Python...
 pip install -r requirements.txt
 
-echo >>> Creazione del file .env per il database...
-(
-echo DB_NAME=tuo_db_name
-echo DB_USER=tuo_db_user
-echo DB_PASSWORD=tua_db_password
-echo DB_HOST=localhost
-echo DB_PORT=5432
-) > .env
+echo  Verifico Django...
+python manage.py check
 
-echo >>> IMPORTANTE: Verra' ora richiesta la password per l'utente PostgreSQL.
-echo >>> Importazione del database...
-
-psql -U tuo_db_user -d tuo_db_name -f db_dump.sql
-
-echo >>> Avvio del server di sviluppo su http://127.0.0.1:8000/
-echo >>> Per fermare il server, premere CTRL+C.
-python manage.py runserver
-
-call venv\Scripts\deactivate
+echo  Avvio server...
+python manage.py runserver 0.0.0.0:8000
