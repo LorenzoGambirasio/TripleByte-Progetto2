@@ -90,7 +90,7 @@ cp .env.example .env
 Apri `.env` con un editor e inserisci **i tuoi parametri personali** per la connessione al database:
 
 ```
-DB_NAME=TUO_NOME_DATABASE (es. servizio_saniatrio)
+DB_NAME=TUO_NOME_DATABASE (es. servizio_sanitario)
 DB_USER=TUO_USERNAME (es. postgres)
 DB_PASSWORD=LA_TUA_PASSWORD (es. admin)
 DB_HOST=localhost
