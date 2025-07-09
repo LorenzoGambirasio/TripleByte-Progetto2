@@ -205,7 +205,7 @@ $(document).ready(function () {
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
+                    cancelButtonColor: '#6e757c',
                     confirmButtonText: 'Sì, procedi',
                     cancelButtonText: 'Annulla'
                 }).then((result) => {
