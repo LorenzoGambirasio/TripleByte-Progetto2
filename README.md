@@ -135,7 +135,7 @@ chmod +x setup.sh
 Esegui `setup.bat` con doppio clic oppure da prompt:
 
 ```bat
-setup.bat
+./setup.bat
 ```
 
 ---
