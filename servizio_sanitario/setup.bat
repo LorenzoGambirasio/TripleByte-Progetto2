@@ -47,7 +47,7 @@ IF NOT EXIST ".env" (
   exit /b 1
 )
 
-REM Leggi .env (approccio semplificato)
+
 FOR /F "tokens=1,2 delims==" %%A IN (.env) DO set %%A=%%B
 
 echo Credenziali DB caricate per l'utente: %DB_USER%
@@ -57,7 +57,7 @@ REM --- 3. CREAZIONE DATABASE (MODO ROBUSTO E AUTOMATICO) ---
 echo Gestione Database: %DB_NAME%
 echo.
 
-REM Imposta la variabile PGPASSWORD per non chiedere la password manualmente
+
 echo  - Imposto la password per l'automazione...
 set PGPASSWORD=%DB_PASSWORD%
 
@@ -80,7 +80,7 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b 1
 )
 
-REM Pulisce la variabile della password per sicurezza
+
 set PGPASSWORD=
 
 echo Database pronto.
